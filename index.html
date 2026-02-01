@@ -81,6 +81,22 @@
       min-height: 0;
     }
 
+    .chat-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .chat-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #ddd;
+      flex-shrink: 0;
+    }
+
     .chat-input-row {
       display: flex;
       gap: 6px;
@@ -331,7 +347,20 @@
 
     const appendChatMessage = (message) => {
       const row = document.createElement("div");
-      row.textContent = `${message.userName}: ${message.text}`;
+      row.className = "chat-row";
+
+      const avatar = document.createElement("img");
+      avatar.className = "chat-avatar";
+      avatar.alt = "avatar";
+      if (message.photoURL) {
+        avatar.src = message.photoURL;
+      }
+
+      const text = document.createElement("div");
+      text.textContent = `${message.userName}: ${message.text}`;
+
+      row.appendChild(avatar);
+      row.appendChild(text);
       chatMessages.appendChild(row);
       chatMessages.scrollTop = chatMessages.scrollHeight;
     };
@@ -473,12 +502,14 @@
         playerNickname ||
         user.displayName ||
         (user.isAnonymous ? "匿名玩家" : "玩家");
+      const photoURL = user.photoURL || "";
 
       try {
         // 將新訊息寫入 Firestore
         await addDoc(collection(db, "messages"), {
           villageId,
           userName,
+          photoURL,
           text,
           createdAt: serverTimestamp(),
         });
