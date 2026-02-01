@@ -1377,7 +1377,9 @@
         ctx.drawImage(playerImage, player.x, player.y, player.size, player.size);
       }
 
-      if (playerNickname) {
+      const playerLabel =
+        playerNickname || auth.currentUser?.displayName || "";
+      if (playerLabel) {
         const playerCenterX = player.x + player.size / 2;
         const playerTopY = player.y - 6;
         ctx.save();
@@ -1385,7 +1387,7 @@
         ctx.font = "14px Arial, Helvetica, sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "bottom";
-        ctx.fillText(playerNickname, playerCenterX, playerTopY);
+        ctx.fillText(playerLabel, playerCenterX, playerTopY);
         ctx.restore();
       }
 
