@@ -600,6 +600,17 @@
       event.preventDefault();
       setMoveTargetFromEvent(event);
     });
+    canvas.addEventListener("click", (event) => {
+      event.preventDefault();
+      setMoveTargetFromEvent(event);
+    });
+    canvas.addEventListener("pointermove", (event) => {
+      if (!event.buttons) {
+        return;
+      }
+      event.preventDefault();
+      setMoveTargetFromEvent(event);
+    });
 
     document.querySelectorAll("[data-direction]").forEach((button) => {
       const direction = button.dataset.direction;
