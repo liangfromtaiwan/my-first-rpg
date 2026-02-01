@@ -122,11 +122,33 @@
       }
     };
 
+    const handleAuthError = (error) => {
+      const code = error?.code || "unknown";
+      let message = "登入失敗，請稍後再試。";
+      if (code === "auth/unauthorized-domain") {
+        message = "此網域未授權，請到 Firebase 加入此網域。";
+      } else if (code === "auth/popup-blocked") {
+        message = "瀏覽器阻擋彈窗，請允許彈窗再試。";
+      } else if (code === "auth/popup-closed-by-user") {
+        message = "你已關閉登入視窗。";
+      } else if (code === "auth/operation-not-allowed") {
+        message = "此登入方式未啟用，請到 Firebase 開啟。";
+      } else if (code === "auth/network-request-failed") {
+        message = "網路連線失敗，請檢查網路。";
+      } else if (code === "auth/invalid-api-key") {
+        message = "Firebase 設定有誤，請確認 apiKey。";
+      }
+      authStatus.textContent = message;
+      googleLoginButton.disabled = false;
+      anonLoginButton.disabled = false;
+      console.error("登入失敗", error);
+    };
+
     googleLoginButton.addEventListener("click", async () => {
       try {
         await signInWithPopup(auth, provider);
       } catch (error) {
-        console.error("Google 登入失敗", error);
+        handleAuthError(error);
       }
     });
 
@@ -134,11 +156,16 @@
       try {
         await signInAnonymously(auth);
       } catch (error) {
-        console.error("匿名登入失敗", error);
+        handleAuthError(error);
       }
     });
 
     onAuthStateChanged(auth, setAuthStatus);
+
+    if (window.location.protocol === "file:") {
+      authStatus.textContent =
+        "Google 登入需要 http/https，請用本機伺服器或 GitHub Pages 開啟。";
+    }
 
     const canvas = document.querySelector("#game");
     const ctx = canvas.getContext("2d");
