@@ -206,7 +206,8 @@
     const nicknameStorageKey = "playerNickname";
     let playerNickname = localStorage.getItem(nicknameStorageKey) || "";
     nicknameInput.value = playerNickname;
-    const villageId = "village-1";
+    // 每個聊天室對應一個 villageId（需求指定為 'lgbtq'）
+    const villageId = "lgbtq";
     let unsubscribeChat = null;
 
     const setAuthStatus = (user) => {
@@ -327,7 +328,11 @@
         },
         (error) => {
           clearChatMessages();
-          showChatStatus("讀取訊息失敗，請稍後再試。");
+          if (error?.code === "permission-denied") {
+            showChatStatus("讀取被 Firebase 規則擋住，請確認 rules。");
+          } else {
+            showChatStatus("讀取訊息失敗，請稍後再試。");
+          }
           console.error("聊天室讀取失敗", error);
         }
       );
