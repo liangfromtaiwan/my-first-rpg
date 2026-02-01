@@ -50,8 +50,10 @@
       border-radius: 6px;
       padding: 10px;
       text-align: left;
-      height: auto;
+      height: 560px;
       align-self: flex-start;
+      display: flex;
+      flex-direction: column;
     }
 
     .chat-title {
@@ -59,13 +61,20 @@
       margin-bottom: 6px;
     }
 
-    .chat-messages {
-      height: calc(100% - 90px);
-      overflow-y: auto;
+    .chat-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
       border: 1px solid #ddd;
-      padding: 6px;
       background: #fafafa;
+      padding: 6px;
+      gap: 8px;
       margin-bottom: 8px;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
       font-size: 16px;
     }
 
@@ -103,6 +112,7 @@
       }
       .chat-panel {
         width: min(720px, 92vw);
+        height: auto;
       }
     }
 
@@ -181,12 +191,14 @@
       </div>
       <div class="chat-panel" id="chat-panel" aria-live="polite">
         <div class="chat-title">🏘 UX Design Village</div>
-        <div class="chat-messages" id="chat-messages"></div>
-        <div class="chat-note">（自動捲到最新）</div>
-        <div class="chat-input-row">
-          <input id="chat-input" type="text" maxlength="120" placeholder="輸入訊息..." />
-          <button id="chat-send" type="button">送出</button>
+        <div class="chat-box">
+          <div class="chat-messages" id="chat-messages"></div>
+          <div class="chat-input-row">
+            <input id="chat-input" type="text" maxlength="120" placeholder="輸入訊息..." />
+            <button id="chat-send" type="button">送出</button>
+          </div>
         </div>
+        <div class="chat-note">（自動捲到最新）</div>
       </div>
     </div>
   </div>
@@ -382,16 +394,8 @@
       chatPanel.style.display = isInVillage ? "block" : "none";
       if (isInVillage) {
         startChatListener();
-        updateChatSize();
       } else {
         stopChatListener();
-      }
-    };
-
-    const updateChatSize = () => {
-      const rect = canvas.getBoundingClientRect();
-      if (rect.height) {
-        chatPanel.style.height = `${Math.floor(rect.height)}px`;
       }
     };
 
@@ -767,7 +771,6 @@
       }
     });
 
-    window.addEventListener("resize", updateChatSize);
 
     const setMoveTargetFromEvent = (event) => {
       const rect = canvas.getBoundingClientRect();
@@ -820,7 +823,6 @@
       dialogueStage = "question";
       selectedOption = 0;
       resultMessage = "";
-      updateChatSize();
       updateChatVisibility();
     };
 
