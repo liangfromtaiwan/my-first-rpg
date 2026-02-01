@@ -79,41 +79,6 @@
       color: #000000;
     }
 
-    .mobile-controls {
-      display: none;
-      gap: 10px;
-      justify-content: center;
-      align-items: center;
-      margin-top: 6px;
-    }
-
-    .dpad {
-      display: grid;
-      grid-template-columns: repeat(3, 48px);
-      grid-template-rows: repeat(3, 48px);
-      gap: 6px;
-    }
-
-    .dpad button {
-      font-size: 18px;
-      border: 1px solid #333;
-      background: #ffffff;
-      border-radius: 6px;
-      width: 48px;
-      height: 48px;
-      touch-action: none;
-      user-select: none;
-    }
-
-    .dpad .empty {
-      visibility: hidden;
-    }
-
-    @media (max-width: 720px) {
-      .mobile-controls {
-        display: flex;
-      }
-    }
   </style>
 </head>
 
@@ -131,19 +96,6 @@
     </div>
     <canvas id="game" width="400" height="300" aria-label="遊戲畫面"></canvas>
     <div class="hint">方向鍵移動，面向 NPC 按 Enter 對話</div>
-    <div class="mobile-controls" aria-label="方向鍵控制">
-      <div class="dpad">
-        <span class="empty"></span>
-        <button type="button" data-direction="up" aria-label="向上">↑</button>
-        <span class="empty"></span>
-        <button type="button" data-direction="left" aria-label="向左">←</button>
-        <span class="empty"></span>
-        <button type="button" data-direction="right" aria-label="向右">→</button>
-        <span class="empty"></span>
-        <button type="button" data-direction="down" aria-label="向下">↓</button>
-        <span class="empty"></span>
-      </div>
-    </div>
   </div>
 
   <script type="module">
@@ -459,12 +411,6 @@
       }
     };
 
-    const setDirectionKey = (direction, isDown) => {
-      if (direction === "up") keys.ArrowUp = isDown;
-      if (direction === "down") keys.ArrowDown = isDown;
-      if (direction === "left") keys.ArrowLeft = isDown;
-      if (direction === "right") keys.ArrowRight = isDown;
-    };
 
     const getRandomInt = (min, max) =>
       Math.floor(Math.random() * (max - min + 1)) + min;
@@ -612,23 +558,6 @@
       setMoveTargetFromEvent(event);
     });
 
-    document.querySelectorAll("[data-direction]").forEach((button) => {
-      const direction = button.dataset.direction;
-      const onPress = (event) => {
-        event.preventDefault();
-        setDirectionKey(direction, true);
-      };
-      const onRelease = (event) => {
-        event.preventDefault();
-        setDirectionKey(direction, false);
-      };
-      button.addEventListener("pointerdown", onPress);
-      button.addEventListener("pointerup", onRelease);
-      button.addEventListener("pointerleave", onRelease);
-      button.addEventListener("pointercancel", onRelease);
-      button.addEventListener("touchstart", onPress, { passive: false });
-      button.addEventListener("touchend", onRelease, { passive: false });
-    });
 
     const setMap = (mapName, spawn) => {
       currentMapName = mapName;
