@@ -209,10 +209,12 @@
     import {
       addDoc,
       collection,
+      doc,
       getFirestore,
       onSnapshot,
       orderBy,
       query,
+      setDoc,
       serverTimestamp,
       where,
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
@@ -246,6 +248,11 @@
     // 每個聊天室對應一個 villageId（需求指定為 'lgbtq'）
     const villageId = "lgbtq";
     let unsubscribeChat = null;
+    let unsubscribePlayers = null;
+    const otherPlayers = new Map();
+    const avatarCache = new Map();
+    let lastPresenceUpdate = 0;
+    const presenceIntervalMs = 800;
 
     const setAuthStatus = (user) => {
       if (user) {
@@ -304,6 +311,9 @@
     });
 
     onAuthStateChanged(auth, setAuthStatus);
+    onAuthStateChanged(auth, () => {
+      startPlayersListener();
+    });
 
     if (window.location.protocol === "file:") {
       authStatus.textContent =
@@ -386,6 +396,59 @@
     const updateChatVisibility = () => {
       chatPanel.style.display = "block";
       startChatListener();
+    };
+
+    const getAvatarImage = (url) => {
+      if (!url) {
+        return null;
+      }
+      if (avatarCache.has(url)) {
+        return avatarCache.get(url);
+      }
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = url;
+      avatarCache.set(url, img);
+      return img;
+    };
+
+    const startPlayersListener = () => {
+      if (unsubscribePlayers) {
+        unsubscribePlayers();
+      }
+      otherPlayers.clear();
+
+      // 即時監聽同地圖玩家，排除自己
+      const playersRef = collection(db, "players");
+      const playersQuery = query(
+        playersRef,
+        where("mapName", "==", currentMapName)
+      );
+
+      unsubscribePlayers = onSnapshot(
+        playersQuery,
+        (snapshot) => {
+          otherPlayers.clear();
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            if (docSnap.id === auth.currentUser?.uid) {
+              return;
+            }
+            otherPlayers.set(docSnap.id, data);
+          });
+        },
+        (error) => {
+          console.error("玩家清單讀取失敗", error);
+        }
+      );
+    };
+
+    const stopPlayersListener = () => {
+      if (unsubscribePlayers) {
+        unsubscribePlayers();
+        unsubscribePlayers = null;
+      }
+      otherPlayers.clear();
     };
 
     const sendChatMessage = async () => {
@@ -818,6 +881,7 @@
       selectedOption = 0;
       resultMessage = "";
       updateChatVisibility();
+      startPlayersListener();
     };
 
     const isWall = (tileX, tileY) => {
@@ -894,6 +958,7 @@
 
     generateCrowdForMap(currentMapName);
     updateChatVisibility();
+    startPlayersListener();
 
     const canMoveTo = (x, y) => {
       const left = Math.floor(x / tileSize);
@@ -916,6 +981,25 @@
         y,
         size: player.size,
       };
+
+      if (otherPlayers.size) {
+        for (const playerData of otherPlayers.values()) {
+          if (
+            typeof playerData.x !== "number" ||
+            typeof playerData.y !== "number"
+          ) {
+            continue;
+          }
+          const otherRect = {
+            x: playerData.x,
+            y: playerData.y,
+            size: player.size,
+          };
+          if (rectsOverlap(nextPlayerRect, otherRect)) {
+            return false;
+          }
+        }
+      }
 
       const castleRect = getCastleRect();
       if (castleRect && rectsOverlap(nextPlayerRect, castleRect)) {
@@ -1078,6 +1162,29 @@
       }
 
       checkMapTransition();
+
+      // 將玩家位置同步到 Firestore（簡單多人同步）
+      const now = performance.now();
+      if (auth.currentUser && now - lastPresenceUpdate > presenceIntervalMs) {
+        lastPresenceUpdate = now;
+        setDoc(
+          doc(db, "players", auth.currentUser.uid),
+          {
+            userName:
+              playerNickname ||
+              auth.currentUser.displayName ||
+              (auth.currentUser.isAnonymous ? "匿名玩家" : "玩家"),
+            photoURL: auth.currentUser.photoURL || "",
+            mapName: currentMapName,
+            x: player.x,
+            y: player.y,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        ).catch((error) => {
+          console.error("玩家位置同步失敗", error);
+        });
+      }
     };
 
     const render = () => {
@@ -1155,6 +1262,38 @@
           ctx.arc(headCenterX, headCenterY, headRadius, 0, Math.PI * 2);
           ctx.fill();
           ctx.fillRect(bodyX, bodyY, bodyWidth, bodyHeight);
+        });
+      }
+
+      if (otherPlayers.size) {
+        otherPlayers.forEach((playerData) => {
+          if (
+            typeof playerData.x !== "number" ||
+            typeof playerData.y !== "number"
+          ) {
+            return;
+          }
+          const avatar = getAvatarImage(playerData.photoURL);
+          if (avatar && avatar.complete) {
+            ctx.drawImage(
+              avatar,
+              playerData.x,
+              playerData.y,
+              player.size,
+              player.size
+            );
+          } else {
+            ctx.fillStyle = "#3498db";
+            ctx.beginPath();
+            ctx.arc(
+              playerData.x + player.size / 2,
+              playerData.y + player.size / 2,
+              player.size * 0.35,
+              0,
+              Math.PI * 2
+            );
+            ctx.fill();
+          }
         });
       }
 
