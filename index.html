@@ -125,6 +125,12 @@
       cursor: pointer;
     }
 
+    .chat-note {
+      font-size: 14px;
+      color: #555;
+      margin: 6px 0 8px;
+    }
+
   </style>
 </head>
 
@@ -143,10 +149,11 @@
     <canvas id="game" width="400" height="300" aria-label="遊戲畫面"></canvas>
     <div class="hint">方向鍵移動，面向 NPC 按 Enter 對話</div>
     <div class="chat-panel" id="chat-panel" aria-live="polite">
-      <div class="chat-title">村莊聊天室</div>
+      <div class="chat-title">🏘 UX Design Village</div>
       <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-note">（自動捲到最新）</div>
       <div class="chat-input-row">
-        <input id="chat-input" type="text" maxlength="120" placeholder="輸入訊息" />
+        <input id="chat-input" type="text" maxlength="120" placeholder="輸入訊息..." />
         <button id="chat-send" type="button">送出</button>
       </div>
     </div>
