@@ -42,6 +42,69 @@
       justify-items: center;
     }
 
+    .chat-panel {
+      display: none;
+      width: min(360px, 92vw);
+      background: #ffffff;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 10px;
+      text-align: left;
+      height: 100%;
+    }
+
+    .chat-title {
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    .chat-messages {
+      height: calc(100% - 90px);
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      padding: 6px;
+      background: #fafafa;
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+
+    .chat-input-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .chat-input-row input {
+      flex: 1;
+      font-size: 16px;
+      padding: 6px 8px;
+      border: 1px solid #333;
+      border-radius: 4px;
+    }
+
+    .chat-input-row button {
+      font-size: 16px;
+      padding: 6px 12px;
+      border: 1px solid #333;
+      background: #ffffff;
+      cursor: pointer;
+    }
+
+    .chat-note {
+      font-size: 14px;
+      color: #555;
+      margin: 6px 0 8px;
+    }
+
+    @media (max-width: 900px) {
+      .main-layout {
+        flex-direction: column;
+        align-items: center;
+      }
+      .chat-panel {
+        width: min(720px, 92vw);
+      }
+    }
+
     .auth-bar {
       display: flex;
       flex-wrap: wrap;
@@ -94,57 +157,6 @@
       color: #000000;
     }
 
-    .chat-panel {
-      display: none;
-      width: min(360px, 92vw);
-      background: #ffffff;
-      border: 1px solid #333;
-      border-radius: 6px;
-      padding: 10px;
-      text-align: left;
-    }
-
-    .chat-title {
-      font-weight: bold;
-      margin-bottom: 6px;
-    }
-
-    .chat-messages {
-      height: 140px;
-      overflow-y: auto;
-      border: 1px solid #ddd;
-      padding: 6px;
-      background: #fafafa;
-      margin-bottom: 8px;
-      font-size: 16px;
-    }
-
-    .chat-input-row {
-      display: flex;
-      gap: 6px;
-    }
-
-    .chat-input-row input {
-      flex: 1;
-      font-size: 16px;
-      padding: 6px 8px;
-      border: 1px solid #333;
-      border-radius: 4px;
-    }
-
-    .chat-input-row button {
-      font-size: 16px;
-      padding: 6px 12px;
-      border: 1px solid #333;
-      background: #ffffff;
-      cursor: pointer;
-    }
-
-    .chat-note {
-      font-size: 14px;
-      color: #555;
-      margin: 6px 0 8px;
-    }
 
   </style>
 </head>
