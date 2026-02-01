@@ -78,11 +78,27 @@
       font-size: 16px;
     }
 
-    .chat-note {
-      font-size: 14px;
-      color: #555;
-      margin: 6px 0 8px;
+    .chat-input-row {
+      display: flex;
+      gap: 6px;
     }
+
+    .chat-input-row input {
+      flex: 1;
+      font-size: 16px;
+      padding: 6px 8px;
+      border: 1px solid #333;
+      border-radius: 4px;
+    }
+
+    .chat-input-row button {
+      font-size: 16px;
+      padding: 6px 12px;
+      border: 1px solid #333;
+      background: #ffffff;
+      cursor: pointer;
+    }
+
 
     @media (max-width: 900px) {
       .main-layout {
@@ -172,8 +188,11 @@
         <div class="chat-title">🏘 UX Design Village</div>
         <div class="chat-box">
           <div class="chat-messages" id="chat-messages"></div>
+          <div class="chat-input-row">
+            <input id="chat-input" type="text" maxlength="120" placeholder="輸入訊息..." />
+            <button id="chat-send" type="button">送出</button>
+          </div>
         </div>
-        <div class="chat-note">（自動捲到最新）</div>
       </div>
     </div>
   </div>
