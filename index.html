@@ -1,0 +1,954 @@
+<!doctype html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>2D RPG 地圖範例</title>
+  <style>
+    :root {
+      color-scheme: light;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #1e1e1e;
+      color: #000000;
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+      font-size: 18px;
+    }
+
+    .game-wrap {
+      display: grid;
+      gap: 12px;
+      text-align: center;
+    }
+
+    .auth-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .auth-bar button {
+      font-size: 18px;
+      padding: 6px 12px;
+      border: 1px solid #333;
+      background: #ffffff;
+      cursor: pointer;
+    }
+
+    .auth-bar button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin: 0;
+    }
+
+    canvas {
+      background: #2c3e50;
+      border: 2px solid #f5f5f5;
+      image-rendering: pixelated;
+    }
+
+    .hint {
+      font-size: 18px;
+      color: #000000;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="game-wrap">
+    <h1>最簡單 2D RPG 地圖範例</h1>
+    <div class="auth-bar" aria-live="polite">
+      <span id="auth-status">尚未登入</span>
+      <button id="google-login" type="button">Google 登入</button>
+      <button id="anon-login" type="button">匿名登入</button>
+    </div>
+    <canvas id="game" width="400" height="300" aria-label="遊戲畫面"></canvas>
+    <div class="hint">方向鍵移動，面向 NPC 按 Enter 對話</div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      onAuthStateChanged,
+      signInAnonymously,
+      signInWithPopup,
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBVxpNlHDSOxe64nSwVqvSpaClA5G4ItRM",
+      authDomain: "social-village-game.firebaseapp.com",
+      projectId: "social-village-game",
+      storageBucket: "social-village-game.firebasestorage.app",
+      messagingSenderId: "678566991092",
+      appId: "1:678566991092:web:fa6990a54476d815183aa1",
+    };
+
+    const firebaseApp = initializeApp(firebaseConfig);
+    const auth = getAuth(firebaseApp);
+    const provider = new GoogleAuthProvider();
+
+    const authStatus = document.querySelector("#auth-status");
+    const googleLoginButton = document.querySelector("#google-login");
+    const anonLoginButton = document.querySelector("#anon-login");
+
+    const setAuthStatus = (user) => {
+      if (user) {
+        const name =
+          user.displayName ||
+          user.isAnonymous && "匿名玩家" ||
+          "玩家";
+        authStatus.textContent = `你好，${name}`;
+        googleLoginButton.disabled = true;
+        anonLoginButton.disabled = true;
+      } else {
+        authStatus.textContent = "尚未登入";
+        googleLoginButton.disabled = false;
+        anonLoginButton.disabled = false;
+      }
+    };
+
+    googleLoginButton.addEventListener("click", async () => {
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (error) {
+        console.error("Google 登入失敗", error);
+      }
+    });
+
+    anonLoginButton.addEventListener("click", async () => {
+      try {
+        await signInAnonymously(auth);
+      } catch (error) {
+        console.error("匿名登入失敗", error);
+      }
+    });
+
+    onAuthStateChanged(auth, setAuthStatus);
+
+    const canvas = document.querySelector("#game");
+    const ctx = canvas.getContext("2d");
+
+    const tileSize = 40;
+    const worldMap = [
+      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    ];
+    const villageMap = [
+      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    ];
+
+    const maps = {
+      worldMap: {
+        tiles: worldMap,
+        entrance: { x: 22, y: 11 },
+        spawn: { x: 21, y: 12 },
+        npc: { tileX: 6, tileY: 6 },
+        crowd: [],
+      },
+      villageMap: {
+        tiles: villageMap,
+        exit: { x: 1, y: 1 },
+        exitArea: [
+          { x: 1, y: 1 },
+          { x: 2, y: 1 },
+          { x: 1, y: 2 },
+          { x: 2, y: 2 },
+        ],
+        spawn: { x: 3, y: 3 },
+        npc: { tileX: 12, tileY: 8 },
+        crowd: [],
+      },
+    };
+
+    let currentMapName = "worldMap";
+    let currentMap = maps[currentMapName];
+    let mapCols = currentMap.tiles[0].length;
+    let mapRows = currentMap.tiles.length;
+
+    canvas.width = mapCols * tileSize;
+    canvas.height = mapRows * tileSize;
+
+    const playerImage = new Image();
+    playerImage.src = "player.png";
+
+    const npcImage = new Image();
+    npcImage.src = "npc.png";
+
+    const doorImage = new Image();
+    doorImage.src = "door.png";
+
+    const treeImage = new Image();
+    treeImage.src = "tree.png";
+
+    const castleImage = new Image();
+    castleImage.src = "castle.png";
+
+    const treeSprite = document.createElement("canvas");
+    const treeSpriteCtx = treeSprite.getContext("2d");
+    const treeBackgroundColor = "#b7d3c2";
+    let treeSpriteReady = false;
+
+    const player = {
+      x: tileSize * 1,
+      y: tileSize * 1,
+      size: tileSize,
+      speed: 5,
+    };
+    player.facing = "down";
+
+    const npc = {
+      tileX: currentMap.npc.tileX,
+      tileY: currentMap.npc.tileY,
+      size: tileSize,
+      active: true,
+    };
+
+    const npcPixel = {
+      get x() {
+        return npc.tileX * tileSize;
+      },
+      get y() {
+        return npc.tileY * tileSize;
+      },
+    };
+
+    const npcQuiz = {
+      question:
+        "嗨～這裡不用急著互動也沒關係。你可以慢慢探索或隨時離開，想聊就選一個心情：",
+      options: ["1. 我先隨意看看", "2. 我想聊聊天", "3. 我先去別處逛逛"],
+      correctIndex: 1,
+      correctMessage: "好呀～我在這裡陪你，慢慢來就好。",
+      wrongMessage: "沒關係，想去哪都可以，我會在這裡等你。",
+    };
+    let isDialogueOpen = false;
+    let dialogueStage = "question";
+    let selectedOption = 0;
+    let resultMessage = "";
+
+    const keys = {
+      ArrowUp: false,
+      ArrowDown: false,
+      ArrowLeft: false,
+      ArrowRight: false,
+    };
+
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+    const hexToRgb = (hex) => {
+      const normalized = hex.replace("#", "");
+      const value = parseInt(normalized, 16);
+      return {
+        r: (value >> 16) & 255,
+        g: (value >> 8) & 255,
+        b: value & 255,
+      };
+    };
+
+    const prepareTreeSprite = () => {
+      if (!treeImage.complete) {
+        return;
+      }
+      treeSprite.width = treeImage.width;
+      treeSprite.height = treeImage.height;
+      treeSpriteCtx.clearRect(0, 0, treeSprite.width, treeSprite.height);
+      treeSpriteCtx.drawImage(treeImage, 0, 0);
+
+      const imageData = treeSpriteCtx.getImageData(
+        0,
+        0,
+        treeSprite.width,
+        treeSprite.height
+      );
+      const data = imageData.data;
+      const bg = [data[0], data[1], data[2], data[3]];
+      const target = hexToRgb(treeBackgroundColor);
+
+      for (let i = 0; i < data.length; i += 4) {
+        if (
+          data[i] === bg[0] &&
+          data[i + 1] === bg[1] &&
+          data[i + 2] === bg[2] &&
+          data[i + 3] === bg[3]
+        ) {
+          data[i] = target.r;
+          data[i + 1] = target.g;
+          data[i + 2] = target.b;
+          data[i + 3] = 255;
+        }
+      }
+
+      treeSpriteCtx.putImageData(imageData, 0, 0);
+      treeSpriteReady = true;
+    };
+
+    treeImage.addEventListener("load", prepareTreeSprite);
+
+    const wrapText = (context, text, maxWidth) => {
+      const lines = [];
+      let line = "";
+      for (const char of text) {
+        const testLine = line + char;
+        if (context.measureText(testLine).width > maxWidth && line) {
+          lines.push(line);
+          line = char;
+        } else {
+          line = testLine;
+        }
+      }
+      if (line) {
+        lines.push(line);
+      }
+      return lines;
+    };
+
+    const handleKey = (event, isDown) => {
+      if (event.key in keys) {
+        keys[event.key] = isDown;
+        event.preventDefault();
+      }
+    };
+
+    const getRandomInt = (min, max) =>
+      Math.floor(Math.random() * (max - min + 1)) + min;
+
+    const getCrowdSpriteStyle = (color) => ({
+      color,
+      size: Math.floor(tileSize * 0.8),
+    });
+
+    const generateCrowdForMap = (mapName) => {
+      const mapData = maps[mapName];
+      if (!mapData || mapData.crowd.length) {
+        return;
+      }
+
+      const crowdCount = getRandomInt(3, 5);
+      const usedTiles = new Set();
+      const blockedTiles = new Set();
+
+      if (mapData.npc) {
+        blockedTiles.add(`${mapData.npc.tileX},${mapData.npc.tileY}`);
+      }
+      if (mapData.entrance) {
+        blockedTiles.add(`${mapData.entrance.x},${mapData.entrance.y}`);
+      }
+      if (mapData.exit) {
+        blockedTiles.add(`${mapData.exit.x},${mapData.exit.y}`);
+      }
+      if (mapData.exitArea && mapData.exitArea.length) {
+        mapData.exitArea.forEach((tile) => {
+          blockedTiles.add(`${tile.x},${tile.y}`);
+        });
+      }
+      if (mapData.spawn) {
+        blockedTiles.add(`${mapData.spawn.x},${mapData.spawn.y}`);
+      }
+
+      const colors = ["#3498db", "#9b59b6", "#e67e22", "#1abc9c", "#f1c40f"];
+      let attempts = 0;
+
+      while (mapData.crowd.length < crowdCount && attempts < 300) {
+        attempts += 1;
+        const tileX = getRandomInt(1, mapCols - 2);
+        const tileY = getRandomInt(1, mapRows - 2);
+        const key = `${tileX},${tileY}`;
+
+        if (blockedTiles.has(key) || usedTiles.has(key)) {
+          continue;
+        }
+        if (mapData.tiles[tileY][tileX] === 1) {
+          continue;
+        }
+        if (mapName === "worldMap") {
+          const castleRect = getCastleRect();
+          if (castleRect) {
+            const tileCenter = {
+              x: tileX * tileSize + tileSize / 2,
+              y: tileY * tileSize + tileSize / 2,
+              size: 1,
+            };
+            if (rectsOverlap(tileCenter, castleRect)) {
+              continue;
+            }
+          }
+        }
+
+        usedTiles.add(key);
+        mapData.crowd.push({
+          tileX,
+          tileY,
+          color: colors[mapData.crowd.length % colors.length],
+        });
+      }
+    };
+
+    window.addEventListener("keydown", (event) => handleKey(event, true));
+    window.addEventListener("keyup", (event) => handleKey(event, false));
+    window.addEventListener("keydown", (event) => {
+      if (isDialogueOpen && dialogueStage === "question") {
+        if (event.key === "ArrowLeft") {
+          selectedOption =
+            (selectedOption - 1 + npcQuiz.options.length) %
+            npcQuiz.options.length;
+          event.preventDefault();
+          return;
+        }
+        if (event.key === "ArrowRight") {
+          selectedOption = (selectedOption + 1) % npcQuiz.options.length;
+          event.preventDefault();
+          return;
+        }
+      }
+
+      if (event.key === "Enter" && !event.repeat) {
+        if (isDialogueOpen) {
+          if (dialogueStage === "question") {
+            const isCorrect = selectedOption === npcQuiz.correctIndex;
+            resultMessage = isCorrect
+              ? npcQuiz.correctMessage
+              : npcQuiz.wrongMessage;
+            dialogueStage = "result";
+          } else {
+            isDialogueOpen = false;
+            dialogueStage = "question";
+            selectedOption = 0;
+            resultMessage = "";
+          }
+          event.preventDefault();
+          return;
+        }
+
+        if (isPlayerFacingNpc()) {
+          isDialogueOpen = true;
+          dialogueStage = "question";
+          selectedOption = 0;
+          resultMessage = "";
+          event.preventDefault();
+        }
+      }
+    });
+
+    const setMap = (mapName, spawn) => {
+      currentMapName = mapName;
+      currentMap = maps[mapName];
+      mapCols = currentMap.tiles[0].length;
+      mapRows = currentMap.tiles.length;
+      canvas.width = mapCols * tileSize;
+      canvas.height = mapRows * tileSize;
+
+      const npcPosition = currentMap.npc;
+      npc.active = Boolean(npcPosition);
+      if (npcPosition) {
+        npc.tileX = npcPosition.tileX;
+        npc.tileY = npcPosition.tileY;
+      }
+
+      if (spawn) {
+        player.x = spawn.x * tileSize;
+        player.y = spawn.y * tileSize;
+      }
+      generateCrowdForMap(mapName);
+      isDialogueOpen = false;
+      dialogueStage = "question";
+      selectedOption = 0;
+      resultMessage = "";
+    };
+
+    const isWall = (tileX, tileY) => {
+      if (tileX < 0 || tileX >= mapCols || tileY < 0 || tileY >= mapRows) {
+        return true;
+      }
+      return currentMap.tiles[tileY][tileX] === 1;
+    };
+
+    const rectsOverlap = (a, b) =>
+      a.x < b.x + b.size &&
+      a.x + a.size > b.x &&
+      a.y < b.y + b.size &&
+      a.y + a.size > b.y;
+
+    const getCrowdRect = (member) => {
+      const sprite = getCrowdSpriteStyle(member.color);
+      const offset = Math.floor((tileSize - sprite.size) / 2);
+      return {
+        x: member.tileX * tileSize + offset,
+        y: member.tileY * tileSize + offset,
+        size: sprite.size,
+      };
+    };
+
+    const getCastleDrawInfo = () => {
+      if (currentMapName !== "worldMap" || !currentMap.entrance) {
+        return null;
+      }
+      const image = castleImage.complete ? castleImage : doorImage;
+      if (!image.complete) {
+        return null;
+      }
+      const isCastle = image === castleImage;
+      const scale = isCastle ? 5 : 1;
+      const size = tileSize * scale;
+      const x =
+        currentMap.entrance.x * tileSize -
+        (size - tileSize) / 2 -
+        tileSize * 4;
+      const y =
+        currentMap.entrance.y * tileSize -
+        (size - tileSize) -
+        tileSize;
+      return { image, x, y, size, isCastle };
+    };
+
+    const getCastleRect = () => {
+      const info = getCastleDrawInfo();
+      if (!info || !info.isCastle) {
+        return null;
+      }
+      return {
+        x: info.x,
+        y: info.y,
+        size: info.size,
+      };
+    };
+
+    const getCastleEntranceZone = () => {
+      const castleRect = getCastleRect();
+      if (!castleRect) {
+        return null;
+      }
+      const zoneWidth = tileSize * 1.4;
+      const zoneHeight = tileSize * 0.7;
+      return {
+        x: castleRect.x + (castleRect.size - zoneWidth) / 2,
+        y: castleRect.y + castleRect.size,
+        size: zoneWidth,
+        height: zoneHeight,
+      };
+    };
+
+    generateCrowdForMap(currentMapName);
+
+    const canMoveTo = (x, y) => {
+      const left = Math.floor(x / tileSize);
+      const right = Math.floor((x + player.size - 1) / tileSize);
+      const top = Math.floor(y / tileSize);
+      const bottom = Math.floor((y + player.size - 1) / tileSize);
+
+      const hitsWall =
+        isWall(left, top) ||
+        isWall(right, top) ||
+        isWall(left, bottom) ||
+        isWall(right, bottom);
+
+      if (hitsWall) {
+        return false;
+      }
+
+      const nextPlayerRect = {
+        x,
+        y,
+        size: player.size,
+      };
+
+      const castleRect = getCastleRect();
+      if (castleRect && rectsOverlap(nextPlayerRect, castleRect)) {
+        return false;
+      }
+
+      if (currentMap.crowd.length) {
+        const blockedByCrowd = currentMap.crowd.some((member) =>
+          rectsOverlap(nextPlayerRect, getCrowdRect(member))
+        );
+        if (blockedByCrowd) {
+          return false;
+        }
+      }
+
+      if (npc.active) {
+        const npcRect = {
+          x: npcPixel.x,
+          y: npcPixel.y,
+          size: npc.size,
+        };
+        if (rectsOverlap(nextPlayerRect, npcRect)) {
+          return false;
+        }
+      }
+
+      return true;
+    };
+
+    const getPlayerTile = () => ({
+      x: Math.floor((player.x + player.size / 2) / tileSize),
+      y: Math.floor((player.y + player.size / 2) / tileSize),
+    });
+
+    const getPlayerCenter = () => ({
+      x: player.x + player.size / 2,
+      y: player.y + player.size / 2,
+    });
+
+    const isPlayerFacingNpc = () => {
+      const playerTile = getPlayerTile();
+      let frontTile = {
+        x: playerTile.x,
+        y: playerTile.y,
+      };
+
+      if (player.facing === "up") frontTile.y -= 1;
+      if (player.facing === "down") frontTile.y += 1;
+      if (player.facing === "left") frontTile.x -= 1;
+      if (player.facing === "right") frontTile.x += 1;
+
+      if (!npc.active) {
+        return false;
+      }
+
+      return frontTile.x === npc.tileX && frontTile.y === npc.tileY;
+    };
+
+    const isPlayerNearNpc = () => {
+      if (!npc.active) {
+        return false;
+      }
+      const playerCenter = getPlayerCenter();
+      const npcCenter = {
+        x: npcPixel.x + npc.size / 2,
+        y: npcPixel.y + npc.size / 2,
+      };
+      const distance = Math.hypot(
+        playerCenter.x - npcCenter.x,
+        playerCenter.y - npcCenter.y
+      );
+      return distance <= tileSize * 1.2;
+    };
+
+    const isExitTile = (mapData, tileX, tileY) => {
+      if (mapData.exitArea && mapData.exitArea.length) {
+        return mapData.exitArea.some(
+          (tile) => tile.x === tileX && tile.y === tileY
+        );
+      }
+      return (
+        mapData.exit && mapData.exit.x === tileX && mapData.exit.y === tileY
+      );
+    };
+
+    const checkMapTransition = () => {
+      const playerTile = getPlayerTile();
+      const playerRect = {
+        x: player.x,
+        y: player.y,
+        size: player.size,
+      };
+      const castleEntranceZone = getCastleEntranceZone();
+      if (
+        currentMapName === "worldMap" &&
+        ((currentMap.entrance &&
+          playerTile.x === currentMap.entrance.x &&
+          playerTile.y === currentMap.entrance.y) ||
+          (castleEntranceZone &&
+            playerRect.x + playerRect.size > castleEntranceZone.x &&
+            playerRect.x < castleEntranceZone.x + castleEntranceZone.size &&
+            playerRect.y + playerRect.size > castleEntranceZone.y &&
+            playerRect.y < castleEntranceZone.y + castleEntranceZone.height))
+      ) {
+        setMap("villageMap", maps.villageMap.spawn);
+        player.facing = "down";
+      }
+
+      if (
+        currentMapName === "villageMap" &&
+        isExitTile(currentMap, playerTile.x, playerTile.y)
+      ) {
+        setMap("worldMap", maps.worldMap.spawn);
+        player.facing = "down";
+      }
+    };
+
+    const update = () => {
+      if (isDialogueOpen) {
+        return;
+      }
+
+      let dx = 0;
+      let dy = 0;
+
+      if (keys.ArrowUp) dy -= player.speed;
+      if (keys.ArrowDown) dy += player.speed;
+      if (keys.ArrowLeft) dx -= player.speed;
+      if (keys.ArrowRight) dx += player.speed;
+
+      if (dy < 0) player.facing = "up";
+      if (dy > 0) player.facing = "down";
+      if (dx < 0) player.facing = "left";
+      if (dx > 0) player.facing = "right";
+
+      const nextX = clamp(player.x + dx, 0, canvas.width - player.size);
+      const nextY = clamp(player.y + dy, 0, canvas.height - player.size);
+
+      if (canMoveTo(nextX, player.y)) {
+        player.x = nextX;
+      }
+
+      if (canMoveTo(player.x, nextY)) {
+        player.y = nextY;
+      }
+
+      checkMapTransition();
+    };
+
+    const render = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let row = 0; row < mapRows; row += 1) {
+        for (let col = 0; col < mapCols; col += 1) {
+          const tile = currentMap.tiles[row][col];
+          const floorColor =
+            currentMapName === "villageMap" ? "#c7d6b7" : "#b7d3c2";
+          if (tile === 1) {
+            if (treeSpriteReady) {
+              ctx.drawImage(
+                treeSprite,
+                col * tileSize,
+                row * tileSize,
+                tileSize,
+                tileSize
+              );
+            }
+          } else {
+            ctx.fillStyle = floorColor;
+            ctx.fillRect(
+              col * tileSize,
+              row * tileSize,
+              tileSize,
+              tileSize
+            );
+          }
+        }
+      }
+
+      const castleInfo = getCastleDrawInfo();
+      if (castleInfo) {
+        ctx.drawImage(
+          castleInfo.image,
+          castleInfo.x,
+          castleInfo.y,
+          castleInfo.size,
+          castleInfo.size
+        );
+      }
+
+      if (doorImage.complete) {
+        if (currentMapName === "villageMap") {
+          const doorTile = currentMap.exit || currentMap.exitArea?.[0];
+          if (doorTile) {
+            ctx.drawImage(
+              doorImage,
+              doorTile.x * tileSize,
+              doorTile.y * tileSize,
+              tileSize,
+              tileSize
+            );
+          }
+        }
+      }
+
+      if (currentMap.crowd.length) {
+        currentMap.crowd.forEach((member) => {
+          const sprite = getCrowdSpriteStyle(member.color);
+          const offset = Math.floor((tileSize - sprite.size) / 2);
+          const baseX = member.tileX * tileSize + offset;
+          const baseY = member.tileY * tileSize + offset;
+          const headRadius = sprite.size * 0.22;
+          const headCenterX = baseX + sprite.size / 2;
+          const headCenterY = baseY + headRadius + 2;
+          const bodyWidth = sprite.size * 0.55;
+          const bodyHeight = sprite.size * 0.45;
+          const bodyX = baseX + (sprite.size - bodyWidth) / 2;
+          const bodyY = headCenterY + headRadius + 2;
+
+          ctx.fillStyle = sprite.color;
+          ctx.beginPath();
+          ctx.arc(headCenterX, headCenterY, headRadius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillRect(bodyX, bodyY, bodyWidth, bodyHeight);
+        });
+      }
+
+      if (currentMap.crowd.length) {
+        const playerCenter = getPlayerCenter();
+        const hintRadius = tileSize * 1.1;
+
+        currentMap.crowd.forEach((member) => {
+          const memberCenter = {
+            x: member.tileX * tileSize + tileSize / 2,
+            y: member.tileY * tileSize + tileSize / 2,
+          };
+          const distance = Math.hypot(
+            playerCenter.x - memberCenter.x,
+            playerCenter.y - memberCenter.y
+          );
+          if (distance > hintRadius) {
+            return;
+          }
+
+          ctx.save();
+          ctx.fillStyle = "#000000";
+          ctx.font = "18px Arial, Helvetica, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "bottom";
+          ctx.fillText(
+            "👋 揮手",
+            memberCenter.x,
+            memberCenter.y - tileSize * 0.6
+          );
+          ctx.restore();
+        });
+      }
+
+      if (npc.active && npcImage.complete) {
+        ctx.drawImage(npcImage, npcPixel.x, npcPixel.y, npc.size, npc.size);
+      }
+
+      if (playerImage.complete) {
+        ctx.drawImage(playerImage, player.x, player.y, player.size, player.size);
+      }
+
+      if (!isDialogueOpen && npc.active && isPlayerNearNpc()) {
+        const npcCenterX = npcPixel.x + npc.size / 2;
+        const npcTopY = npcPixel.y - tileSize * 0.2;
+        ctx.save();
+        ctx.fillStyle = "#000000";
+        ctx.font = "18px Arial, Helvetica, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.fillText("👋", npcCenterX, npcTopY);
+        ctx.fillStyle = "#000000";
+        ctx.fillText("按 Enter 互動", npcCenterX, npcTopY - 18);
+        ctx.restore();
+      }
+
+      if (isDialogueOpen) {
+        const boxWidth = canvas.width * 0.78;
+        const boxHeight = 160;
+        const boxX = (canvas.width - boxWidth) / 2;
+        const boxY = (canvas.height - boxHeight) / 2;
+        const textColor = "#000000";
+        const subTextColor = "#000000";
+        const maxTextWidth = boxWidth - 40;
+        const lineHeight = 24;
+
+        ctx.save();
+        ctx.fillStyle = "rgba(255, 255, 255, 0.98)";
+        ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        if (dialogueStage === "question") {
+          ctx.fillStyle = textColor;
+          ctx.font = "18px Arial, Helvetica, sans-serif";
+          const questionLines = wrapText(ctx, npcQuiz.question, maxTextWidth);
+          const questionY = boxY + 14;
+          questionLines.forEach((line, index) => {
+            ctx.fillText(line, canvas.width / 2, questionY + index * lineHeight);
+          });
+
+          const optionY =
+            questionY + questionLines.length * lineHeight + 10;
+          const optionCount = npcQuiz.options.length;
+          const spacing =
+            optionCount > 1
+              ? Math.min(140, (boxWidth - 40) / (optionCount - 1))
+              : 0;
+          const startX =
+            canvas.width / 2 - (spacing * (optionCount - 1)) / 2;
+
+          ctx.font = "18px Arial, Helvetica, sans-serif";
+          ctx.textBaseline = "middle";
+          npcQuiz.options.forEach((option, index) => {
+            ctx.fillStyle = index === selectedOption ? "#f1c40f" : textColor;
+            ctx.fillText(option, startX + spacing * index, optionY);
+          });
+
+          ctx.fillStyle = subTextColor;
+          ctx.textBaseline = "bottom";
+          ctx.fillText(
+            "左右選擇，Enter 確認",
+            canvas.width / 2,
+            boxY + boxHeight - 14
+          );
+        } else {
+          ctx.fillStyle = textColor;
+          ctx.font = "18px Arial, Helvetica, sans-serif";
+          const resultLines = wrapText(ctx, resultMessage, maxTextWidth);
+          const resultY = boxY + 34;
+          resultLines.forEach((line, index) => {
+            ctx.fillText(line, canvas.width / 2, resultY + index * lineHeight);
+          });
+          ctx.fillStyle = subTextColor;
+          ctx.textBaseline = "bottom";
+          ctx.fillText(
+            "按 Enter 關閉",
+            canvas.width / 2,
+            boxY + boxHeight - 14
+          );
+        }
+        ctx.restore();
+      }
+    };
+
+    const loop = () => {
+      update();
+      render();
+      requestAnimationFrame(loop);
+    };
+
+    loop();
+  </script>
+</body>
+
+</html>
