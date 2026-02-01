@@ -49,6 +49,20 @@
       cursor: not-allowed;
     }
 
+    .nickname-field {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      font-size: 18px;
+    }
+
+    .nickname-field input {
+      font-size: 18px;
+      padding: 4px 8px;
+      border: 1px solid #333;
+      border-radius: 4px;
+    }
+
     h1 {
       font-size: 18px;
       margin: 0;
@@ -72,6 +86,10 @@
     <h1>最簡單 2D RPG 地圖範例</h1>
     <div class="auth-bar" aria-live="polite">
       <span id="auth-status">尚未登入</span>
+      <label class="nickname-field" for="nickname-input">
+        暱稱
+        <input id="nickname-input" type="text" maxlength="12" placeholder="輸入暱稱" />
+      </label>
       <button id="google-login" type="button">Google 登入</button>
       <button id="anon-login" type="button">匿名登入</button>
     </div>
@@ -105,6 +123,11 @@
     const authStatus = document.querySelector("#auth-status");
     const googleLoginButton = document.querySelector("#google-login");
     const anonLoginButton = document.querySelector("#anon-login");
+    const nicknameField = document.querySelector(".nickname-field");
+    const nicknameInput = document.querySelector("#nickname-input");
+    const nicknameStorageKey = "playerNickname";
+    let playerNickname = localStorage.getItem(nicknameStorageKey) || "";
+    nicknameInput.value = playerNickname;
 
     const setAuthStatus = (user) => {
       if (user) {
@@ -115,10 +138,12 @@
         authStatus.textContent = `你好，${name}`;
         googleLoginButton.disabled = true;
         anonLoginButton.disabled = true;
+        nicknameField.style.display = "flex";
       } else {
         authStatus.textContent = "尚未登入";
         googleLoginButton.disabled = false;
         anonLoginButton.disabled = false;
+        nicknameField.style.display = "none";
       }
     };
 
@@ -166,6 +191,11 @@
       authStatus.textContent =
         "Google 登入需要 http/https，請用本機伺服器或 GitHub Pages 開啟。";
     }
+
+    nicknameInput.addEventListener("input", () => {
+      playerNickname = nicknameInput.value.trim();
+      localStorage.setItem(nicknameStorageKey, playerNickname);
+    });
 
     const canvas = document.querySelector("#game");
     const ctx = canvas.getContext("2d");
@@ -880,6 +910,18 @@
 
       if (playerImage.complete) {
         ctx.drawImage(playerImage, player.x, player.y, player.size, player.size);
+      }
+
+      if (playerNickname) {
+        const playerCenterX = player.x + player.size / 2;
+        const playerTopY = player.y - 6;
+        ctx.save();
+        ctx.fillStyle = "#000000";
+        ctx.font = "14px Arial, Helvetica, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.fillText(playerNickname, playerCenterX, playerTopY);
+        ctx.restore();
       }
 
       if (!isDialogueOpen && npc.active && isPlayerNearNpc()) {
