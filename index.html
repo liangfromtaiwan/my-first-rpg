@@ -377,6 +377,7 @@
       ArrowLeft: false,
       ArrowRight: false,
     };
+    const moveTarget = { x: null, y: null };
 
     const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
@@ -451,6 +452,10 @@
       if (event.key in keys) {
         keys[event.key] = isDown;
         event.preventDefault();
+        if (isDown) {
+          moveTarget.x = null;
+          moveTarget.y = null;
+        }
       }
     };
 
@@ -579,6 +584,21 @@
           event.preventDefault();
         }
       }
+    });
+
+    const setMoveTargetFromEvent = (event) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const x = (event.clientX - rect.left) * scaleX;
+      const y = (event.clientY - rect.top) * scaleY;
+      moveTarget.x = clamp(x - player.size / 2, 0, canvas.width - player.size);
+      moveTarget.y = clamp(y - player.size / 2, 0, canvas.height - player.size);
+    };
+
+    canvas.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      setMoveTargetFromEvent(event);
     });
 
     document.querySelectorAll("[data-direction]").forEach((button) => {
@@ -849,6 +869,21 @@
       if (keys.ArrowDown) dy += player.speed;
       if (keys.ArrowLeft) dx -= player.speed;
       if (keys.ArrowRight) dx += player.speed;
+
+      if (dx === 0 && dy === 0 && moveTarget.x !== null) {
+        const diffX = moveTarget.x - player.x;
+        const diffY = moveTarget.y - player.y;
+        const distance = Math.hypot(diffX, diffY);
+        if (distance <= player.speed) {
+          dx = diffX;
+          dy = diffY;
+          moveTarget.x = null;
+          moveTarget.y = null;
+        } else {
+          dx = (diffX / distance) * player.speed;
+          dy = (diffY / distance) * player.speed;
+        }
+      }
 
       if (dy < 0) player.facing = "up";
       if (dy > 0) player.facing = "down";
