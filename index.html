@@ -356,10 +356,14 @@
       }
     };
 
-    chatSend.addEventListener("click", async () => {
+    const sendChatMessage = async () => {
       const text = chatInput.value.trim();
       const user = auth.currentUser;
-      if (!user || !text) {
+      if (!user) {
+        showChatStatus("請先登入再送出訊息。");
+        return;
+      }
+      if (!text) {
         return;
       }
       const userName =
@@ -367,15 +371,27 @@
         user.displayName ||
         (user.isAnonymous ? "匿名玩家" : "玩家");
 
-      // 將新訊息寫入 Firestore
-      await addDoc(collection(db, "messages"), {
-        villageId,
-        userName,
-        text,
-        createdAt: serverTimestamp(),
-      });
+      try {
+        // 將新訊息寫入 Firestore
+        await addDoc(collection(db, "messages"), {
+          villageId,
+          userName,
+          text,
+          createdAt: serverTimestamp(),
+        });
+        chatInput.value = "";
+      } catch (error) {
+        showChatStatus(`送出失敗：${error?.code || "未知錯誤"}`);
+        console.error("訊息送出失敗", error);
+      }
+    };
 
-      chatInput.value = "";
+    chatSend.addEventListener("click", sendChatMessage);
+    chatInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        sendChatMessage();
+      }
     });
 
     const canvas = document.querySelector("#game");
