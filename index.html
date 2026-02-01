@@ -303,11 +303,8 @@
 
       // 即時監聽村莊訊息，依時間排序
       const messagesRef = collection(db, "messages");
-      const messagesQuery = query(
-        messagesRef,
-        where("villageId", "==", villageId),
-        orderBy("createdAt", "asc")
-      );
+      // 不使用 orderBy 以避免需要建立索引
+      const messagesQuery = query(messagesRef, where("villageId", "==", villageId));
 
       unsubscribeChat = onSnapshot(
         messagesQuery,
@@ -317,9 +314,16 @@
             showChatStatus("目前還沒有訊息");
             return;
           }
+          const rows = [];
           snapshot.forEach((doc) => {
-            appendChatMessage(doc.data());
+            rows.push(doc.data());
           });
+          rows.sort((a, b) => {
+            const aTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+            const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+            return aTime - bTime;
+          });
+          rows.forEach((row) => appendChatMessage(row));
         },
         (error) => {
           clearChatMessages();
