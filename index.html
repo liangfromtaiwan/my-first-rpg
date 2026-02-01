@@ -1367,7 +1367,12 @@
         ctx.drawImage(npcImage, npcPixel.x, npcPixel.y, npc.size, npc.size);
       }
 
-      if (playerImage.complete) {
+      const selfAvatar = auth.currentUser?.photoURL
+        ? getAvatarImage(auth.currentUser.photoURL)
+        : null;
+      if (selfAvatar && selfAvatar.complete) {
+        ctx.drawImage(selfAvatar, player.x, player.y, player.size, player.size);
+      } else if (playerImage.complete) {
         ctx.drawImage(playerImage, player.x, player.y, player.size, player.size);
       }
 
