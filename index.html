@@ -287,6 +287,13 @@
       chatMessages.innerHTML = "";
     };
 
+    const showChatStatus = (text) => {
+      const row = document.createElement("div");
+      row.textContent = text;
+      row.style.color = "#666";
+      chatMessages.appendChild(row);
+    };
+
     const startChatListener = () => {
       if (unsubscribeChat) {
         unsubscribeChat();
@@ -301,12 +308,24 @@
         orderBy("createdAt", "asc")
       );
 
-      unsubscribeChat = onSnapshot(messagesQuery, (snapshot) => {
-        clearChatMessages();
-        snapshot.forEach((doc) => {
-          appendChatMessage(doc.data());
-        });
-      });
+      unsubscribeChat = onSnapshot(
+        messagesQuery,
+        (snapshot) => {
+          clearChatMessages();
+          if (snapshot.empty) {
+            showChatStatus("目前還沒有訊息");
+            return;
+          }
+          snapshot.forEach((doc) => {
+            appendChatMessage(doc.data());
+          });
+        },
+        (error) => {
+          clearChatMessages();
+          showChatStatus("讀取訊息失敗，請稍後再試。");
+          console.error("聊天室讀取失敗", error);
+        }
+      );
     };
 
     const stopChatListener = () => {
