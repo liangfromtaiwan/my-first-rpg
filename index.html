@@ -28,6 +28,20 @@
       text-align: center;
     }
 
+    .main-layout {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .map-column {
+      display: grid;
+      gap: 8px;
+      justify-items: center;
+    }
+
     .auth-bar {
       display: flex;
       flex-wrap: wrap;
@@ -82,7 +96,7 @@
 
     .chat-panel {
       display: none;
-      width: min(720px, 92vw);
+      width: min(360px, 92vw);
       background: #ffffff;
       border: 1px solid #333;
       border-radius: 6px;
@@ -147,15 +161,19 @@
       <button id="google-login" type="button">Google 登入</button>
       <button id="anon-login" type="button">匿名登入</button>
     </div>
-    <canvas id="game" width="400" height="300" aria-label="遊戲畫面"></canvas>
-    <div class="hint">方向鍵移動，面向 NPC 按 Enter 對話</div>
-    <div class="chat-panel" id="chat-panel" aria-live="polite">
-      <div class="chat-title">🏘 UX Design Village</div>
-      <div class="chat-messages" id="chat-messages"></div>
-      <div class="chat-note">（自動捲到最新）</div>
-      <div class="chat-input-row">
-        <input id="chat-input" type="text" maxlength="120" placeholder="輸入訊息..." />
-        <button id="chat-send" type="button">送出</button>
+    <div class="main-layout">
+      <div class="map-column">
+        <canvas id="game" width="400" height="300" aria-label="遊戲畫面"></canvas>
+        <div class="hint">方向鍵移動，面向 NPC 按 Enter 對話</div>
+      </div>
+      <div class="chat-panel" id="chat-panel" aria-live="polite">
+        <div class="chat-title">🏘 UX Design Village</div>
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="chat-note">（自動捲到最新）</div>
+        <div class="chat-input-row">
+          <input id="chat-input" type="text" maxlength="120" placeholder="輸入訊息..." />
+          <button id="chat-send" type="button">送出</button>
+        </div>
       </div>
     </div>
   </div>
