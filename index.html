@@ -358,6 +358,7 @@
 
     const sendChatMessage = async () => {
       const text = chatInput.value.trim();
+      chatInput.value = "";
       const user = auth.currentUser;
       if (!user) {
         showChatStatus("請先登入再送出訊息。");
@@ -379,7 +380,6 @@
           text,
           createdAt: serverTimestamp(),
         });
-        chatInput.value = "";
       } catch (error) {
         showChatStatus(`送出失敗：${error?.code || "未知錯誤"}`);
         console.error("訊息送出失敗", error);
