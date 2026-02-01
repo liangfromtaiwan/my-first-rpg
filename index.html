@@ -50,7 +50,7 @@
       border-radius: 6px;
       padding: 10px;
       text-align: left;
-      height: 560px;
+      height: 544px;
       align-self: flex-start;
       display: flex;
       flex-direction: column;
@@ -76,27 +76,6 @@
       flex: 1;
       overflow-y: auto;
       font-size: 16px;
-    }
-
-    .chat-input-row {
-      display: flex;
-      gap: 6px;
-    }
-
-    .chat-input-row input {
-      flex: 1;
-      font-size: 16px;
-      padding: 6px 8px;
-      border: 1px solid #333;
-      border-radius: 4px;
-    }
-
-    .chat-input-row button {
-      font-size: 16px;
-      padding: 6px 12px;
-      border: 1px solid #333;
-      background: #ffffff;
-      cursor: pointer;
     }
 
     .chat-note {
@@ -193,10 +172,6 @@
         <div class="chat-title">🏘 UX Design Village</div>
         <div class="chat-box">
           <div class="chat-messages" id="chat-messages"></div>
-          <div class="chat-input-row">
-            <input id="chat-input" type="text" maxlength="120" placeholder="輸入訊息..." />
-            <button id="chat-send" type="button">送出</button>
-          </div>
         </div>
         <div class="chat-note">（自動捲到最新）</div>
       </div>
@@ -390,16 +365,14 @@
     };
 
     const updateChatVisibility = () => {
-      const isInVillage = currentMapName === "villageMap";
-      chatPanel.style.display = isInVillage ? "block" : "none";
-      if (isInVillage) {
-        startChatListener();
-      } else {
-        stopChatListener();
-      }
+      chatPanel.style.display = "block";
+      startChatListener();
     };
 
     const sendChatMessage = async () => {
+      if (!chatInput) {
+        return;
+      }
       const text = chatInput.value.trim();
       chatInput.value = "";
       const user = auth.currentUser;
@@ -429,13 +402,15 @@
       }
     };
 
-    chatSend.addEventListener("click", sendChatMessage);
-    chatInput.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") {
-        event.preventDefault();
-        sendChatMessage();
-      }
-    });
+    if (chatSend && chatInput) {
+      chatSend.addEventListener("click", sendChatMessage);
+      chatInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          sendChatMessage();
+        }
+      });
+    }
 
     const canvas = document.querySelector("#game");
     const ctx = canvas.getContext("2d");
