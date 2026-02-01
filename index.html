@@ -50,7 +50,8 @@
       border-radius: 6px;
       padding: 10px;
       text-align: left;
-      height: 100%;
+      height: auto;
+      align-self: flex-start;
     }
 
     .chat-title {
@@ -381,8 +382,16 @@
       chatPanel.style.display = isInVillage ? "block" : "none";
       if (isInVillage) {
         startChatListener();
+        updateChatSize();
       } else {
         stopChatListener();
+      }
+    };
+
+    const updateChatSize = () => {
+      const rect = canvas.getBoundingClientRect();
+      if (rect.height) {
+        chatPanel.style.height = `${Math.floor(rect.height)}px`;
       }
     };
 
@@ -758,6 +767,8 @@
       }
     });
 
+    window.addEventListener("resize", updateChatSize);
+
     const setMoveTargetFromEvent = (event) => {
       const rect = canvas.getBoundingClientRect();
       const scaleX = canvas.width / rect.width;
@@ -809,6 +820,7 @@
       dialogueStage = "question";
       selectedOption = 0;
       resultMessage = "";
+      updateChatSize();
       updateChatVisibility();
     };
 
