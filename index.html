@@ -272,6 +272,7 @@
     let unsubscribePlayers = null;
     const otherPlayers = new Map();
     const avatarCache = new Map();
+    const otherPlayerRender = new Map();
     let lastPresenceUpdate = 0;
     const presenceIntervalMs = 800;
 
@@ -451,6 +452,7 @@
         unsubscribePlayers();
       }
       otherPlayers.clear();
+      otherPlayerRender.clear();
 
       // 即時監聽同地圖玩家，排除自己
       const playersRef = collection(db, "players");
@@ -469,6 +471,12 @@
               return;
             }
             otherPlayers.set(docSnap.id, data);
+            if (!otherPlayerRender.has(docSnap.id)) {
+              otherPlayerRender.set(docSnap.id, {
+                x: data.x ?? 0,
+                y: data.y ?? 0,
+              });
+            }
           });
         },
         (error) => {
@@ -483,6 +491,7 @@
         unsubscribePlayers = null;
       }
       otherPlayers.clear();
+      otherPlayerRender.clear();
     };
 
     const sendChatMessage = async () => {
@@ -1283,19 +1292,28 @@
       }
 
       if (otherPlayers.size) {
-        otherPlayers.forEach((playerData) => {
+        otherPlayers.forEach((playerData, playerId) => {
           if (
             typeof playerData.x !== "number" ||
             typeof playerData.y !== "number"
           ) {
             return;
           }
+          const renderPos = otherPlayerRender.get(playerId) || {
+            x: playerData.x,
+            y: playerData.y,
+          };
+          const smoothFactor = 0.12;
+          renderPos.x += (playerData.x - renderPos.x) * smoothFactor;
+          renderPos.y += (playerData.y - renderPos.y) * smoothFactor;
+          otherPlayerRender.set(playerId, renderPos);
+
           const avatar = getAvatarImage(playerData.photoURL);
           if (avatar && avatar.complete) {
             ctx.drawImage(
               avatar,
-              playerData.x,
-              playerData.y,
+              renderPos.x,
+              renderPos.y,
               player.size,
               player.size
             );
@@ -1303,13 +1321,31 @@
             ctx.fillStyle = "#3498db";
             ctx.beginPath();
             ctx.arc(
-              playerData.x + player.size / 2,
-              playerData.y + player.size / 2,
+              renderPos.x + player.size / 2,
+              renderPos.y + player.size / 2,
               player.size * 0.35,
               0,
               Math.PI * 2
             );
             ctx.fill();
+          }
+
+          const otherName =
+            playerData.userName ||
+            playerData.displayName ||
+            "玩家";
+          if (otherName) {
+            ctx.save();
+            ctx.fillStyle = "#000000";
+            ctx.font = "14px Arial, Helvetica, sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "bottom";
+            ctx.fillText(
+              otherName,
+              renderPos.x + player.size / 2,
+              renderPos.y - 6
+            );
+            ctx.restore();
           }
         });
       }
