@@ -1018,25 +1018,6 @@
         size: player.size,
       };
 
-      if (otherPlayers.size) {
-        for (const playerData of otherPlayers.values()) {
-          if (
-            typeof playerData.x !== "number" ||
-            typeof playerData.y !== "number"
-          ) {
-            continue;
-          }
-          const otherRect = {
-            x: playerData.x,
-            y: playerData.y,
-            size: player.size,
-          };
-          if (rectsOverlap(nextPlayerRect, otherRect)) {
-            return false;
-          }
-        }
-      }
-
       const castleRect = getCastleRect();
       if (castleRect && rectsOverlap(nextPlayerRect, castleRect)) {
         return false;
