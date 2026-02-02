@@ -2059,6 +2059,21 @@
         });
       }
 
+      if (activePrivatePartner && canAcceptCall()) {
+        const playerCenter = getPlayerCenter();
+        ctx.save();
+        ctx.fillStyle = "#000000";
+        ctx.font = "18px Arial, Helvetica, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.fillText(
+          "按下 Enter 開始視訊通話",
+          playerCenter.x,
+          playerCenter.y - tileSize * 0.8
+        );
+        ctx.restore();
+      }
+
       if (npc.active && npcImage.complete) {
         ctx.drawImage(npcImage, npcPixel.x, npcPixel.y, npc.size, npc.size);
       }
