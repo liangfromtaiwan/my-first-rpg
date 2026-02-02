@@ -41,6 +41,7 @@
       display: grid;
       gap: 8px;
       justify-items: center;
+      position: relative;
     }
 
     .chat-panel {
@@ -304,6 +305,40 @@
       image-rendering: pixelated;
     }
 
+    .video-wrap {
+      width: min(720px, 92vw);
+      background: #ffffff;
+      border: 1px solid #333;
+      border-radius: 6px;
+      overflow: hidden;
+      display: none;
+    }
+
+    .video-wrap iframe {
+      width: 100%;
+      height: 360px;
+      border: 0;
+    }
+
+    .call-accept {
+      position: absolute;
+      z-index: 6;
+      padding: 4px 8px;
+      font-size: 12px;
+      border: 1px solid #333;
+      background: #ffffff;
+      border-radius: 6px;
+      cursor: pointer;
+      display: none;
+    }
+
+    .video-placeholder {
+      padding: 12px;
+      font-size: 14px;
+      text-align: center;
+      color: #333;
+    }
+
     .hint {
       font-size: 18px;
       color: #000000;
@@ -327,8 +362,20 @@
     </div>
     <div class="main-layout">
       <div class="map-column">
+        <div class="video-wrap" id="video-wrap">
+          <div class="video-placeholder" id="video-placeholder">
+            請先設定 Daily subdomain 才能啟用視訊
+          </div>
+          <iframe
+            id="daily-frame"
+            allow="camera; microphone; fullscreen; speaker; display-capture"
+          ></iframe>
+        </div>
         <canvas id="game" width="400" height="300" aria-label="遊戲畫面"></canvas>
         <div class="hint">方向鍵移動，面向 NPC 按 Enter 對話</div>
+        <button class="call-accept" id="call-accept" type="button">
+          接受通話
+        </button>
       </div>
       <div class="chat-panel" id="chat-panel" aria-live="polite">
         <div class="chat-tabs">
@@ -384,11 +431,13 @@
       collection,
       doc,
       getFirestore,
+      getDoc,
       onSnapshot,
       orderBy,
       query,
       setDoc,
       serverTimestamp,
+      updateDoc,
       where,
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
@@ -421,6 +470,10 @@
     const chatViewPrivate = document.querySelector("#chat-view-private");
     const onlinePanel = document.querySelector("#online-panel");
     const onlineList = document.querySelector("#online-list");
+    const videoWrap = document.querySelector("#video-wrap");
+    const videoPlaceholder = document.querySelector("#video-placeholder");
+    const dailyFrame = document.querySelector("#daily-frame");
+    const callAccept = document.querySelector("#call-accept");
     const privateChat = document.querySelector("#private-chat");
     const privateMessagesEl = document.querySelector("#private-messages");
     const privateEmpty = document.querySelector("#private-empty");
@@ -440,11 +493,15 @@
     let activePrivatePartner = null;
     let privateMessages = [];
     let unsubscribePrivate = null;
+    let unsubscribeCall = null;
+    let activeCallId = null;
+    let activeCallData = null;
     let unsubscribeUsers = null;
     const onlineUsers = new Map();
     let onlineRefreshTimer = null;
     let activeChatTab = "map";
     let userSelectedTab = false;
+    const dailyRoomBaseUrl = "https://YOUR-SUBDOMAIN.daily.co";
     let lastPresenceUpdate = 0;
     const presenceIntervalMs = 800;
 
@@ -674,6 +731,115 @@
       }
     };
 
+    const setCallButtonVisibility = (visible) => {
+      if (!callAccept) {
+        return;
+      }
+      callAccept.style.display = visible ? "block" : "none";
+    };
+
+    const positionCallButton = () => {
+      if (!callAccept || !activePrivatePartner) {
+        return;
+      }
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = rect.width / canvas.width;
+      const scaleY = rect.height / canvas.height;
+      const x =
+        rect.left + (activePrivatePartner.x + player.size / 2) * scaleX;
+      const y = rect.top + (activePrivatePartner.y - 14) * scaleY;
+      callAccept.style.left = `${Math.max(8, x - 30)}px`;
+      callAccept.style.top = `${Math.max(8, y - 18)}px`;
+    };
+
+    const startCallListener = async (conversationId, partnerId) => {
+      if (unsubscribeCall) {
+        unsubscribeCall();
+      }
+      activeCallId = conversationId;
+      const callRef = doc(db, "calls", conversationId);
+      const user = auth.currentUser;
+      if (!user) {
+        return;
+      }
+      await setDoc(
+        callRef,
+        {
+          conversationId,
+          participants: [user.uid, partnerId],
+          status: "pending",
+        },
+        { merge: true }
+      );
+      unsubscribeCall = onSnapshot(
+        callRef,
+        (docSnap) => {
+          activeCallData = docSnap.exists() ? docSnap.data() : null;
+          if (!activeCallData) {
+            return;
+          }
+          const acceptedBy = activeCallData.acceptedBy || {};
+          const isAcceptedBySelf = Boolean(acceptedBy[user.uid]);
+          const isAcceptedByOther = Boolean(acceptedBy[partnerId]);
+          const bothAccepted = isAcceptedBySelf && isAcceptedByOther;
+          const roomUrl =
+            activeCallData.roomUrl ||
+            (bothAccepted ? buildDailyRoomUrl(conversationId) : "");
+          if (bothAccepted && roomUrl && activeCallData.roomUrl !== roomUrl) {
+            updateDoc(callRef, {
+              status: "active",
+              roomUrl,
+            }).catch((error) => {
+              console.error("更新通話房間失敗", error);
+            });
+          }
+          if (bothAccepted) {
+            showVideoRoom(roomUrl);
+          } else {
+            hideVideoRoom();
+          }
+          setCallButtonVisibility(!isAcceptedBySelf);
+          positionCallButton();
+        },
+        (error) => {
+          console.error("通話狀態讀取失敗", error);
+        }
+      );
+    };
+
+    const stopCallListener = () => {
+      if (unsubscribeCall) {
+        unsubscribeCall();
+        unsubscribeCall = null;
+      }
+      activeCallId = null;
+      activeCallData = null;
+      setCallButtonVisibility(false);
+      hideVideoRoom();
+    };
+
+    if (callAccept) {
+      callAccept.addEventListener("click", async () => {
+        const user = auth.currentUser;
+        if (!user || !activeCallId) {
+          return;
+        }
+        try {
+          await setDoc(
+            doc(db, "calls", activeCallId),
+            {
+              acceptedBy: {
+                [user.uid]: true,
+              },
+            },
+            { merge: true }
+          );
+        } catch (error) {
+          console.error("接受通話失敗", error);
+        }
+      });
+    }
+
     const updateChatVisibility = () => {
       chatPanel.style.display = "block";
       startChatListener();
@@ -691,6 +857,41 @@
       tabPrivate.classList.toggle("is-active", activeChatTab === "private");
       chatViewMap.classList.toggle("is-active", activeChatTab === "map");
       chatViewPrivate.classList.toggle("is-active", activeChatTab === "private");
+    };
+
+    const buildDailyRoomUrl = (conversationId) => {
+      if (!dailyRoomBaseUrl || dailyRoomBaseUrl.includes("YOUR-SUBDOMAIN")) {
+        return "";
+      }
+      return `${dailyRoomBaseUrl}/rpg-${conversationId}`;
+    };
+
+    const showVideoRoom = (roomUrl) => {
+      if (!videoWrap || !dailyFrame || !videoPlaceholder) {
+        return;
+      }
+      if (!roomUrl) {
+        videoWrap.style.display = "block";
+        dailyFrame.style.display = "none";
+        videoPlaceholder.style.display = "block";
+        return;
+      }
+      videoWrap.style.display = "block";
+      videoPlaceholder.style.display = "none";
+      dailyFrame.style.display = "block";
+      if (dailyFrame.src !== roomUrl) {
+        dailyFrame.src = roomUrl;
+      }
+    };
+
+    const hideVideoRoom = () => {
+      if (!videoWrap || !dailyFrame || !videoPlaceholder) {
+        return;
+      }
+      videoWrap.style.display = "none";
+      videoPlaceholder.style.display = "none";
+      dailyFrame.style.display = "none";
+      dailyFrame.src = "";
     };
 
     const updateMapTabLabel = () => {
@@ -1642,6 +1843,7 @@
               y: nearest.data.y,
             };
             startPrivateListener(conversationId);
+            startCallListener(conversationId, nearest.id);
           }
           setPrivateAvailability(true);
           if (!userSelectedTab && activeChatTab !== "private") {
@@ -1653,6 +1855,7 @@
         activePrivateChatId = null;
         activePrivatePartner = null;
         stopPrivateListener();
+        stopCallListener();
         setPrivateAvailability(false);
         if (!userSelectedTab && activeChatTab !== "map") {
           activeChatTab = "map";
@@ -1970,6 +2173,7 @@
     const loop = () => {
       update();
       render();
+      positionCallButton();
       requestAnimationFrame(loop);
     };
 
