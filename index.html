@@ -885,9 +885,7 @@
           text,
           createdAt: serverTimestamp(),
         });
-        if (currentMapName === "villageMap") {
-          updateUserPresence();
-        }
+        updateUserPresence();
       } catch (error) {
         showChatStatus(`送出失敗：${error?.code || "未知錯誤"}`);
         console.error("訊息送出失敗", error);
@@ -1326,9 +1324,7 @@
       resultMessage = "";
       updateChatVisibility();
       startPlayersListener();
-      if (currentMapName === "villageMap") {
-        updateUserPresence();
-      }
+      updateUserPresence();
     };
 
     const isWall = (tileX, tileY) => {
