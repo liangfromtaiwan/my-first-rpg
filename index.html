@@ -321,8 +321,6 @@
     }
 
     .call-accept {
-      position: absolute;
-      z-index: 6;
       padding: 4px 8px;
       font-size: 12px;
       border: 1px solid #333;
@@ -361,6 +359,9 @@
     <h1>最簡單 2D RPG 地圖範例</h1>
     <div class="auth-bar" aria-live="polite">
       <span id="auth-status">尚未登入</span>
+      <button class="call-accept" id="call-accept" type="button">
+        接受通話
+      </button>
       <label class="nickname-field" for="nickname-input">
         暱稱
         <input id="nickname-input" type="text" maxlength="12" placeholder="輸入暱稱" />
@@ -382,9 +383,6 @@
         </div>
         <canvas id="game" width="400" height="300" aria-label="遊戲畫面"></canvas>
         <div class="hint">方向鍵移動，面向 NPC 按 Enter 對話</div>
-        <button class="call-accept" id="call-accept" type="button">
-          接受通話
-        </button>
       </div>
       <div class="chat-panel" id="chat-panel" aria-live="polite">
         <div class="chat-tabs">
@@ -744,21 +742,7 @@
       if (!callAccept) {
         return;
       }
-      callAccept.style.display = visible ? "block" : "none";
-    };
-
-    const positionCallButton = () => {
-      if (!callAccept || !activePrivatePartner) {
-        return;
-      }
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = rect.width / canvas.width;
-      const scaleY = rect.height / canvas.height;
-      const x =
-        rect.left + (activePrivatePartner.x + player.size / 2) * scaleX;
-      const y = rect.top + (activePrivatePartner.y - 14) * scaleY;
-      callAccept.style.left = `${Math.max(8, x - 30)}px`;
-      callAccept.style.top = `${Math.max(8, y - 18)}px`;
+      callAccept.style.display = visible ? "inline-flex" : "none";
     };
 
     const startCallListener = async (conversationId, partnerId) => {
@@ -811,7 +795,6 @@
             hideVideoRoom();
           }
           setCallButtonVisibility(!isAcceptedBySelf);
-          positionCallButton();
         },
         (error) => {
           console.error("通話狀態讀取失敗", error);
@@ -2214,7 +2197,6 @@
     const loop = () => {
       update();
       render();
-      positionCallButton();
       requestAnimationFrame(loop);
     };
 
