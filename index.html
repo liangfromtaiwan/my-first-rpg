@@ -339,6 +339,14 @@
       color: #333;
     }
 
+    .video-room-url {
+      font-size: 12px;
+      color: #333;
+      padding: 0 12px 8px;
+      word-break: break-all;
+      display: none;
+    }
+
     .hint {
       font-size: 18px;
       color: #000000;
@@ -366,6 +374,7 @@
           <div class="video-placeholder" id="video-placeholder">
             視訊準備中...
           </div>
+          <div class="video-room-url" id="video-room-url"></div>
           <iframe
             id="daily-frame"
             allow="camera; microphone; fullscreen; speaker; display-capture"
@@ -471,6 +480,7 @@
     const onlineList = document.querySelector("#online-list");
     const videoWrap = document.querySelector("#video-wrap");
     const videoPlaceholder = document.querySelector("#video-placeholder");
+    const videoRoomUrl = document.querySelector("#video-room-url");
     const dailyFrame = document.querySelector("#daily-frame");
     const callAccept = document.querySelector("#call-accept");
     const privateChat = document.querySelector("#private-chat");
@@ -781,18 +791,16 @@
           const isAcceptedBySelf = Boolean(acceptedBy[user.uid]);
           const isAcceptedByOther = Boolean(acceptedBy[partnerId]);
           const bothAccepted = isAcceptedBySelf && isAcceptedByOther;
-          if (bothAccepted && !activeCallData.roomUrl) {
+          const desiredRoomUrl = buildJitsiRoomUrl(conversationId);
+          if (bothAccepted && desiredRoomUrl && activeCallData.roomUrl !== desiredRoomUrl) {
             const isOwner = user.uid < partnerId;
             if (isOwner) {
-              const roomUrl = buildJitsiRoomUrl(conversationId);
-              if (roomUrl) {
-                updateDoc(callRef, {
-                  status: "active",
-                  roomUrl,
-                }).catch((error) => {
-                  console.error("更新通話房間失敗", error);
-                });
-              }
+              updateDoc(callRef, {
+                status: "active",
+                roomUrl: desiredRoomUrl,
+              }).catch((error) => {
+                console.error("更新通話房間失敗", error);
+              });
             }
           }
           if (bothAccepted && activeCallData.roomUrl) {
@@ -868,6 +876,19 @@
       videoPlaceholder.textContent = message;
     };
 
+    const setVideoRoomUrl = (roomUrl) => {
+      if (!videoRoomUrl) {
+        return;
+      }
+      if (!roomUrl) {
+        videoRoomUrl.style.display = "none";
+        videoRoomUrl.textContent = "";
+        return;
+      }
+      videoRoomUrl.style.display = "block";
+      videoRoomUrl.textContent = roomUrl;
+    };
+
     const buildJitsiRoomUrl = (conversationId) => {
       if (!jitsiRoomBaseUrl) {
         return "";
@@ -889,11 +910,13 @@
         dailyFrame.style.display = "none";
         videoPlaceholder.style.display = "block";
         setVideoPlaceholder("正在建立視訊房間...");
+        setVideoRoomUrl("");
         return;
       }
       videoWrap.style.display = "block";
       videoPlaceholder.style.display = "none";
       dailyFrame.style.display = "block";
+      setVideoRoomUrl(roomUrl);
       if (dailyFrame.src !== roomUrl) {
         dailyFrame.src = roomUrl;
       }
@@ -907,6 +930,7 @@
       videoPlaceholder.style.display = "none";
       dailyFrame.style.display = "none";
       dailyFrame.src = "";
+      setVideoRoomUrl("");
     };
 
     const updateMapTabLabel = () => {
