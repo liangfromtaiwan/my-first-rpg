@@ -1389,7 +1389,18 @@
         ? getAvatarImage(auth.currentUser.photoURL)
         : null;
       if (selfAvatar && selfAvatar.complete) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(
+          player.x + player.size / 2,
+          player.y + player.size / 2,
+          player.size / 2,
+          0,
+          Math.PI * 2
+        );
+        ctx.clip();
         ctx.drawImage(selfAvatar, player.x, player.y, player.size, player.size);
+        ctx.restore();
       } else if (playerImage.complete) {
         ctx.drawImage(playerImage, player.x, player.y, player.size, player.size);
       }
