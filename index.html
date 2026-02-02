@@ -60,9 +60,36 @@
       gap: 8px;
     }
 
-    .chat-title {
+    .chat-tabs {
+      display: flex;
+      gap: 6px;
+    }
+
+    .chat-tab {
+      flex: 1;
+      padding: 6px 8px;
+      border: 1px solid #333;
+      background: #ffffff;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .chat-tab.is-active {
+      background: #f0f0f0;
       font-weight: bold;
-      margin-bottom: 0;
+    }
+
+    .chat-view {
+      display: none;
+      flex: 1;
+      min-height: 0;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .chat-view.is-active {
+      display: flex;
     }
 
     .chat-box {
@@ -101,31 +128,58 @@
     }
 
     .private-chat {
-      position: absolute;
       display: none;
+      flex-direction: column;
       gap: 6px;
-      align-items: center;
-      background: rgba(255, 255, 255, 0.95);
-      border: 1px solid #333;
+      border: 1px solid #ddd;
       border-radius: 8px;
       padding: 6px;
-      z-index: 5;
+      background: #fafafa;
     }
 
-    .private-chat input {
-      width: 160px;
+    .private-box {
+      border: 1px solid #ddd;
+      background: #ffffff;
+      border-radius: 6px;
+      padding: 4px;
+      max-height: 220px;
+      overflow: hidden;
+    }
+
+    .private-messages {
+      max-height: 210px;
+      overflow-y: auto;
+      font-size: 14px;
+      line-height: 1.4;
+      text-align: left;
+    }
+
+    .private-input-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .private-input-row input {
+      flex: 1;
       font-size: 14px;
       padding: 4px 6px;
       border: 1px solid #333;
       border-radius: 4px;
     }
 
-    .private-chat button {
+    .private-input-row button {
       font-size: 14px;
       padding: 4px 8px;
       border: 1px solid #333;
       background: #ffffff;
       cursor: pointer;
+    }
+
+    .private-empty {
+      font-size: 14px;
+      color: #666;
+      text-align: center;
+      padding: 8px 0;
     }
 
     .chat-input-row {
@@ -235,19 +289,38 @@
         <div class="hint">方向鍵移動，面向 NPC 按 Enter 對話</div>
       </div>
       <div class="chat-panel" id="chat-panel" aria-live="polite">
-        <div class="chat-title">🏘 UX Design Village</div>
-        <div class="chat-box">
-          <div class="chat-messages" id="chat-messages"></div>
+        <div class="chat-tabs">
+          <button class="chat-tab is-active" id="tab-map" type="button">
+            地圖
+          </button>
+          <button class="chat-tab" id="tab-private" type="button">
+            兩人對話
+          </button>
         </div>
-        <div class="chat-input-row">
-          <input id="chat-input" type="text" maxlength="120" placeholder="輸入訊息..." />
-          <button id="chat-send" type="button">送出</button>
+        <div class="chat-view is-active" id="chat-view-map">
+          <div class="chat-box">
+            <div class="chat-messages" id="chat-messages"></div>
+          </div>
+          <div class="chat-input-row">
+            <input id="chat-input" type="text" maxlength="120" placeholder="輸入訊息..." />
+            <button id="chat-send" type="button">送出</button>
+          </div>
+        </div>
+        <div class="chat-view" id="chat-view-private">
+          <div class="private-chat" id="private-chat">
+            <div class="private-box">
+              <div class="private-messages" id="private-messages"></div>
+            </div>
+            <div class="private-empty" id="private-empty">
+              靠近玩家即可開始私聊
+            </div>
+            <div class="private-input-row">
+              <input id="private-input" type="text" maxlength="60" placeholder="私聊..." />
+              <button id="private-send" type="button">送出</button>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="private-chat" id="private-chat">
-      <input id="private-input" type="text" maxlength="60" placeholder="私聊..." />
-      <button id="private-send" type="button">送出</button>
     </div>
   </div>
 
@@ -296,7 +369,13 @@
     const chatMessages = document.querySelector("#chat-messages");
     const chatInput = document.querySelector("#chat-input");
     const chatSend = document.querySelector("#chat-send");
+    const tabMap = document.querySelector("#tab-map");
+    const tabPrivate = document.querySelector("#tab-private");
+    const chatViewMap = document.querySelector("#chat-view-map");
+    const chatViewPrivate = document.querySelector("#chat-view-private");
     const privateChat = document.querySelector("#private-chat");
+    const privateMessagesEl = document.querySelector("#private-messages");
+    const privateEmpty = document.querySelector("#private-empty");
     const privateInput = document.querySelector("#private-input");
     const privateSend = document.querySelector("#private-send");
     const nicknameStorageKey = "playerNickname";
@@ -313,6 +392,7 @@
     let activePrivatePartner = null;
     let privateMessages = [];
     let unsubscribePrivate = null;
+    let activeChatTab = "map";
     let lastPresenceUpdate = 0;
     const presenceIntervalMs = 800;
 
@@ -491,6 +571,7 @@
             const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
             return aTime - bTime;
           });
+          renderPrivateMessages();
         },
         (error) => {
           console.error("私聊讀取失敗", error);
@@ -504,12 +585,80 @@
         unsubscribePrivate = null;
       }
       privateMessages = [];
+      renderPrivateMessages();
+    };
+
+    const renderPrivateMessages = () => {
+      if (!privateMessagesEl) {
+        return;
+      }
+      privateMessagesEl.innerHTML = "";
+      privateMessages.forEach((message) => {
+        const row = document.createElement("div");
+        row.textContent = `${message.fromName || "玩家"}：${message.text || ""}`;
+        privateMessagesEl.appendChild(row);
+      });
+      privateMessagesEl.scrollTop = privateMessagesEl.scrollHeight;
+    };
+
+    const setPrivateAvailability = (isAvailable) => {
+      if (!privateChat) {
+        return;
+      }
+      privateChat.style.display = "flex";
+      if (privateEmpty) {
+        privateEmpty.style.display = isAvailable ? "none" : "block";
+      }
+      if (privateMessagesEl) {
+        privateMessagesEl.parentElement.style.display = isAvailable
+          ? "block"
+          : "none";
+      }
+      if (privateInput) {
+        privateInput.disabled = !isAvailable;
+      }
+      if (privateSend) {
+        privateSend.disabled = !isAvailable;
+      }
     };
 
     const updateChatVisibility = () => {
       chatPanel.style.display = "block";
       startChatListener();
+      updateMapTabLabel();
+      updateChatTabs();
+      setPrivateAvailability(Boolean(activePrivatePartner));
     };
+
+    const updateChatTabs = () => {
+      if (!tabMap || !tabPrivate || !chatViewMap || !chatViewPrivate) {
+        return;
+      }
+      tabMap.classList.toggle("is-active", activeChatTab === "map");
+      tabPrivate.classList.toggle("is-active", activeChatTab === "private");
+      chatViewMap.classList.toggle("is-active", activeChatTab === "map");
+      chatViewPrivate.classList.toggle("is-active", activeChatTab === "private");
+    };
+
+    const updateMapTabLabel = () => {
+      if (!tabMap) {
+        return;
+      }
+      const mapLabel =
+        currentMapName === "villageMap" ? "村莊" : "主世界";
+      tabMap.textContent = mapLabel;
+    };
+
+    if (tabMap && tabPrivate) {
+      tabMap.addEventListener("click", () => {
+        activeChatTab = "map";
+        updateChatTabs();
+      });
+      tabPrivate.addEventListener("click", () => {
+        activeChatTab = "private";
+        updateChatTabs();
+      });
+    }
 
     const getAvatarImage = (url) => {
       if (!url) {
@@ -1358,13 +1507,13 @@
             };
             startPrivateListener(conversationId);
           }
-          privateChat.style.display = "flex";
+          setPrivateAvailability(true);
         }
       } else {
         activePrivateChatId = null;
         activePrivatePartner = null;
-        privateChat.style.display = "none";
         stopPrivateListener();
+        setPrivateAvailability(false);
       }
     };
 
@@ -1516,36 +1665,7 @@
         });
       }
 
-      if (activePrivatePartner && privateMessages.length) {
-        const last = privateMessages[privateMessages.length - 1];
-        const bubbleText = `${last.fromName}: ${last.text}`;
-        const maxWidth = 160;
-        const padding = 4;
-
-        const drawBubble = (x, y) => {
-          ctx.save();
-          ctx.font = "12px Arial, Helvetica, sans-serif";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "bottom";
-          const textWidth = Math.min(ctx.measureText(bubbleText).width, maxWidth);
-          const boxWidth = textWidth + padding * 2;
-          const boxHeight = 18;
-          ctx.fillStyle = "rgba(255,255,255,0.9)";
-          ctx.strokeStyle = "#333";
-          ctx.lineWidth = 1;
-          ctx.fillRect(x - boxWidth / 2, y - boxHeight, boxWidth, boxHeight);
-          ctx.strokeRect(x - boxWidth / 2, y - boxHeight, boxWidth, boxHeight);
-          ctx.fillStyle = "#000000";
-          ctx.fillText(bubbleText, x, y - 4);
-          ctx.restore();
-        };
-
-        drawBubble(player.x + player.size / 2, player.y - 10);
-        drawBubble(
-          activePrivatePartner.x + player.size / 2,
-          activePrivatePartner.y - 10
-        );
-      }
+      // 私聊訊息改顯示在右側面板，避免與名字重疊
 
       if (currentMap.crowd.length) {
         const playerCenter = getPlayerCenter();
@@ -1702,23 +1822,10 @@
       }
     };
 
-    const positionPrivateChat = () => {
-      if (!activePrivatePartner || privateChat.style.display === "none") {
-        return;
-      }
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = rect.width / canvas.width;
-      const scaleY = rect.height / canvas.height;
-      const x = rect.left + (player.x + player.size / 2) * scaleX;
-      const y = rect.top + (player.y - 18) * scaleY;
-      privateChat.style.left = `${Math.max(8, x - 90)}px`;
-      privateChat.style.top = `${Math.max(8, y - 40)}px`;
-    };
 
     const loop = () => {
       update();
       render();
-      positionPrivateChat();
       requestAnimationFrame(loop);
     };
 
