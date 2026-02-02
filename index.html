@@ -26,6 +26,7 @@
       display: grid;
       gap: 12px;
       text-align: center;
+      position: relative;
     }
 
     .main-layout {
@@ -97,6 +98,34 @@
       object-fit: cover;
       background: #ddd;
       flex-shrink: 0;
+    }
+
+    .private-chat {
+      position: absolute;
+      display: none;
+      gap: 6px;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 6px;
+      z-index: 5;
+    }
+
+    .private-chat input {
+      width: 160px;
+      font-size: 14px;
+      padding: 4px 6px;
+      border: 1px solid #333;
+      border-radius: 4px;
+    }
+
+    .private-chat button {
+      font-size: 14px;
+      padding: 4px 8px;
+      border: 1px solid #333;
+      background: #ffffff;
+      cursor: pointer;
     }
 
     .chat-input-row {
@@ -216,6 +245,10 @@
         </div>
       </div>
     </div>
+    <div class="private-chat" id="private-chat">
+      <input id="private-input" type="text" maxlength="60" placeholder="私聊..." />
+      <button id="private-send" type="button">送出</button>
+    </div>
   </div>
 
   <script type="module">
@@ -263,6 +296,9 @@
     const chatMessages = document.querySelector("#chat-messages");
     const chatInput = document.querySelector("#chat-input");
     const chatSend = document.querySelector("#chat-send");
+    const privateChat = document.querySelector("#private-chat");
+    const privateInput = document.querySelector("#private-input");
+    const privateSend = document.querySelector("#private-send");
     const nicknameStorageKey = "playerNickname";
     let playerNickname = localStorage.getItem(nicknameStorageKey) || "";
     nicknameInput.value = playerNickname;
@@ -273,6 +309,10 @@
     const otherPlayers = new Map();
     const avatarCache = new Map();
     const otherPlayerRender = new Map();
+    let activePrivateChatId = null;
+    let activePrivatePartner = null;
+    let privateMessages = [];
+    let unsubscribePrivate = null;
     let lastPresenceUpdate = 0;
     const presenceIntervalMs = 800;
 
@@ -428,6 +468,44 @@
       clearChatMessages();
     };
 
+    const getConversationId = (uidA, uidB) => {
+      return [uidA, uidB].sort().join("_");
+    };
+
+    const startPrivateListener = (conversationId) => {
+      if (unsubscribePrivate) {
+        unsubscribePrivate();
+      }
+      privateMessages = [];
+      const ref = collection(db, "privateMessages");
+      const privateQuery = query(ref, where("conversationId", "==", conversationId));
+      unsubscribePrivate = onSnapshot(
+        privateQuery,
+        (snapshot) => {
+          privateMessages = [];
+          snapshot.forEach((docSnap) => {
+            privateMessages.push(docSnap.data());
+          });
+          privateMessages.sort((a, b) => {
+            const aTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+            const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+            return aTime - bTime;
+          });
+        },
+        (error) => {
+          console.error("私聊讀取失敗", error);
+        }
+      );
+    };
+
+    const stopPrivateListener = () => {
+      if (unsubscribePrivate) {
+        unsubscribePrivate();
+        unsubscribePrivate = null;
+      }
+      privateMessages = [];
+    };
+
     const updateChatVisibility = () => {
       chatPanel.style.display = "block";
       startChatListener();
@@ -535,6 +613,41 @@
         if (event.key === "Enter") {
           event.preventDefault();
           sendChatMessage();
+        }
+      });
+    }
+
+    const sendPrivateMessage = async () => {
+      const text = privateInput.value.trim();
+      privateInput.value = "";
+      const user = auth.currentUser;
+      if (!user || !activePrivatePartner || !text) {
+        return;
+      }
+      const userName =
+        playerNickname ||
+        user.displayName ||
+        (user.isAnonymous ? "匿名玩家" : "玩家");
+      try {
+        await addDoc(collection(db, "privateMessages"), {
+          conversationId: activePrivateChatId,
+          fromUid: user.uid,
+          toUid: activePrivatePartner.uid,
+          fromName: userName,
+          text,
+          createdAt: serverTimestamp(),
+        });
+      } catch (error) {
+        console.error("私聊送出失敗", error);
+      }
+    };
+
+    if (privateSend && privateInput) {
+      privateSend.addEventListener("click", sendPrivateMessage);
+      privateInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          sendPrivateMessage();
         }
       });
     }
@@ -1211,6 +1324,48 @@
           console.error("玩家位置同步失敗", error);
         });
       }
+
+      // 依距離決定是否開啟私聊
+      let nearest = null;
+      let nearestDist = Infinity;
+      otherPlayers.forEach((playerData, playerId) => {
+        if (
+          typeof playerData.x !== "number" ||
+          typeof playerData.y !== "number"
+        ) {
+          return;
+        }
+        const dx = playerData.x - player.x;
+        const dy = playerData.y - player.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearest = { id: playerId, data: playerData };
+        }
+      });
+
+      if (nearest && nearestDist < tileSize * 1.6) {
+        const user = auth.currentUser;
+        if (user) {
+          const conversationId = getConversationId(user.uid, nearest.id);
+          if (conversationId !== activePrivateChatId) {
+            activePrivateChatId = conversationId;
+            activePrivatePartner = {
+              uid: nearest.id,
+              name: nearest.data.userName || "玩家",
+              x: nearest.data.x,
+              y: nearest.data.y,
+            };
+            startPrivateListener(conversationId);
+          }
+          privateChat.style.display = "flex";
+        }
+      } else {
+        activePrivateChatId = null;
+        activePrivatePartner = null;
+        privateChat.style.display = "none";
+        stopPrivateListener();
+      }
     };
 
     const render = () => {
@@ -1359,6 +1514,37 @@
             ctx.restore();
           }
         });
+      }
+
+      if (activePrivatePartner && privateMessages.length) {
+        const last = privateMessages[privateMessages.length - 1];
+        const bubbleText = `${last.fromName}: ${last.text}`;
+        const maxWidth = 160;
+        const padding = 4;
+
+        const drawBubble = (x, y) => {
+          ctx.save();
+          ctx.font = "12px Arial, Helvetica, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "bottom";
+          const textWidth = Math.min(ctx.measureText(bubbleText).width, maxWidth);
+          const boxWidth = textWidth + padding * 2;
+          const boxHeight = 18;
+          ctx.fillStyle = "rgba(255,255,255,0.9)";
+          ctx.strokeStyle = "#333";
+          ctx.lineWidth = 1;
+          ctx.fillRect(x - boxWidth / 2, y - boxHeight, boxWidth, boxHeight);
+          ctx.strokeRect(x - boxWidth / 2, y - boxHeight, boxWidth, boxHeight);
+          ctx.fillStyle = "#000000";
+          ctx.fillText(bubbleText, x, y - 4);
+          ctx.restore();
+        };
+
+        drawBubble(player.x + player.size / 2, player.y - 10);
+        drawBubble(
+          activePrivatePartner.x + player.size / 2,
+          activePrivatePartner.y - 10
+        );
       }
 
       if (currentMap.crowd.length) {
@@ -1516,9 +1702,23 @@
       }
     };
 
+    const positionPrivateChat = () => {
+      if (!activePrivatePartner || privateChat.style.display === "none") {
+        return;
+      }
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = rect.width / canvas.width;
+      const scaleY = rect.height / canvas.height;
+      const x = rect.left + (player.x + player.size / 2) * scaleX;
+      const y = rect.top + (player.y - 18) * scaleY;
+      privateChat.style.left = `${Math.max(8, x - 90)}px`;
+      privateChat.style.top = `${Math.max(8, y - 40)}px`;
+    };
+
     const loop = () => {
       update();
       render();
+      positionPrivateChat();
       requestAnimationFrame(loop);
     };
 
