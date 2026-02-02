@@ -1310,6 +1310,16 @@
 
           const avatar = getAvatarImage(playerData.photoURL);
           if (avatar && avatar.complete) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(
+              renderPos.x + player.size / 2,
+              renderPos.y + player.size / 2,
+              player.size / 2,
+              0,
+              Math.PI * 2
+            );
+            ctx.clip();
             ctx.drawImage(
               avatar,
               renderPos.x,
@@ -1317,6 +1327,7 @@
               player.size,
               player.size
             );
+            ctx.restore();
           } else {
             ctx.fillStyle = "#3498db";
             ctx.beginPath();
