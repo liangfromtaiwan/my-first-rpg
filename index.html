@@ -122,10 +122,11 @@
     }
 
     .online-dot {
-      width: 8px;
-      height: 8px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
       background: #9e9e9e;
+      border: 1px solid #777;
       flex-shrink: 0;
     }
 
@@ -441,6 +442,7 @@
     let unsubscribePrivate = null;
     let unsubscribeUsers = null;
     const onlineUsers = new Map();
+    let onlineRefreshTimer = null;
     let activeChatTab = "map";
     let userSelectedTab = false;
     let lastPresenceUpdate = 0;
@@ -744,6 +746,12 @@
       }
       const now = Date.now();
       onlineList.innerHTML = "";
+      if (!onlineUsers.size) {
+        const empty = document.createElement("div");
+        empty.textContent = "尚無村莊使用者";
+        onlineList.appendChild(empty);
+        return;
+      }
       onlineUsers.forEach((userData) => {
         const lastActiveMs = userData.lastActiveAt?.toMillis
           ? userData.lastActiveAt.toMillis()
@@ -765,6 +773,9 @@
       if (unsubscribeUsers) {
         unsubscribeUsers();
       }
+      if (onlineRefreshTimer) {
+        clearInterval(onlineRefreshTimer);
+      }
       onlineUsers.clear();
       const usersRef = collection(db, "users");
       const usersQuery = query(usersRef, where("villageId", "==", "lgbtq"));
@@ -781,6 +792,7 @@
           console.error("線上名單讀取失敗", error);
         }
       );
+      onlineRefreshTimer = setInterval(renderOnlineUsers, 30000);
     };
 
     const getAvatarImage = (url) => {
