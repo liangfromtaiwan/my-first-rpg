@@ -83,6 +83,7 @@
     .chat-view {
       display: none;
       flex: 1;
+      height: 94%;
       min-height: 0;
       flex-direction: column;
       gap: 8px;
@@ -101,7 +102,7 @@
       padding: 6px;
       gap: 8px;
       min-height: 0;
-      height: 85%;
+      overflow: hidden;
     }
 
     .chat-messages {
@@ -393,6 +394,7 @@
     let privateMessages = [];
     let unsubscribePrivate = null;
     let activeChatTab = "map";
+    let userSelectedTab = false;
     let lastPresenceUpdate = 0;
     const presenceIntervalMs = 800;
 
@@ -652,10 +654,12 @@
     if (tabMap && tabPrivate) {
       tabMap.addEventListener("click", () => {
         activeChatTab = "map";
+        userSelectedTab = true;
         updateChatTabs();
       });
       tabPrivate.addEventListener("click", () => {
         activeChatTab = "private";
+        userSelectedTab = true;
         updateChatTabs();
       });
     }
@@ -1508,12 +1512,20 @@
             startPrivateListener(conversationId);
           }
           setPrivateAvailability(true);
+          if (!userSelectedTab && activeChatTab !== "private") {
+            activeChatTab = "private";
+            updateChatTabs();
+          }
         }
       } else {
         activePrivateChatId = null;
         activePrivatePartner = null;
         stopPrivateListener();
         setPrivateAvailability(false);
+        if (!userSelectedTab && activeChatTab !== "map") {
+          activeChatTab = "map";
+          updateChatTabs();
+        }
       }
     };
 
