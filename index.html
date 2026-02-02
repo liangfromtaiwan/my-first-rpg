@@ -501,7 +501,7 @@
     let onlineRefreshTimer = null;
     let activeChatTab = "map";
     let userSelectedTab = false;
-    const dailyRoomBaseUrl = "https://aaagoodaaa.daily.co";
+    const dailyCreateRoomEndpoint = "/api/create-room";
     let lastPresenceUpdate = 0;
     const presenceIntervalMs = 800;
 
@@ -782,19 +782,25 @@
           const isAcceptedBySelf = Boolean(acceptedBy[user.uid]);
           const isAcceptedByOther = Boolean(acceptedBy[partnerId]);
           const bothAccepted = isAcceptedBySelf && isAcceptedByOther;
-          const roomUrl =
-            activeCallData.roomUrl ||
-            (bothAccepted ? buildDailyRoomUrl(conversationId) : "");
-          if (bothAccepted && roomUrl && activeCallData.roomUrl !== roomUrl) {
-            updateDoc(callRef, {
-              status: "active",
-              roomUrl,
-            }).catch((error) => {
-              console.error("更新通話房間失敗", error);
-            });
+          if (bothAccepted && !activeCallData.roomUrl) {
+            const isOwner = user.uid < partnerId;
+            if (isOwner) {
+              showVideoRoom("");
+              createDailyRoom(conversationId).then((roomUrl) => {
+                if (!roomUrl) {
+                  return;
+                }
+                updateDoc(callRef, {
+                  status: "active",
+                  roomUrl,
+                }).catch((error) => {
+                  console.error("更新通話房間失敗", error);
+                });
+              });
+            }
           }
-          if (bothAccepted) {
-            showVideoRoom(roomUrl);
+          if (bothAccepted && activeCallData.roomUrl) {
+            showVideoRoom(activeCallData.roomUrl);
           } else {
             hideVideoRoom();
           }
@@ -859,11 +865,11 @@
       chatViewPrivate.classList.toggle("is-active", activeChatTab === "private");
     };
 
-    const buildDailyRoomUrl = (conversationId) => {
-      if (!dailyRoomBaseUrl || dailyRoomBaseUrl.includes("YOUR-SUBDOMAIN")) {
-        return "";
+    const setVideoPlaceholder = (message) => {
+      if (!videoPlaceholder) {
+        return;
       }
-      return `${dailyRoomBaseUrl}/rpg-${conversationId}`;
+      videoPlaceholder.textContent = message;
     };
 
     const showVideoRoom = (roomUrl) => {
@@ -874,6 +880,7 @@
         videoWrap.style.display = "block";
         dailyFrame.style.display = "none";
         videoPlaceholder.style.display = "block";
+        setVideoPlaceholder("正在建立視訊房間...");
         return;
       }
       videoWrap.style.display = "block";
@@ -892,6 +899,28 @@
       videoPlaceholder.style.display = "none";
       dailyFrame.style.display = "none";
       dailyFrame.src = "";
+    };
+
+    const createDailyRoom = async (conversationId) => {
+      try {
+        const response = await fetch(dailyCreateRoomEndpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ conversationId }),
+        });
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(text);
+        }
+        const data = await response.json();
+        return data?.roomUrl || "";
+      } catch (error) {
+        console.error("建立 Daily 房間失敗", error);
+        setVideoPlaceholder("建立房間失敗，請稍後再試");
+        return "";
+      }
     };
 
     const updateMapTabLabel = () => {
