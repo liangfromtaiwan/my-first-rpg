@@ -872,7 +872,12 @@
       if (!jitsiRoomBaseUrl) {
         return "";
       }
-      return `${jitsiRoomBaseUrl}/rpg-${conversationId}`;
+      let hash = 5381;
+      for (let i = 0; i < conversationId.length; i += 1) {
+        hash = (hash * 33) ^ conversationId.charCodeAt(i);
+      }
+      const safeId = Math.abs(hash).toString(16);
+      return `${jitsiRoomBaseUrl}/rpg-${safeId}`;
     };
 
     const showVideoRoom = (roomUrl) => {
