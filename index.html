@@ -320,16 +320,6 @@
       border: 0;
     }
 
-    .call-accept {
-      padding: 4px 8px;
-      font-size: 12px;
-      border: 1px solid #333;
-      background: #ffffff;
-      border-radius: 6px;
-      cursor: pointer;
-      display: none;
-    }
-
     .video-placeholder {
       padding: 12px;
       font-size: 14px;
@@ -359,9 +349,6 @@
     <h1>最簡單 2D RPG 地圖範例</h1>
     <div class="auth-bar" aria-live="polite">
       <span id="auth-status">尚未登入</span>
-      <button class="call-accept" id="call-accept" type="button">
-        接受通話
-      </button>
       <label class="nickname-field" for="nickname-input">
         暱稱
         <input id="nickname-input" type="text" maxlength="12" placeholder="輸入暱稱" />
@@ -480,7 +467,6 @@
     const videoPlaceholder = document.querySelector("#video-placeholder");
     const videoRoomUrl = document.querySelector("#video-room-url");
     const dailyFrame = document.querySelector("#daily-frame");
-    const callAccept = document.querySelector("#call-accept");
     const privateChat = document.querySelector("#private-chat");
     const privateMessagesEl = document.querySelector("#private-messages");
     const privateEmpty = document.querySelector("#private-empty");
@@ -738,13 +724,6 @@
       }
     };
 
-    const setCallButtonVisibility = (visible) => {
-      if (!callAccept) {
-        return;
-      }
-      callAccept.style.display = visible ? "inline-flex" : "none";
-    };
-
     const startCallListener = async (conversationId, partnerId) => {
       if (unsubscribeCall) {
         unsubscribeCall();
@@ -794,7 +773,6 @@
           } else {
             hideVideoRoom();
           }
-          setCallButtonVisibility(!isAcceptedBySelf);
         },
         (error) => {
           console.error("通話狀態讀取失敗", error);
@@ -809,31 +787,37 @@
       }
       activeCallId = null;
       activeCallData = null;
-      setCallButtonVisibility(false);
       hideVideoRoom();
     };
 
-    if (callAccept) {
-      callAccept.addEventListener("click", async () => {
-        const user = auth.currentUser;
-        if (!user || !activeCallId) {
-          return;
-        }
-        try {
-          await setDoc(
-            doc(db, "calls", activeCallId),
-            {
-              acceptedBy: {
-                [user.uid]: true,
-              },
+    const canAcceptCall = () => {
+      const user = auth.currentUser;
+      if (!user || !activeCallId || !activeCallData) {
+        return false;
+      }
+      const acceptedBy = activeCallData.acceptedBy || {};
+      return !acceptedBy[user.uid];
+    };
+
+    const acceptCall = async () => {
+      const user = auth.currentUser;
+      if (!user || !activeCallId) {
+        return;
+      }
+      try {
+        await setDoc(
+          doc(db, "calls", activeCallId),
+          {
+            acceptedBy: {
+              [user.uid]: true,
             },
-            { merge: true }
-          );
-        } catch (error) {
-          console.error("接受通話失敗", error);
-        }
-      });
-    }
+          },
+          { merge: true }
+        );
+      } catch (error) {
+        console.error("接受通話失敗", error);
+      }
+    };
 
     const updateChatVisibility = () => {
       chatPanel.style.display = "block";
@@ -1481,6 +1465,12 @@
             selectedOption = 0;
             resultMessage = "";
           }
+          event.preventDefault();
+          return;
+        }
+
+        if (activePrivatePartner && canAcceptCall()) {
+          acceptCall();
           event.preventDefault();
           return;
         }
