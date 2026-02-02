@@ -364,7 +364,7 @@
       <div class="map-column">
         <div class="video-wrap" id="video-wrap">
           <div class="video-placeholder" id="video-placeholder">
-            請先設定 Daily subdomain 才能啟用視訊
+            視訊準備中...
           </div>
           <iframe
             id="daily-frame"
@@ -431,7 +431,6 @@
       collection,
       doc,
       getFirestore,
-      getDoc,
       onSnapshot,
       orderBy,
       query,
@@ -501,7 +500,7 @@
     let onlineRefreshTimer = null;
     let activeChatTab = "map";
     let userSelectedTab = false;
-    const dailyCreateRoomEndpoint = "/api/create-room";
+    const jitsiRoomBaseUrl = "https://meet.jit.si";
     let lastPresenceUpdate = 0;
     const presenceIntervalMs = 800;
 
@@ -785,18 +784,15 @@
           if (bothAccepted && !activeCallData.roomUrl) {
             const isOwner = user.uid < partnerId;
             if (isOwner) {
-              showVideoRoom("");
-              createDailyRoom(conversationId).then((roomUrl) => {
-                if (!roomUrl) {
-                  return;
-                }
+              const roomUrl = buildJitsiRoomUrl(conversationId);
+              if (roomUrl) {
                 updateDoc(callRef, {
                   status: "active",
                   roomUrl,
                 }).catch((error) => {
                   console.error("更新通話房間失敗", error);
                 });
-              });
+              }
             }
           }
           if (bothAccepted && activeCallData.roomUrl) {
@@ -872,6 +868,13 @@
       videoPlaceholder.textContent = message;
     };
 
+    const buildJitsiRoomUrl = (conversationId) => {
+      if (!jitsiRoomBaseUrl) {
+        return "";
+      }
+      return `${jitsiRoomBaseUrl}/rpg-${conversationId}`;
+    };
+
     const showVideoRoom = (roomUrl) => {
       if (!videoWrap || !dailyFrame || !videoPlaceholder) {
         return;
@@ -899,28 +902,6 @@
       videoPlaceholder.style.display = "none";
       dailyFrame.style.display = "none";
       dailyFrame.src = "";
-    };
-
-    const createDailyRoom = async (conversationId) => {
-      try {
-        const response = await fetch(dailyCreateRoomEndpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ conversationId }),
-        });
-        if (!response.ok) {
-          const text = await response.text();
-          throw new Error(text);
-        }
-        const data = await response.json();
-        return data?.roomUrl || "";
-      } catch (error) {
-        console.error("建立 Daily 房間失敗", error);
-        setVideoPlaceholder("建立房間失敗，請稍後再試");
-        return "";
-      }
     };
 
     const updateMapTabLabel = () => {
