@@ -93,6 +93,46 @@
       display: flex;
     }
 
+    .online-panel {
+      border: 1px solid #ddd;
+      background: #fafafa;
+      border-radius: 6px;
+      padding: 6px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .online-title {
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .online-list {
+      display: grid;
+      gap: 6px;
+      max-height: 120px;
+      overflow-y: auto;
+      font-size: 14px;
+    }
+
+    .online-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .online-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #9e9e9e;
+      flex-shrink: 0;
+    }
+
+    .online-dot.is-online {
+      background: #2ecc71;
+    }
+
     .chat-box {
       flex: 1;
       display: flex;
@@ -299,6 +339,10 @@
           </button>
         </div>
         <div class="chat-view is-active" id="chat-view-map">
+          <div class="online-panel" id="online-panel">
+            <div class="online-title">村莊使用者</div>
+            <div class="online-list" id="online-list"></div>
+          </div>
           <div class="chat-box">
             <div class="chat-messages" id="chat-messages"></div>
           </div>
@@ -374,6 +418,8 @@
     const tabPrivate = document.querySelector("#tab-private");
     const chatViewMap = document.querySelector("#chat-view-map");
     const chatViewPrivate = document.querySelector("#chat-view-private");
+    const onlinePanel = document.querySelector("#online-panel");
+    const onlineList = document.querySelector("#online-list");
     const privateChat = document.querySelector("#private-chat");
     const privateMessagesEl = document.querySelector("#private-messages");
     const privateEmpty = document.querySelector("#private-empty");
@@ -393,6 +439,8 @@
     let activePrivatePartner = null;
     let privateMessages = [];
     let unsubscribePrivate = null;
+    let unsubscribeUsers = null;
+    const onlineUsers = new Map();
     let activeChatTab = "map";
     let userSelectedTab = false;
     let lastPresenceUpdate = 0;
@@ -627,6 +675,7 @@
     const updateChatVisibility = () => {
       chatPanel.style.display = "block";
       startChatListener();
+      startUsersListener();
       updateMapTabLabel();
       updateChatTabs();
       setPrivateAvailability(Boolean(activePrivatePartner));
@@ -663,6 +712,76 @@
         updateChatTabs();
       });
     }
+
+    const updateUserPresence = async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        return;
+      }
+      const displayName =
+        playerNickname ||
+        user.displayName ||
+        (user.isAnonymous ? "匿名玩家" : "玩家");
+      try {
+        await setDoc(
+          doc(db, "users", user.uid),
+          {
+            uid: user.uid,
+            displayName,
+            villageId: "lgbtq",
+            lastActiveAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+      } catch (error) {
+        console.error("更新在線狀態失敗", error);
+      }
+    };
+
+    const renderOnlineUsers = () => {
+      if (!onlineList) {
+        return;
+      }
+      const now = Date.now();
+      onlineList.innerHTML = "";
+      onlineUsers.forEach((userData) => {
+        const lastActiveMs = userData.lastActiveAt?.toMillis
+          ? userData.lastActiveAt.toMillis()
+          : 0;
+        const isOnline = now - lastActiveMs < 5 * 60 * 1000;
+        const row = document.createElement("div");
+        row.className = "online-row";
+        const dot = document.createElement("span");
+        dot.className = `online-dot${isOnline ? " is-online" : ""}`;
+        const name = document.createElement("span");
+        name.textContent = userData.displayName || "玩家";
+        row.appendChild(dot);
+        row.appendChild(name);
+        onlineList.appendChild(row);
+      });
+    };
+
+    const startUsersListener = () => {
+      if (unsubscribeUsers) {
+        unsubscribeUsers();
+      }
+      onlineUsers.clear();
+      const usersRef = collection(db, "users");
+      const usersQuery = query(usersRef, where("villageId", "==", "lgbtq"));
+      unsubscribeUsers = onSnapshot(
+        usersQuery,
+        (snapshot) => {
+          onlineUsers.clear();
+          snapshot.forEach((docSnap) => {
+            onlineUsers.set(docSnap.id, docSnap.data());
+          });
+          renderOnlineUsers();
+        },
+        (error) => {
+          console.error("線上名單讀取失敗", error);
+        }
+      );
+    };
 
     const getAvatarImage = (url) => {
       if (!url) {
@@ -754,6 +873,9 @@
           text,
           createdAt: serverTimestamp(),
         });
+        if (currentMapName === "villageMap") {
+          updateUserPresence();
+        }
       } catch (error) {
         showChatStatus(`送出失敗：${error?.code || "未知錯誤"}`);
         console.error("訊息送出失敗", error);
@@ -1192,6 +1314,9 @@
       resultMessage = "";
       updateChatVisibility();
       startPlayersListener();
+      if (currentMapName === "villageMap") {
+        updateUserPresence();
+      }
     };
 
     const isWall = (tileX, tileY) => {
