@@ -369,12 +369,7 @@
     <h1>最簡單 2D RPG 地圖範例</h1>
     <div class="auth-bar" aria-live="polite">
       <span id="auth-status">尚未登入</span>
-      <label class="nickname-field" for="nickname-input">
-        暱稱
-        <input id="nickname-input" type="text" maxlength="12" placeholder="輸入暱稱" />
-      </label>
       <button id="google-login" type="button">Google 登入</button>
-      <button id="anon-login" type="button">匿名登入</button>
     </div>
     <div class="main-layout">
       <div class="map-column">
@@ -444,7 +439,6 @@
       getAuth,
       GoogleAuthProvider,
       onAuthStateChanged,
-      signInAnonymously,
       signInWithPopup,
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
     import {
@@ -477,9 +471,6 @@
 
     const authStatus = document.querySelector("#auth-status");
     const googleLoginButton = document.querySelector("#google-login");
-    const anonLoginButton = document.querySelector("#anon-login");
-    const nicknameField = document.querySelector(".nickname-field");
-    const nicknameInput = document.querySelector("#nickname-input");
     const chatPanel = document.querySelector("#chat-panel");
     const chatMessages = document.querySelector("#chat-messages");
     const chatInput = document.querySelector("#chat-input");
@@ -506,7 +497,6 @@
     );
     const nicknameStorageKey = "playerNickname";
     let playerNickname = localStorage.getItem(nicknameStorageKey) || "";
-    nicknameInput.value = playerNickname;
     // 每個聊天室對應一個 villageId（需求指定為 'lgbtq'）
     const villageId = "lgbtq";
     let unsubscribeChat = null;
@@ -538,13 +528,9 @@
           "玩家";
         authStatus.textContent = `你好，${name}`;
         googleLoginButton.disabled = true;
-        anonLoginButton.disabled = true;
-        nicknameField.style.display = "flex";
       } else {
         authStatus.textContent = "尚未登入";
         googleLoginButton.disabled = false;
-        anonLoginButton.disabled = false;
-        nicknameField.style.display = "none";
       }
     };
 
@@ -566,21 +552,12 @@
       }
       authStatus.textContent = message;
       googleLoginButton.disabled = false;
-      anonLoginButton.disabled = false;
       console.error("登入失敗", error);
     };
 
     googleLoginButton.addEventListener("click", async () => {
       try {
         await signInWithPopup(auth, provider);
-      } catch (error) {
-        handleAuthError(error);
-      }
-    });
-
-    anonLoginButton.addEventListener("click", async () => {
-      try {
-        await signInAnonymously(auth);
       } catch (error) {
         handleAuthError(error);
       }
@@ -595,11 +572,6 @@
       authStatus.textContent =
         "Google 登入需要 http/https，請用本機伺服器或 GitHub Pages 開啟。";
     }
-
-    nicknameInput.addEventListener("input", () => {
-      playerNickname = nicknameInput.value.trim();
-      localStorage.setItem(nicknameStorageKey, playerNickname);
-    });
 
     const appendChatMessage = (message) => {
       const row = document.createElement("div");
@@ -2039,27 +2011,27 @@
           const tile = currentMap.tiles[row][col];
           const floorColor =
             currentMapName === "villageMap" ? "#c7d6b7" : "#b7d3c2";
-          if (tile === 1) {
-            if (treeSpriteReady) {
-              ctx.drawImage(
-                treeSprite,
-                col * tileSize,
-                row * tileSize,
-                tileSize,
-                tileSize
-              );
-            }
-          } else {
-            ctx.fillStyle = floorColor;
-            ctx.fillRect(
-              col * tileSize,
-              row * tileSize,
-              tileSize,
-              tileSize
-            );
-          }
+          ctx.fillStyle = floorColor;
+          ctx.fillRect(
+            col * tileSize,
+            row * tileSize,
+            tileSize,
+            tileSize
+          );
         }
       }
+
+      // Dark green border around the map
+      ctx.save();
+      ctx.strokeStyle = "#1f5f3a";
+      ctx.lineWidth = Math.max(4, Math.floor(tileSize * 0.35));
+      ctx.strokeRect(
+        ctx.lineWidth / 2,
+        ctx.lineWidth / 2,
+        canvas.width - ctx.lineWidth,
+        canvas.height - ctx.lineWidth
+      );
+      ctx.restore();
 
       const castleInfo = getCastleDrawInfo();
       if (castleInfo) {
