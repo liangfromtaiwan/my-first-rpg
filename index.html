@@ -503,8 +503,8 @@
     );
     const nicknameStorageKey = "playerNickname";
     let playerNickname = localStorage.getItem(nicknameStorageKey) || "";
-    // 每個聊天室對應一個 villageId（需求指定為 'lgbtq'）
-    const villageId = "lgbtq";
+    // 主世界聊天室（主世界與村莊都顯示同一個對話）
+    const villageId = "worldMap";
     let unsubscribeChat = null;
     let unsubscribePlayers = null;
     const otherPlayers = new Map();
