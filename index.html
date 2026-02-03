@@ -1614,7 +1614,7 @@
       ctx.closePath();
     };
 
-    const drawNameBubble = (ctx, centerX, topY, label) => {
+    const drawNameBubble = (ctx, centerX, topY, label, isOnline) => {
       const fontSize = 14;
       const paddingX = 10;
       const paddingY = 6;
@@ -1644,7 +1644,7 @@
 
       const dotX = bubbleX + paddingX + dotRadius;
       const dotY = bubbleY + bubbleHeight / 2;
-      ctx.fillStyle = "#2ecc71";
+      ctx.fillStyle = isOnline ? "#2ecc71" : "#9e9e9e";
       ctx.beginPath();
       ctx.arc(dotX, dotY, dotRadius, 0, Math.PI * 2);
       ctx.fill();
@@ -1658,6 +1658,17 @@
         bubbleY + bubbleHeight / 2
       );
       ctx.restore();
+    };
+
+    const isUserOnline = (uid) => {
+      if (!uid) {
+        return false;
+      }
+      const data = onlineUsers.get(uid);
+      const lastActiveMs = data?.lastActiveAt?.toMillis
+        ? data.lastActiveAt.toMillis()
+        : 0;
+      return Date.now() - lastActiveMs < 5 * 60 * 1000;
     };
 
     const rectsOverlap = (a, b) =>
@@ -2126,7 +2137,8 @@
               ctx,
               renderPos.x + player.size / 2,
               renderPos.y - 6,
-              otherName
+              otherName,
+              isUserOnline(playerId)
             );
           }
         });
@@ -2203,7 +2215,8 @@
           ctx,
           player.x + player.size / 2,
           player.y - 6,
-          playerLabel
+          playerLabel,
+          isUserOnline(auth.currentUser?.uid)
         );
       }
 
