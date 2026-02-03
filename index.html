@@ -1906,7 +1906,7 @@
         return null;
       }
       const isCastle = image === castleImage;
-      const scale = isCastle ? 5 : 1;
+      const scale = isCastle ? 5 * 0.7 : 1;
       const size = tileSize * scale;
       const x =
         currentMap.entrance.x * tileSize -
