@@ -2070,23 +2070,11 @@
 
       if (currentMap.crowd.length) {
         currentMap.crowd.forEach((member) => {
-          const sprite = getCrowdSpriteStyle(member.color);
-          const offset = Math.floor((tileSize - sprite.size) / 2);
-          const baseX = member.tileX * tileSize + offset;
-          const baseY = member.tileY * tileSize + offset;
-          const headRadius = sprite.size * 0.22;
-          const headCenterX = baseX + sprite.size / 2;
-          const headCenterY = baseY + headRadius + 2;
-          const bodyWidth = sprite.size * 0.55;
-          const bodyHeight = sprite.size * 0.45;
-          const bodyX = baseX + (sprite.size - bodyWidth) / 2;
-          const bodyY = headCenterY + headRadius + 2;
-
-          ctx.fillStyle = sprite.color;
-          ctx.beginPath();
-          ctx.arc(headCenterX, headCenterY, headRadius, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillRect(bodyX, bodyY, bodyWidth, bodyHeight);
+          const x = member.tileX * tileSize;
+          const y = member.tileY * tileSize;
+          if (treeSpriteReady) {
+            ctx.drawImage(treeSprite, x, y, tileSize, tileSize);
+          }
         });
       }
 
