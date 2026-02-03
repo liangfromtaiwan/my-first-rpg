@@ -2024,13 +2024,16 @@
       // Dark green border around the map
       ctx.save();
       ctx.strokeStyle = "#1f5f3a";
-      ctx.lineWidth = 4;
-      ctx.strokeRect(
+      ctx.lineWidth = 2;
+      drawRoundedRect(
+        ctx,
         ctx.lineWidth / 2,
         ctx.lineWidth / 2,
         canvas.width - ctx.lineWidth,
-        canvas.height - ctx.lineWidth
+        canvas.height - ctx.lineWidth,
+        12
       );
+      ctx.stroke();
       ctx.restore();
 
       const castleInfo = getCastleDrawInfo();
