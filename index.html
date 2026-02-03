@@ -1315,7 +1315,6 @@
         return;
       }
       const text = chatInput.value.trim();
-      chatInput.value = "";
       const user = auth.currentUser;
       if (!user) {
         showChatStatus("請先登入再送出訊息。");
@@ -1324,6 +1323,7 @@
       if (!text) {
         return;
       }
+      chatInput.value = "";
       const userName =
         playerNickname ||
         user.displayName ||
@@ -1346,6 +1346,7 @@
         }
         updateUserPresence();
       } catch (error) {
+        chatInput.value = text;
         showChatStatus(`送出失敗：${error?.code || "未知錯誤"}`);
         console.error("訊息送出失敗", error);
       }
@@ -1363,11 +1364,11 @@
 
     const sendPrivateMessage = async () => {
       const text = privateInput.value.trim();
-      privateInput.value = "";
       const user = auth.currentUser;
       if (!user || !activePrivatePartner || !text) {
         return;
       }
+      privateInput.value = "";
       const userName =
         playerNickname ||
         user.displayName ||
@@ -1388,6 +1389,7 @@
           messageSendAudio.play().catch(() => {});
         }
       } catch (error) {
+        privateInput.value = text;
         console.error("私聊送出失敗", error);
       }
     };
