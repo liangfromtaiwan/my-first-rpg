@@ -975,10 +975,10 @@
         return;
       }
       const rect = canvas.getBoundingClientRect();
-      const scaleX = rect.width / canvas.width;
-      const scaleY = rect.height / canvas.height;
-      const x = rect.left + (info.x + info.size / 2) * scaleX;
-      const y = rect.top + info.y * scaleY - 10;
+      const scaleX = rect.width / viewportWidth;
+      const scaleY = rect.height / viewportHeight;
+      const x = rect.left + (info.x + info.size / 2 - camera.x) * scaleX;
+      const y = rect.top + (info.y - camera.y) * scaleY - 10;
       boardAction.style.left = `${Math.max(8, x - 60)}px`;
       boardAction.style.top = `${Math.max(8, y - 24)}px`;
     };
@@ -1023,11 +1023,10 @@
         return;
       }
       const rect = canvas.getBoundingClientRect();
-      const scaleX = rect.width / canvas.width;
-      const scaleY = rect.height / canvas.height;
-      const x =
-        rect.left + (player.x + player.size / 2) * scaleX;
-      const y = rect.top + (player.y + player.size + 6) * scaleY;
+      const scaleX = rect.width / viewportWidth;
+      const scaleY = rect.height / viewportHeight;
+      const x = rect.left + (player.x + player.size / 2 - camera.x) * scaleX;
+      const y = rect.top + (player.y + player.size + 6 - camera.y) * scaleY;
       callStart.style.left = `${Math.max(8, x - 30)}px`;
       callStart.style.top = `${Math.max(8, y)}px`;
     };
@@ -1408,45 +1407,31 @@
     const ctx = canvas.getContext("2d");
 
     const tileSize = 40;
-    const worldMap = [
-      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    ];
-    const villageMap = [
-      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-      [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    ];
+    const viewportWidth = 720;
+    const viewportHeight = 560;
+    const camera = { x: 0, y: 0 };
+
+    const makeMapTiles = (cols, rows) => {
+      const tiles = [];
+      for (let r = 0; r < rows; r++) {
+        const row = [];
+        for (let c = 0; c < cols; c++) {
+          row.push(r === 0 || r === rows - 1 || c === 0 || c === cols - 1 ? 1 : 0);
+        }
+        tiles.push(row);
+      }
+      return tiles;
+    };
+
+    const worldMap = makeMapTiles(48, 32);
+    const villageMap = makeMapTiles(40, 28);
 
     const maps = {
       worldMap: {
         tiles: worldMap,
-        entrance: { x: 22, y: 11 },
-        spawn: { x: 21, y: 12 },
-        npc: { tileX: 6, tileY: 6 },
+        entrance: { x: 44, y: 22 },
+        spawn: { x: 42, y: 24 },
+        npc: { tileX: 12, tileY: 12 },
         crowd: [],
       },
       villageMap: {
@@ -1458,8 +1443,8 @@
           { x: 1, y: 2 },
           { x: 2, y: 2 },
         ],
-        spawn: { x: 3, y: 3 },
-        npc: { tileX: 12, tileY: 8 },
+        spawn: { x: 5, y: 5 },
+        npc: { tileX: 20, tileY: 14 },
         crowd: [],
       },
     };
@@ -1468,9 +1453,11 @@
     let currentMap = maps[currentMapName];
     let mapCols = currentMap.tiles[0].length;
     let mapRows = currentMap.tiles.length;
+    let mapWidth = mapCols * tileSize;
+    let mapHeight = mapRows * tileSize;
 
-    canvas.width = mapCols * tileSize;
-    canvas.height = mapRows * tileSize;
+    canvas.width = viewportWidth;
+    canvas.height = viewportHeight;
 
     const playerImage = new Image();
     playerImage.src = "player.png";
@@ -1754,12 +1741,14 @@
 
     const setMoveTargetFromEvent = (event) => {
       const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
-      const x = (event.clientX - rect.left) * scaleX;
-      const y = (event.clientY - rect.top) * scaleY;
-      moveTarget.x = clamp(x - player.size / 2, 0, canvas.width - player.size);
-      moveTarget.y = clamp(y - player.size / 2, 0, canvas.height - player.size);
+      const scaleX = viewportWidth / rect.width;
+      const scaleY = viewportHeight / rect.height;
+      const canvasX = (event.clientX - rect.left) * scaleX;
+      const canvasY = (event.clientY - rect.top) * scaleY;
+      const worldX = canvasX + camera.x;
+      const worldY = canvasY + camera.y;
+      moveTarget.x = clamp(worldX - player.size / 2, 0, mapWidth - player.size);
+      moveTarget.y = clamp(worldY - player.size / 2, 0, mapHeight - player.size);
     };
 
     canvas.addEventListener("pointerdown", (event) => {
@@ -1784,8 +1773,8 @@
       currentMap = maps[mapName];
       mapCols = currentMap.tiles[0].length;
       mapRows = currentMap.tiles.length;
-      canvas.width = mapCols * tileSize;
-      canvas.height = mapRows * tileSize;
+      mapWidth = mapCols * tileSize;
+      mapHeight = mapRows * tileSize;
 
       const npcPosition = currentMap.npc;
       npc.active = Boolean(npcPosition);
@@ -1797,6 +1786,16 @@
       if (spawn) {
         player.x = spawn.x * tileSize;
         player.y = spawn.y * tileSize;
+        camera.x = clamp(
+          player.x + player.size / 2 - viewportWidth / 2,
+          0,
+          Math.max(0, mapWidth - viewportWidth)
+        );
+        camera.y = clamp(
+          player.y + player.size / 2 - viewportHeight / 2,
+          0,
+          Math.max(0, mapHeight - viewportHeight)
+        );
       }
       generateCrowdForMap(mapName);
       isDialogueOpen = false;
@@ -1985,9 +1984,7 @@
       );
     };
 
-    generateCrowdForMap(currentMapName);
-    updateChatVisibility();
-    startPlayersListener();
+    setMap(currentMapName, maps[currentMapName].spawn);
 
     const canMoveTo = (x, y) => {
       const left = Math.floor(x / tileSize);
@@ -2160,8 +2157,8 @@
       if (dx < 0) player.facing = "left";
       if (dx > 0) player.facing = "right";
 
-      const nextX = clamp(player.x + dx, 0, canvas.width - player.size);
-      const nextY = clamp(player.y + dy, 0, canvas.height - player.size);
+      const nextX = clamp(player.x + dx, 0, mapWidth - player.size);
+      const nextY = clamp(player.y + dy, 0, mapHeight - player.size);
 
       if (canMoveTo(nextX, player.y)) {
         player.x = nextX;
@@ -2170,6 +2167,17 @@
       if (canMoveTo(player.x, nextY)) {
         player.y = nextY;
       }
+
+      camera.x = clamp(
+        player.x + player.size / 2 - viewportWidth / 2,
+        0,
+        Math.max(0, mapWidth - viewportWidth)
+      );
+      camera.y = clamp(
+        player.y + player.size / 2 - viewportHeight / 2,
+        0,
+        Math.max(0, mapHeight - viewportHeight)
+      );
 
       checkMapTransition();
 
@@ -2250,7 +2258,9 @@
     };
 
     const render = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, viewportWidth, viewportHeight);
+      ctx.save();
+      ctx.translate(-camera.x, -camera.y);
 
       for (let row = 0; row < mapRows; row += 1) {
         for (let col = 0; col < mapCols; col += 1) {
@@ -2266,21 +2276,6 @@
           );
         }
       }
-
-      // Dark green border around the map
-      ctx.save();
-      ctx.strokeStyle = "#c49a88";
-      ctx.lineWidth = 2;
-      drawRoundedRect(
-        ctx,
-        ctx.lineWidth / 2,
-        ctx.lineWidth / 2,
-        canvas.width - ctx.lineWidth,
-        canvas.height - ctx.lineWidth,
-        12
-      );
-      ctx.stroke();
-      ctx.restore();
 
       const whiteboardDraw = getWhiteboardDrawInfo();
       if (whiteboardDraw) {
@@ -2475,6 +2470,23 @@
         ctx.fillText("按 Enter 互動", npcCenterX, npcTopY - 18);
         ctx.restore();
       }
+
+      ctx.restore();
+
+      // Dark green border around the viewport
+      ctx.save();
+      ctx.strokeStyle = "#c49a88";
+      ctx.lineWidth = 2;
+      drawRoundedRect(
+        ctx,
+        ctx.lineWidth / 2,
+        ctx.lineWidth / 2,
+        viewportWidth - ctx.lineWidth,
+        viewportHeight - ctx.lineWidth,
+        12
+      );
+      ctx.stroke();
+      ctx.restore();
 
       if (isDialogueOpen) {
         const boxWidth = canvas.width * 0.78;
