@@ -771,6 +771,15 @@
       unsubscribePrivate = onSnapshot(
         privateQuery,
         (snapshot) => {
+          snapshot.docChanges().forEach((change) => {
+            if (change.type === "added") {
+              const data = change.doc.data();
+              if (data?.fromUid && data.fromUid !== auth.currentUser?.uid && messageReceiveAudio) {
+                messageReceiveAudio.currentTime = 0;
+                messageReceiveAudio.play().catch(() => {});
+              }
+            }
+          });
           privateMessages = [];
           snapshot.forEach((docSnap) => {
             privateMessages.push(docSnap.data());
@@ -804,7 +813,20 @@
       privateMessagesEl.innerHTML = "";
       privateMessages.forEach((message) => {
         const row = document.createElement("div");
-        row.textContent = `${message.fromName || "玩家"}：${message.text || ""}`;
+        row.className = "chat-row";
+
+        const avatar = document.createElement("img");
+        avatar.className = "chat-avatar";
+        avatar.alt = "avatar";
+        if (message.fromPhotoURL) {
+          avatar.src = message.fromPhotoURL;
+        }
+
+        const text = document.createElement("div");
+        text.textContent = `${message.fromName || "玩家"}：${message.text || ""}`;
+
+        row.appendChild(avatar);
+        row.appendChild(text);
         privateMessagesEl.appendChild(row);
       });
       privateMessagesEl.scrollTop = privateMessagesEl.scrollHeight;
@@ -1318,15 +1340,21 @@
         playerNickname ||
         user.displayName ||
         (user.isAnonymous ? "匿名玩家" : "玩家");
+      const photoURL = user.photoURL || "";
       try {
         await addDoc(collection(db, "privateMessages"), {
           conversationId: activePrivateChatId,
           fromUid: user.uid,
           toUid: activePrivatePartner.uid,
           fromName: userName,
+          fromPhotoURL: photoURL,
           text,
           createdAt: serverTimestamp(),
         });
+        if (messageSendAudio) {
+          messageSendAudio.currentTime = 0;
+          messageSendAudio.play().catch(() => {});
+        }
       } catch (error) {
         console.error("私聊送出失敗", error);
       }
@@ -1531,7 +1559,13 @@
       return lines;
     };
 
+    const isTypingInInput = () => {
+      const active = document.activeElement;
+      return active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.isContentEditable);
+    };
+
     const handleKey = (event, isDown) => {
+      if (isTypingInInput()) return;
       if (event.key in keys) {
         keys[event.key] = isDown;
         event.preventDefault();
@@ -1620,6 +1654,8 @@
     window.addEventListener("keydown", (event) => handleKey(event, true));
     window.addEventListener("keyup", (event) => handleKey(event, false));
     window.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && isTypingInInput()) return;
+
       if (isDialogueOpen && dialogueStage === "question") {
         if (event.key === "ArrowLeft") {
           selectedOption =

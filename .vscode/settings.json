@@ -1,10 +1,11 @@
 {
-  "emeraldwalk.runonsave": {
+  "saveAndRun": {
     "commands": [
       {
         "match": ".*",
         "cmd": "cd /Users/liang/Desktop/my-first-rpg && ./push.sh",
-        "autoShowOutputPanel": "always"
+        "useShortcut": false,
+        "silent": false
       }
     ]
   }
