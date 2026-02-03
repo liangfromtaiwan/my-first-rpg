@@ -432,6 +432,11 @@
     </div>
   </div>
   <audio id="message-send-audio" src="message-send.mp3" preload="auto"></audio>
+  <audio
+    id="message-receive-audio"
+    src="bright-notification.mp3"
+    preload="auto"
+  ></audio>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
@@ -496,6 +501,9 @@
     const privateInput = document.querySelector("#private-input");
     const privateSend = document.querySelector("#private-send");
     const messageSendAudio = document.querySelector("#message-send-audio");
+    const messageReceiveAudio = document.querySelector(
+      "#message-receive-audio"
+    );
     const nicknameStorageKey = "playerNickname";
     let playerNickname = localStorage.getItem(nicknameStorageKey) || "";
     nicknameInput.value = playerNickname;
@@ -629,6 +637,7 @@
         unsubscribeChat();
       }
       clearChatMessages();
+      let chatInitialized = false;
 
       // 即時監聽村莊訊息，依時間排序
       const messagesRef = collection(db, "messages");
@@ -638,6 +647,21 @@
       unsubscribeChat = onSnapshot(
         messagesQuery,
         (snapshot) => {
+          if (!chatInitialized) {
+            chatInitialized = true;
+          } else if (messageReceiveAudio) {
+            snapshot.docChanges().forEach((change) => {
+              if (change.type !== "added") {
+                return;
+              }
+              const data = change.doc.data();
+              if (data?.uid && data.uid === auth.currentUser?.uid) {
+                return;
+              }
+              messageReceiveAudio.currentTime = 0;
+              messageReceiveAudio.play().catch(() => {});
+            });
+          }
           clearChatMessages();
           if (snapshot.empty) {
             showChatStatus("目前還沒有訊息");
@@ -1145,6 +1169,7 @@
         // 將新訊息寫入 Firestore
         await addDoc(collection(db, "messages"), {
           villageId,
+          uid: user.uid,
           userName,
           photoURL,
           text,
