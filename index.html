@@ -2338,36 +2338,7 @@
 
       // 私聊訊息改顯示在右側面板，避免與名字重疊
 
-      if (currentMap.crowd.length) {
-        const playerCenter = getPlayerCenter();
-        const hintRadius = tileSize * 1.1;
-
-        currentMap.crowd.forEach((member) => {
-          const memberCenter = {
-            x: member.tileX * tileSize + tileSize / 2,
-            y: member.tileY * tileSize + tileSize / 2,
-          };
-          const distance = Math.hypot(
-            playerCenter.x - memberCenter.x,
-            playerCenter.y - memberCenter.y
-          );
-          if (distance > hintRadius) {
-            return;
-          }
-
-          ctx.save();
-          ctx.fillStyle = "#000000";
-          ctx.font = "18px Arial, Helvetica, sans-serif";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "bottom";
-          ctx.fillText(
-            "👋 揮手",
-            memberCenter.x,
-            memberCenter.y - tileSize * 0.6
-          );
-          ctx.restore();
-        });
-      }
+      // Tree NPCs no longer show greeting hints.
 
       if (activePrivatePartner && canAcceptCall()) {
         setCallStartVisibility(true);
