@@ -533,7 +533,7 @@
           user.isAnonymous && "匿名玩家" ||
           "玩家";
         authStatus.textContent = `你好，${name}`;
-        googleLoginButton.disabled = true;
+        googleLoginButton.disabled = false;
         googleLoginButton.textContent = "使用其他帳號";
       } else {
         authStatus.textContent = "尚未登入";
