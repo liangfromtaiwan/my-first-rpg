@@ -1294,7 +1294,6 @@
 
     const treeSprite = document.createElement("canvas");
     const treeSpriteCtx = treeSprite.getContext("2d");
-    const treeBackgroundColor = "#b7d3c2";
     let treeSpriteReady = false;
 
     const player = {
@@ -1343,16 +1342,6 @@
 
     const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
-    const hexToRgb = (hex) => {
-      const normalized = hex.replace("#", "");
-      const value = parseInt(normalized, 16);
-      return {
-        r: (value >> 16) & 255,
-        g: (value >> 8) & 255,
-        b: value & 255,
-      };
-    };
-
     const prepareTreeSprite = () => {
       if (!treeImage.complete) {
         return;
@@ -1370,7 +1359,6 @@
       );
       const data = imageData.data;
       const bg = [data[0], data[1], data[2], data[3]];
-      const target = hexToRgb(treeBackgroundColor);
 
       for (let i = 0; i < data.length; i += 4) {
         if (
@@ -1379,10 +1367,7 @@
           data[i + 2] === bg[2] &&
           data[i + 3] === bg[3]
         ) {
-          data[i] = target.r;
-          data[i + 1] = target.g;
-          data[i + 2] = target.b;
-          data[i + 3] = 255;
+          data[i + 3] = 0;
         }
       }
 
