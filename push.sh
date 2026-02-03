@@ -5,6 +5,12 @@
 
 cd "$(dirname "$0")"
 
+# 若無變更則直接結束
+if [[ -z $(git status -s) ]]; then
+  echo "沒有變更，跳過 push"
+  exit 0
+fi
+
 # 提交訊息：有帶參數就用參數，否則用時間
 MESSAGE="${1:-更新於 $(date '+%Y-%m-%d %H:%M')}"
 
