@@ -1603,6 +1603,63 @@
       return currentMap.tiles[tileY][tileX] === 1;
     };
 
+    const drawRoundedRect = (ctx, x, y, width, height, radius) => {
+      const r = Math.min(radius, width / 2, height / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + width, y, x + width, y + height, r);
+      ctx.arcTo(x + width, y + height, x, y + height, r);
+      ctx.arcTo(x, y + height, x, y, r);
+      ctx.arcTo(x, y, x + width, y, r);
+      ctx.closePath();
+    };
+
+    const drawNameBubble = (ctx, centerX, topY, label) => {
+      const fontSize = 14;
+      const paddingX = 10;
+      const paddingY = 6;
+      const dotRadius = 5;
+      const dotGap = 6;
+      const text = label || "";
+
+      ctx.save();
+      ctx.font = `${fontSize}px Arial, Helvetica, sans-serif`;
+      const textWidth = ctx.measureText(text).width;
+      const bubbleHeight = fontSize + paddingY * 2;
+      const bubbleWidth =
+        textWidth + paddingX * 2 + dotRadius * 2 + dotGap;
+      const bubbleX = centerX - bubbleWidth / 2;
+      const bubbleY = topY - bubbleHeight - 10;
+
+      ctx.fillStyle = "#6a4bdc";
+      drawRoundedRect(ctx, bubbleX, bubbleY, bubbleWidth, bubbleHeight, 10);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(centerX - 6, bubbleY + bubbleHeight);
+      ctx.lineTo(centerX, bubbleY + bubbleHeight + 8);
+      ctx.lineTo(centerX + 6, bubbleY + bubbleHeight);
+      ctx.closePath();
+      ctx.fill();
+
+      const dotX = bubbleX + paddingX + dotRadius;
+      const dotY = bubbleY + bubbleHeight / 2;
+      ctx.fillStyle = "#2ecc71";
+      ctx.beginPath();
+      ctx.arc(dotX, dotY, dotRadius, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText(
+        text,
+        dotX + dotRadius + dotGap,
+        bubbleY + bubbleHeight / 2
+      );
+      ctx.restore();
+    };
+
     const rectsOverlap = (a, b) =>
       a.x < b.x + b.size &&
       a.x + a.size > b.x &&
@@ -2065,17 +2122,12 @@
             playerData.displayName ||
             "玩家";
           if (otherName) {
-            ctx.save();
-            ctx.fillStyle = "#000000";
-            ctx.font = "14px Arial, Helvetica, sans-serif";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "bottom";
-            ctx.fillText(
-              otherName,
+            drawNameBubble(
+              ctx,
               renderPos.x + player.size / 2,
-              renderPos.y - 6
+              renderPos.y - 6,
+              otherName
             );
-            ctx.restore();
           }
         });
       }
@@ -2147,15 +2199,12 @@
       const playerLabel =
         playerNickname || auth.currentUser?.displayName || "";
       if (playerLabel) {
-        const playerCenterX = player.x + player.size / 2;
-        const playerTopY = player.y - 6;
-        ctx.save();
-        ctx.fillStyle = "#000000";
-        ctx.font = "14px Arial, Helvetica, sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "bottom";
-        ctx.fillText(playerLabel, playerCenterX, playerTopY);
-        ctx.restore();
+        drawNameBubble(
+          ctx,
+          player.x + player.size / 2,
+          player.y - 6,
+          playerLabel
+        );
       }
 
       if (!isDialogueOpen && npc.active && isPlayerNearNpc()) {
