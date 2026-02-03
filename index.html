@@ -125,6 +125,13 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      cursor: pointer;
+      padding: 2px 0;
+      border-radius: 4px;
+    }
+
+    .online-row:hover {
+      background: rgba(0, 0, 0, 0.05);
     }
 
     .online-dot {
@@ -522,6 +529,7 @@
       addDoc,
       collection,
       doc,
+      getDoc,
       getFirestore,
       onSnapshot,
       orderBy,
@@ -1174,7 +1182,8 @@
         onlineList.appendChild(empty);
         return;
       }
-      onlineUsers.forEach((userData) => {
+      onlineUsers.forEach((userData, uid) => {
+        if (uid === auth.currentUser?.uid) return;
         const lastActiveMs = userData.lastActiveAt?.toMillis
           ? userData.lastActiveAt.toMillis()
           : 0;
@@ -1187,6 +1196,29 @@
         name.textContent = userData.displayName || "玩家";
         row.appendChild(dot);
         row.appendChild(name);
+        row.addEventListener("click", async () => {
+          try {
+            const playerSnap = await getDoc(doc(db, "players", uid));
+            const data = playerSnap.data();
+            if (!data || !data.mapName) return;
+            const targetX = typeof data.x === "number" ? data.x : 0;
+            const targetY = typeof data.y === "number" ? data.y : 0;
+            if (data.mapName !== currentMapName) {
+              const tileX = Math.floor(targetX / tileSize);
+              const tileY = Math.floor(targetY / tileSize);
+              setMap(data.mapName, { x: tileX, y: tileY });
+            } else {
+              moveTarget.x = targetX;
+              moveTarget.y = targetY;
+            }
+            if (activeChatTab !== "private") {
+              activeChatTab = "map";
+              updateChatTabs();
+            }
+          } catch (err) {
+            console.error("無法取得玩家位置", err);
+          }
+        });
         onlineList.appendChild(row);
       });
     };
