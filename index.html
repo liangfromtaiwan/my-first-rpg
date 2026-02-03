@@ -334,6 +334,19 @@
       color: #333;
     }
 
+    .call-start {
+      position: fixed;
+      z-index: 25;
+      padding: 6px 10px;
+      font-size: 14px;
+      border: 2px solid #333;
+      background: #ffffff;
+      border-radius: 8px;
+      cursor: pointer;
+      display: none;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+    }
+
     .video-room-url {
       font-size: 12px;
       color: #333;
@@ -377,6 +390,7 @@
         </div>
         <canvas id="game" width="400" height="300" aria-label="遊戲畫面"></canvas>
         <div class="hint">方向鍵移動，面向 NPC 按 Enter 對話</div>
+        <button class="call-start" id="call-start" type="button">開始通話</button>
       </div>
       <div class="chat-panel" id="chat-panel" aria-live="polite">
         <div class="chat-tabs">
@@ -474,6 +488,7 @@
     const videoPlaceholder = document.querySelector("#video-placeholder");
     const videoRoomUrl = document.querySelector("#video-room-url");
     const dailyFrame = document.querySelector("#daily-frame");
+    const callStart = document.querySelector("#call-start");
     const privateChat = document.querySelector("#private-chat");
     const privateMessagesEl = document.querySelector("#private-messages");
     const privateEmpty = document.querySelector("#private-empty");
@@ -780,6 +795,8 @@
           } else {
             hideVideoRoom();
           }
+          setCallStartVisibility(Boolean(activePrivatePartner && canAcceptCall()));
+          positionCallStart();
         },
         (error) => {
           console.error("通話狀態讀取失敗", error);
@@ -795,6 +812,7 @@
       activeCallId = null;
       activeCallData = null;
       hideVideoRoom();
+      setCallStartVisibility(false);
     };
 
     const canAcceptCall = () => {
@@ -825,6 +843,35 @@
         console.error("接受通話失敗", error);
       }
     };
+
+    const setCallStartVisibility = (visible) => {
+      if (!callStart) {
+        return;
+      }
+      callStart.style.display = visible ? "inline-flex" : "none";
+    };
+
+    const positionCallStart = () => {
+      if (!callStart || !activePrivatePartner) {
+        return;
+      }
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = rect.width / canvas.width;
+      const scaleY = rect.height / canvas.height;
+      const x =
+        rect.left + (player.x + player.size / 2) * scaleX;
+      const y = rect.top + (player.y + player.size + 6) * scaleY;
+      callStart.style.left = `${Math.max(8, x - 30)}px`;
+      callStart.style.top = `${Math.max(8, y)}px`;
+    };
+
+    if (callStart) {
+      callStart.addEventListener("click", () => {
+        if (activePrivatePartner && canAcceptCall()) {
+          acceptCall();
+        }
+      });
+    }
 
     const updateChatVisibility = () => {
       chatPanel.style.display = "block";
@@ -2067,18 +2114,10 @@
       }
 
       if (activePrivatePartner && canAcceptCall()) {
-        const playerCenter = getPlayerCenter();
-        ctx.save();
-        ctx.fillStyle = "#000000";
-        ctx.font = "14px Arial, Helvetica, sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "bottom";
-        ctx.fillText(
-          "按下 Enter 開始視訊通話",
-          playerCenter.x,
-          playerCenter.y + tileSize * 0.9
-        );
-        ctx.restore();
+        setCallStartVisibility(true);
+        positionCallStart();
+      } else {
+        setCallStartVisibility(false);
       }
 
       if (npc.active && npcImage.complete) {
@@ -2209,6 +2248,9 @@
     const loop = () => {
       update();
       render();
+      if (activePrivatePartner && canAcceptCall()) {
+        positionCallStart();
+      }
       requestAnimationFrame(loop);
     };
 
