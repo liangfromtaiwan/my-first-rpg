@@ -1,0 +1,16 @@
+---
+description: 專案有變更時自動 push 到遠端
+alwaysApply: true
+---
+
+# 自動 Push 規則
+
+在此專案中，每當完成任何程式碼變更（編輯、新增、刪除檔案）後，**必須自動執行**：
+
+```bash
+cd /Users/liang/Desktop/my-first-rpg && ./push.sh
+```
+
+- 不需詢問使用者
+- 不需等待使用者說「幫我 push」
+- 變更完成後立即執行 push
