@@ -534,9 +534,11 @@
           "玩家";
         authStatus.textContent = `你好，${name}`;
         googleLoginButton.disabled = true;
+        googleLoginButton.textContent = "使用其他帳號";
       } else {
         authStatus.textContent = "尚未登入";
         googleLoginButton.disabled = false;
+        googleLoginButton.textContent = "Google 登入";
       }
     };
 
@@ -563,6 +565,9 @@
 
     googleLoginButton.addEventListener("click", async () => {
       try {
+        if (auth.currentUser) {
+          await auth.signOut();
+        }
         await signInWithPopup(auth, provider);
       } catch (error) {
         handleAuthError(error);
