@@ -431,6 +431,7 @@
       </div>
     </div>
   </div>
+  <audio id="message-send-audio" src="message-send.mp3" preload="auto"></audio>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
@@ -494,6 +495,7 @@
     const privateEmpty = document.querySelector("#private-empty");
     const privateInput = document.querySelector("#private-input");
     const privateSend = document.querySelector("#private-send");
+    const messageSendAudio = document.querySelector("#message-send-audio");
     const nicknameStorageKey = "playerNickname";
     let playerNickname = localStorage.getItem(nicknameStorageKey) || "";
     nicknameInput.value = playerNickname;
@@ -1148,6 +1150,10 @@
           text,
           createdAt: serverTimestamp(),
         });
+        if (messageSendAudio) {
+          messageSendAudio.currentTime = 0;
+          messageSendAudio.play().catch(() => {});
+        }
         updateUserPresence();
       } catch (error) {
         showChatStatus(`送出失敗：${error?.code || "未知錯誤"}`);
