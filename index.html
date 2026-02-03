@@ -353,6 +353,61 @@
       box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
     }
 
+    .board-action {
+      position: fixed;
+      z-index: 25;
+      padding: 6px 10px;
+      font-size: 14px;
+      border: 2px solid var(--palette-mauve);
+      background: var(--palette-white);
+      border-radius: 8px;
+      cursor: pointer;
+      display: none;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+    }
+
+    .notice-overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.35);
+      z-index: 30;
+    }
+
+    .notice-card {
+      width: min(720px, 92vw);
+      background: var(--palette-white);
+      border: 1px solid var(--palette-mauve);
+      border-radius: 12px;
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .notice-title {
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    .notice-body {
+      font-size: 16px;
+      line-height: 1.5;
+      white-space: pre-line;
+    }
+
+    .notice-close {
+      justify-self: end;
+      font-size: 14px;
+      padding: 6px 10px;
+      border: 1px solid var(--palette-mauve);
+      background: var(--palette-white);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
     .video-room-url {
       font-size: 12px;
       color: #333;
@@ -392,6 +447,9 @@
         <canvas id="game" width="400" height="300" aria-label="遊戲畫面"></canvas>
         <div class="hint">方向鍵移動，面向 NPC 按 Enter 對話</div>
         <button class="call-start" id="call-start" type="button">開始通話 ↲</button>
+        <button class="board-action" id="board-action" type="button">
+          查看公布欄 ↲
+        </button>
       </div>
       <div class="chat-panel" id="chat-panel" aria-live="polite">
         <div class="chat-tabs">
@@ -430,6 +488,17 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+  <div class="notice-overlay" id="notice-overlay" aria-live="polite">
+    <div class="notice-card">
+      <div class="notice-title">最新消息</div>
+      <div class="notice-body" id="notice-body">
+        歡迎來到村莊！\n今天晚上 8 點有小聚，歡迎一起來～
+      </div>
+      <button class="notice-close" id="notice-close" type="button">
+        關閉 ↲
+      </button>
     </div>
   </div>
   <audio id="message-send-audio" src="message-send.mp3" preload="auto"></audio>
@@ -492,6 +561,10 @@
     const videoRoomUrl = document.querySelector("#video-room-url");
     const dailyFrame = document.querySelector("#daily-frame");
     const callStart = document.querySelector("#call-start");
+    const boardAction = document.querySelector("#board-action");
+    const noticeOverlay = document.querySelector("#notice-overlay");
+    const noticeClose = document.querySelector("#notice-close");
+    const noticeBody = document.querySelector("#notice-body");
     const privateChat = document.querySelector("#private-chat");
     const privateMessagesEl = document.querySelector("#private-messages");
     const privateEmpty = document.querySelector("#private-empty");
@@ -517,6 +590,7 @@
     let unsubscribeCall = null;
     let activeCallId = null;
     let activeCallData = null;
+    let isNoticeOpen = false;
     let unsubscribeUsers = null;
     const onlineUsers = new Map();
     let onlineRefreshTimer = null;
@@ -852,6 +926,58 @@
         console.error("接受通話失敗", error);
       }
     };
+
+    const setBoardActionVisibility = (visible) => {
+      if (!boardAction) {
+        return;
+      }
+      boardAction.style.display = visible ? "inline-flex" : "none";
+    };
+
+    const positionBoardAction = () => {
+      if (!boardAction) {
+        return;
+      }
+      const info = getWhiteboardDrawInfo();
+      if (!info) {
+        return;
+      }
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = rect.width / canvas.width;
+      const scaleY = rect.height / canvas.height;
+      const x = rect.left + (info.x + info.size / 2) * scaleX;
+      const y = rect.top + info.y * scaleY - 10;
+      boardAction.style.left = `${Math.max(8, x - 60)}px`;
+      boardAction.style.top = `${Math.max(8, y - 24)}px`;
+    };
+
+    const openNotice = () => {
+      if (!noticeOverlay) {
+        return;
+      }
+      isNoticeOpen = true;
+      noticeOverlay.style.display = "flex";
+    };
+
+    const closeNotice = () => {
+      if (!noticeOverlay) {
+        return;
+      }
+      isNoticeOpen = false;
+      noticeOverlay.style.display = "none";
+    };
+
+    if (boardAction) {
+      boardAction.addEventListener("click", () => {
+        openNotice();
+      });
+    }
+
+    if (noticeClose) {
+      noticeClose.addEventListener("click", () => {
+        closeNotice();
+      });
+    }
 
     const setCallStartVisibility = (visible) => {
       if (!callStart) {
@@ -1297,6 +1423,9 @@
     const castleImage = new Image();
     castleImage.src = "castle.png";
 
+    const whiteboardImage = new Image();
+    whiteboardImage.src = "whirteboard.png";
+
     const treeSprite = document.createElement("canvas");
     const treeSpriteCtx = treeSprite.getContext("2d");
     let treeSpriteReady = false;
@@ -1522,6 +1651,18 @@
           return;
         }
 
+        if (isNoticeOpen) {
+          closeNotice();
+          event.preventDefault();
+          return;
+        }
+
+        if (isPlayerNearWhiteboard()) {
+          openNotice();
+          event.preventDefault();
+          return;
+        }
+
         if (activePrivatePartner && canAcceptCall()) {
           acceptCall();
           event.preventDefault();
@@ -1735,6 +1876,43 @@
       };
     };
 
+    const whiteboardInfo = {
+      mapName: "villageMap",
+      tileX: 3,
+      tileY: 2,
+    };
+
+    const getWhiteboardDrawInfo = () => {
+      if (currentMapName !== whiteboardInfo.mapName) {
+        return null;
+      }
+      if (!whiteboardImage.complete) {
+        return null;
+      }
+      const size = tileSize * 1.2;
+      const x = whiteboardInfo.tileX * tileSize - tileSize * 0.1;
+      const y = whiteboardInfo.tileY * tileSize - tileSize * 0.1;
+      return { x, y, size };
+    };
+
+    const isPlayerNearWhiteboard = () => {
+      const info = getWhiteboardDrawInfo();
+      if (!info) {
+        return false;
+      }
+      const playerCenter = getPlayerCenter();
+      const boardCenter = {
+        x: info.x + info.size / 2,
+        y: info.y + info.size / 2,
+      };
+      return (
+        Math.hypot(
+          playerCenter.x - boardCenter.x,
+          playerCenter.y - boardCenter.y
+        ) < tileSize * 1.2
+      );
+    };
+
     generateCrowdForMap(currentMapName);
     updateChatVisibility();
     startPlayersListener();
@@ -1878,7 +2056,7 @@
     };
 
     const update = () => {
-      if (isDialogueOpen) {
+      if (isDialogueOpen || isNoticeOpen) {
         return;
       }
 
@@ -2032,6 +2210,30 @@
       ctx.stroke();
       ctx.restore();
 
+      const whiteboardDraw = getWhiteboardDrawInfo();
+      if (whiteboardDraw) {
+        ctx.drawImage(
+          whiteboardImage,
+          whiteboardDraw.x,
+          whiteboardDraw.y,
+          whiteboardDraw.size,
+          whiteboardDraw.size
+        );
+        if (isPlayerNearWhiteboard() && !isNoticeOpen) {
+          ctx.save();
+          ctx.fillStyle = "#000000";
+          ctx.font = "14px Arial, Helvetica, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "bottom";
+          ctx.fillText(
+            "查看公布欄↲",
+            whiteboardDraw.x + whiteboardDraw.size / 2,
+            whiteboardDraw.y - 4
+          );
+          ctx.restore();
+        }
+      }
+
       const castleInfo = getCastleDrawInfo();
       if (castleInfo) {
         ctx.drawImage(
@@ -2174,6 +2376,13 @@
         setCallStartVisibility(false);
       }
 
+      if (isPlayerNearWhiteboard() && !isNoticeOpen) {
+        setBoardActionVisibility(true);
+        positionBoardAction();
+      } else {
+        setBoardActionVisibility(false);
+      }
+
       if (npc.active && npcImage.complete) {
         ctx.drawImage(npcImage, npcPixel.x, npcPixel.y, npc.size, npc.size);
       }
@@ -2302,6 +2511,9 @@
       render();
       if (activePrivatePartner && canAcceptCall()) {
         positionCallStart();
+      }
+      if (isPlayerNearWhiteboard() && !isNoticeOpen) {
+        positionBoardAction();
       }
       requestAnimationFrame(loop);
     };
