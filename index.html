@@ -1435,6 +1435,7 @@
         spawn: { x: 42, y: 24 },
         npc: { tileX: 12, tileY: 12 },
         crowd: [],
+        decorations: [],
       },
       villageMap: {
         tiles: villageMap,
@@ -1448,6 +1449,7 @@
         spawn: { x: 5, y: 5 },
         npc: { tileX: 20, tileY: 14 },
         crowd: [],
+        decorations: [],
       },
     };
 
@@ -1478,6 +1480,18 @@
 
     const whiteboardImage = new Image();
     whiteboardImage.src = "image/whirteboard.png";
+
+    const decorationImages = [
+      { img: new Image(), src: "image/bigTree.png" },
+      { img: new Image(), src: "image/bush_01.png" },
+      { img: new Image(), src: "image/bush_02.png" },
+      { img: new Image(), src: "image/chikenLeft.png" },
+      { img: new Image(), src: "image/cowLeft.png" },
+      { img: new Image(), src: "image/house_01.png" },
+      { img: new Image(), src: "image/house_02.png" },
+      { img: new Image(), src: "image/pigRight.png" },
+    ];
+    decorationImages.forEach((d) => { d.img.src = d.src; });
 
     const treeSprite = document.createElement("canvas");
     const treeSpriteCtx = treeSprite.getContext("2d");
@@ -1680,6 +1694,72 @@
       }
     };
 
+    const generateDecorationsForMap = (mapName) => {
+      const mapData = maps[mapName];
+      if (!mapData || !mapData.decorations || mapData.decorations.length) {
+        return;
+      }
+      mapData.decorations.length = 0;
+      const usedTiles = new Set();
+      const blockedTiles = new Set();
+
+      if (mapData.npc) {
+        blockedTiles.add(`${mapData.npc.tileX},${mapData.npc.tileY}`);
+      }
+      if (mapData.entrance) {
+        blockedTiles.add(`${mapData.entrance.x},${mapData.entrance.y}`);
+      }
+      if (mapData.exit) {
+        blockedTiles.add(`${mapData.exit.x},${mapData.exit.y}`);
+      }
+      if (mapData.exitArea && mapData.exitArea.length) {
+        mapData.exitArea.forEach((tile) => {
+          blockedTiles.add(`${tile.x},${tile.y}`);
+        });
+      }
+      if (mapData.spawn) {
+        blockedTiles.add(`${mapData.spawn.x},${mapData.spawn.y}`);
+      }
+      mapData.crowd.forEach((m) => {
+        usedTiles.add(`${m.tileX},${m.tileY}`);
+      });
+
+      const decoCount = getRandomInt(20, 35);
+      let attempts = 0;
+
+      while (mapData.decorations.length < decoCount && attempts < 400) {
+        attempts += 1;
+        const tileX = getRandomInt(1, mapCols - 2);
+        const tileY = getRandomInt(1, mapRows - 2);
+        const key = `${tileX},${tileY}`;
+
+        if (blockedTiles.has(key) || usedTiles.has(key)) continue;
+        if (mapData.tiles[tileY][tileX] === 1) continue;
+
+        if (mapName === "worldMap") {
+          const castleRect = getCastleRect();
+          if (castleRect) {
+            const pad = tileSize;
+            const castleWithPadding = {
+              x: castleRect.x - pad,
+              y: castleRect.y - pad,
+              size: castleRect.size + pad * 2,
+            };
+            const tileRect = {
+              x: tileX * tileSize,
+              y: tileY * tileSize,
+              size: tileSize,
+            };
+            if (rectsOverlap(tileRect, castleWithPadding)) continue;
+          }
+        }
+
+        usedTiles.add(key);
+        const imgIndex = getRandomInt(0, decorationImages.length - 1);
+        mapData.decorations.push({ tileX, tileY, imgIndex });
+      }
+    };
+
     const drawMinimap = () => {
       const miniW = 140;
       const miniH = 120;
@@ -1873,6 +1953,7 @@
         );
       }
       generateCrowdForMap(mapName);
+      generateDecorationsForMap(mapName);
       isDialogueOpen = false;
       dialogueStage = "question";
       selectedOption = 0;
@@ -2408,6 +2489,17 @@
           const y = member.tileY * tileSize;
           if (treeSpriteReady) {
             ctx.drawImage(treeSprite, x, y, tileSize, tileSize);
+          }
+        });
+      }
+
+      if (currentMap.decorations && currentMap.decorations.length) {
+        currentMap.decorations.forEach((d) => {
+          const deco = decorationImages[d.imgIndex];
+          if (deco && deco.img.complete) {
+            const x = d.tileX * tileSize;
+            const y = d.tileY * tileSize;
+            ctx.drawImage(deco.img, x, y, tileSize, tileSize);
           }
         });
       }
