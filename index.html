@@ -1927,6 +1927,11 @@
       if (mapData.spawn) {
         blockedTiles.add(`${mapData.spawn.x},${mapData.spawn.y}`);
       }
+      if (mapName === "villageMap") {
+        for (let dy = -1; dy <= 1; dy++)
+          for (let dx = -1; dx <= 1; dx++)
+            blockedTiles.add(`${4 + dx},${2 + dy}`);
+      }
 
       const colors = ["#3498db", "#9b59b6", "#e67e22", "#1abc9c", "#f1c40f"];
       let attempts = 0;
@@ -2005,6 +2010,11 @@
       }
       if (mapData.spawn) {
         blockedTiles.add(`${mapData.spawn.x},${mapData.spawn.y}`);
+      }
+      if (mapName === "villageMap") {
+        for (let dy = -1; dy <= 1; dy++)
+          for (let dx = -1; dx <= 1; dx++)
+            blockedTiles.add(`${4 + dx},${2 + dy}`);
       }
       mapData.crowd.forEach((m) => {
         for (let dy = -1; dy <= 1; dy++) {
@@ -2124,6 +2134,11 @@
       if (mapData.exit) usedTiles.add(`${mapData.exit.x},${mapData.exit.y}`);
       if (mapData.exitArea) mapData.exitArea.forEach((t) => usedTiles.add(`${t.x},${t.y}`));
       if (mapData.spawn) usedTiles.add(`${mapData.spawn.x},${mapData.spawn.y}`);
+      if (mapName === "villageMap") {
+        for (let dy = -1; dy <= 1; dy++)
+          for (let dx = -1; dx <= 1; dx++)
+            usedTiles.add(`${4 + dx},${2 + dy}`);
+      }
       mapData.crowd.forEach((m) => {
         for (let dy = -1; dy <= 1; dy++)
           for (let dx = -1; dx <= 1; dx++)
@@ -2192,6 +2207,7 @@
           for (let tx = left; tx <= right; tx++) {
             if (tx < 0 || tx >= mapCols || ty < 0 || ty >= mapRows) canMove = false;
             else if (currentMap.tiles[ty][tx] === 1) canMove = false;
+            else if (currentMapName === "villageMap" && tx >= 3 && tx <= 5 && ty >= 1 && ty <= 3) canMove = false;
           }
         }
         if (canMove) {
@@ -2215,6 +2231,11 @@
       if (mapData.exit) usedTiles.add(`${mapData.exit.x},${mapData.exit.y}`);
       if (mapData.exitArea) mapData.exitArea.forEach((t) => usedTiles.add(`${t.x},${t.y}`));
       if (mapData.spawn) usedTiles.add(`${mapData.spawn.x},${mapData.spawn.y}`);
+      if (mapName === "villageMap") {
+        for (let dy = -1; dy <= 1; dy++)
+          for (let dx = -1; dx <= 1; dx++)
+            usedTiles.add(`${4 + dx},${2 + dy}`);
+      }
       mapData.crowd.forEach((m) => {
         for (let dy = -1; dy <= 1; dy++)
           for (let dx = -1; dx <= 1; dx++)
@@ -2288,6 +2309,7 @@
           for (let tx = left; tx <= right; tx++) {
             if (tx < 0 || tx >= mapCols || ty < 0 || ty >= mapRows) canMove = false;
             else if (currentMap.tiles[ty][tx] === 1) canMove = false;
+            else if (currentMapName === "villageMap" && tx >= 3 && tx <= 5 && ty >= 1 && ty <= 3) canMove = false;
           }
         }
         if (canMove) {
@@ -2653,9 +2675,9 @@
       if (!whiteboardImage.complete) {
         return null;
       }
-      const size = tileSize * 1.2;
-      const x = whiteboardInfo.tileX * tileSize - tileSize * 0.1;
-      const y = whiteboardInfo.tileY * tileSize - tileSize * 0.1;
+      const size = tileSize * 1.7;
+      const x = whiteboardInfo.tileX * tileSize - (size - tileSize) / 2;
+      const y = whiteboardInfo.tileY * tileSize - (size - tileSize) / 2;
       return { x, y, size };
     };
 
@@ -2673,7 +2695,7 @@
         Math.hypot(
           playerCenter.x - boardCenter.x,
           playerCenter.y - boardCenter.y
-        ) < tileSize * 1.2
+        ) < tileSize * 1.5
       );
     };
 
