@@ -1712,7 +1712,7 @@
       if (castleRect) {
         const cx = offX + (castleRect.x + castleRect.size / 2) * scale;
         const cy = offY + (castleRect.y + castleRect.size / 2) * scale;
-        const s = Math.max(5, castleRect.size * scale * 0.2);
+        const s = Math.max(10, castleRect.size * scale * 0.4);
         ctx.fillStyle = "#8b7355";
         ctx.fillRect(cx - s / 2, cy - s * 0.6, s, s * 0.8);
         ctx.fillStyle = "#a0522d";
