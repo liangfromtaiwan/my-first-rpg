@@ -1688,6 +1688,7 @@
         npc: { tileX: 12, tileY: 12 },
         crowd: [],
         decorations: [],
+        pigs: [],
       },
       villageMap: {
         tiles: villageMap,
@@ -1702,6 +1703,7 @@
         npc: { tileX: 20, tileY: 14 },
         crowd: [],
         decorations: [],
+        pigs: [],
       },
     };
 
@@ -1732,6 +1734,17 @@
 
     const whiteboardImage = new Image();
     whiteboardImage.src = "image/whirteboard.png";
+
+    const pigImages = {
+      up: new Image(),
+      down: new Image(),
+      left: new Image(),
+      right: new Image(),
+    };
+    pigImages.up.src = "image/pigBack.png";
+    pigImages.down.src = "image/pigFront.png";
+    pigImages.left.src = "image/pigLeft.png";
+    pigImages.right.src = "image/pigRight.png";
 
     const decorationImages = [
       { img: new Image(), src: "image/bigTree.png" },
@@ -2071,6 +2084,113 @@
       }
     };
 
+    const drawImageProportional = (ctx, img, x, y, maxW, maxH) => {
+      if (!img) return;
+      const w = img.naturalWidth ?? img.width;
+      const h = img.naturalHeight ?? img.height;
+      if (!w || !h) return;
+      if (img.complete === false && img.tagName === "IMG") return;
+      const r = w / h;
+      let drawW = maxW, drawH = maxH;
+      if (r > maxW / maxH) {
+        drawH = maxW / r;
+      } else {
+        drawW = maxH * r;
+      }
+      ctx.drawImage(img, x + (maxW - drawW) / 2, y + (maxH - drawH) / 2, drawW, drawH);
+    };
+
+    const generatePigsForMap = (mapName) => {
+      const mapData = maps[mapName];
+      if (!mapData || !mapData.pigs) return;
+      mapData.pigs.length = 0;
+      const pigCount = getRandomInt(2, 4);
+      const usedTiles = new Set();
+      if (mapData.npc) usedTiles.add(`${mapData.npc.tileX},${mapData.npc.tileY}`);
+      if (mapData.entrance) usedTiles.add(`${mapData.entrance.x},${mapData.entrance.y}`);
+      if (mapData.exit) usedTiles.add(`${mapData.exit.x},${mapData.exit.y}`);
+      if (mapData.exitArea) mapData.exitArea.forEach((t) => usedTiles.add(`${t.x},${t.y}`));
+      if (mapData.spawn) usedTiles.add(`${mapData.spawn.x},${mapData.spawn.y}`);
+      mapData.crowd.forEach((m) => {
+        for (let dy = -1; dy <= 1; dy++)
+          for (let dx = -1; dx <= 1; dx++)
+            usedTiles.add(`${m.tileX + dx},${m.tileY + dy}`);
+      });
+      mapData.decorations.forEach((d) => {
+        const isHouse = d.imgIndex === 5 || d.imgIndex === 6;
+        if (isHouse) {
+          for (let dy = -1; dy <= 1; dy++)
+            for (let dx = -1; dx <= 1; dx++)
+              usedTiles.add(`${d.tileX + dx},${d.tileY + dy}`);
+        } else {
+          for (let dy = 0; dy <= 1; dy++)
+            for (let dx = 0; dx <= 1; dx++)
+              usedTiles.add(`${d.tileX + dx},${d.tileY + dy}`);
+        }
+      });
+      let attempts = 0;
+      while (mapData.pigs.length < pigCount && attempts < 100) {
+        attempts++;
+        const tileX = getRandomInt(2, mapCols - 3);
+        const tileY = getRandomInt(2, mapRows - 3);
+        const key = `${tileX},${tileY}`;
+        if (usedTiles.has(key) || mapData.tiles[tileY][tileX] === 1) continue;
+        if (mapName === "worldMap" && getCastleRect()) {
+          const castleRect = getCastleRect();
+          const pad = tileSize;
+          const tileRect = { x: tileX * tileSize, y: tileY * tileSize, size: tileSize };
+          if (rectsOverlap(tileRect, {
+            x: castleRect.x - pad,
+            y: castleRect.y - pad,
+            size: castleRect.size + pad * 2,
+          })) continue;
+        }
+        usedTiles.add(key);
+        mapData.pigs.push({
+          x: tileX * tileSize + (tileSize - tileSize * 0.8) / 2,
+          y: tileY * tileSize + (tileSize - tileSize * 0.8) / 2,
+          dir: getRandomInt(0, 3),
+          nextDirChange: getRandomInt(60, 120),
+          speed: 0.8,
+          size: tileSize * 0.8,
+        });
+      }
+    };
+
+    const updatePigs = () => {
+      if (!currentMap.pigs || currentMap.pigs.length === 0) return;
+      const dirs = [{ dx: 0, dy: -1 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }, { dx: 1, dy: 0 }];
+      const dirKeys = ["up", "down", "left", "right"];
+      currentMap.pigs.forEach((pig) => {
+        pig.nextDirChange--;
+        if (pig.nextDirChange <= 0) {
+          pig.dir = getRandomInt(0, 3);
+          pig.nextDirChange = getRandomInt(60, 120);
+        }
+        const d = dirs[pig.dir];
+        const nextX = pig.x + d.dx * pig.speed;
+        const nextY = pig.y + d.dy * pig.speed;
+        const left = Math.floor(nextX / tileSize);
+        const right = Math.floor((nextX + pig.size - 1) / tileSize);
+        const top = Math.floor(nextY / tileSize);
+        const bottom = Math.floor((nextY + pig.size - 1) / tileSize);
+        let canMove = true;
+        for (let ty = top; ty <= bottom; ty++) {
+          for (let tx = left; tx <= right; tx++) {
+            if (tx < 0 || tx >= mapCols || ty < 0 || ty >= mapRows) canMove = false;
+            else if (currentMap.tiles[ty][tx] === 1) canMove = false;
+          }
+        }
+        if (canMove) {
+          pig.x = clamp(nextX, 0, mapWidth - pig.size);
+          pig.y = clamp(nextY, 0, mapHeight - pig.size);
+        } else {
+          pig.dir = getRandomInt(0, 3);
+          pig.nextDirChange = getRandomInt(30, 60);
+        }
+      });
+    };
+
     const drawMinimap = () => {
       const maxW = 140;
       const maxH = 120;
@@ -2268,6 +2388,7 @@
       }
       generateCrowdForMap(mapName);
       generateDecorationsForMap(mapName);
+      generatePigsForMap(mapName);
       isDialogueOpen = false;
       dialogueStage = "question";
       selectedOption = 0;
@@ -2601,6 +2722,7 @@
         selectedOption = 0;
         resultMessage = "";
       }
+      updatePigs();
       if (isDialogueOpen || isNoticeOpen) {
         return;
       }
@@ -2810,7 +2932,7 @@
           const x = member.tileX * tileSize - offset;
           const y = member.tileY * tileSize - offset;
           if (treeSpriteReady) {
-            ctx.drawImage(treeSprite, x, y, treeSize, treeSize);
+            drawImageProportional(ctx, treeSprite, x, y, treeSize, treeSize);
           }
         });
       }
@@ -2823,7 +2945,17 @@
             const size = isHouse ? tileSize * 3 : tileSize;
             const x = d.tileX * tileSize - (isHouse ? tileSize : 0);
             const y = d.tileY * tileSize - (isHouse ? tileSize : 0);
-            ctx.drawImage(deco.img, x, y, size, size);
+            drawImageProportional(ctx, deco.img, x, y, size, size);
+          }
+        });
+      }
+
+      if (currentMap.pigs && currentMap.pigs.length) {
+        const dirKeys = ["up", "down", "left", "right"];
+        currentMap.pigs.forEach((pig) => {
+          const img = pigImages[dirKeys[pig.dir]];
+          if (img && img.complete) {
+            drawImageProportional(ctx, img, pig.x, pig.y, pig.size, pig.size);
           }
         });
       }
