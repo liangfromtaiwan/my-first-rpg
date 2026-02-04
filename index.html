@@ -2081,9 +2081,12 @@
       if (castleRect) {
         const cx = offX + (castleRect.x + castleRect.size / 2) * scale;
         const cy = offY + (castleRect.y + castleRect.size / 2) * scale;
-        const s = Math.max(10, castleRect.size * scale * 0.4);
+        const s = Math.max(16, castleRect.size * scale * 0.65);
+        ctx.strokeStyle = "#2d1f14";
+        ctx.lineWidth = 1.5;
         ctx.fillStyle = "#8b7355";
         ctx.fillRect(cx - s / 2, cy - s * 0.6, s, s * 0.8);
+        ctx.strokeRect(cx - s / 2, cy - s * 0.6, s, s * 0.8);
         ctx.fillStyle = "#a0522d";
         ctx.beginPath();
         ctx.moveTo(cx - s * 0.6, cy - s * 0.2);
@@ -2091,17 +2094,23 @@
         ctx.lineTo(cx + s * 0.6, cy - s * 0.2);
         ctx.closePath();
         ctx.fill();
+        ctx.stroke();
       }
 
       if (currentMap.decorations) {
-        const houseSize = Math.max(6, tileSize * scale * 0.6);
+        const houseSize = Math.max(12, tileSize * scale * 1.1);
         currentMap.decorations.forEach((d) => {
           if (d.imgIndex !== HOUSE_01_INDEX && d.imgIndex !== HOUSE_02_INDEX) return;
           const deco = decorationImages[d.imgIndex];
           if (!deco || !deco.img.complete) return;
           const cx = offX + (d.tileX + 0.5) * tileSize * scale;
           const cy = offY + (d.tileY + 0.5) * tileSize * scale;
-          ctx.drawImage(deco.img, cx - houseSize / 2, cy - houseSize / 2, houseSize, houseSize);
+          const hx = cx - houseSize / 2;
+          const hy = cy - houseSize / 2;
+          ctx.strokeStyle = "#2d1f14";
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(hx, hy, houseSize, houseSize);
+          ctx.drawImage(deco.img, hx, hy, houseSize, houseSize);
         });
       }
 
