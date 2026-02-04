@@ -270,6 +270,119 @@
       }
     }
 
+    @media (max-width: 719px) {
+      .chat-overlay-mobile {
+        position: fixed !important;
+        inset: 0 !important;
+        display: none !important;
+        background: transparent !important;
+        align-items: center !important;
+        justify-content: center !important;
+        z-index: 60 !important;
+      }
+      .chat-overlay-mobile.is-open {
+        display: flex !important;
+        background: rgba(0, 0, 0, 0.4) !important;
+      }
+      .chat-overlay-backdrop {
+        display: block !important;
+        position: absolute !important;
+        inset: 0 !important;
+      }
+      .chat-overlay-close {
+        display: block !important;
+      }
+      .chat-mobile-btn {
+        display: flex !important;
+      }
+    }
+
+    @media (min-width: 720px) {
+      .chat-mobile-btn {
+        display: none !important;
+      }
+      .chat-overlay-mobile {
+        position: static !important;
+        background: transparent !important;
+      }
+      .chat-overlay-backdrop {
+        display: none !important;
+      }
+      .chat-overlay-close {
+        display: none !important;
+      }
+    }
+
+    .chat-mobile-btn {
+      display: none;
+      position: fixed;
+      bottom: 16px;
+      left: 16px;
+      z-index: 50;
+      padding: 12px 20px;
+      font-size: 16px;
+      background: var(--palette-peach);
+      border: 2px solid var(--palette-mauve);
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .chat-overlay-mobile {
+      display: flex;
+      flex-direction: column;
+      width: min(360px, 92vw);
+      height: 566px;
+    }
+
+    .chat-overlay-backdrop {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+
+    .chat-overlay-content {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
+
+    @media (max-width: 719px) {
+      .chat-overlay-content {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: min(360px, 92vw);
+        max-height: 85vh;
+        background: var(--palette-white);
+        border: 1px solid var(--palette-mauve);
+        border-radius: 12px;
+        padding: 12px;
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+        z-index: 2;
+      }
+    }
+
+    .chat-overlay-close {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      font-size: 24px;
+      cursor: pointer;
+      color: #666;
+      line-height: 1;
+      padding: 0;
+      z-index: 10;
+    }
+
     .auth-bar {
       display: flex;
       flex-wrap: wrap;
@@ -547,7 +660,11 @@
           查看公布欄 ↲
         </button>
       </div>
-      <div class="chat-panel" id="chat-panel" aria-live="polite">
+      <div class="chat-overlay-mobile" id="chat-overlay-mobile">
+        <div class="chat-overlay-backdrop" id="chat-overlay-backdrop"></div>
+        <div class="chat-overlay-content">
+          <button class="chat-overlay-close" id="chat-overlay-close" type="button" aria-label="關閉">✕</button>
+          <div class="chat-panel" id="chat-panel" aria-live="polite">
         <div class="chat-tabs">
           <button class="chat-tab is-active" id="tab-map" type="button">
             地圖
@@ -583,8 +700,12 @@
             </div>
           </div>
         </div>
+        </div>
+      </div>
       </div>
     </div>
+    <button class="chat-mobile-btn" id="chat-mobile-btn" type="button">聊天室💬</button>
+
   </div>
   </div>
   <div class="notice-overlay" id="notice-overlay" aria-live="polite">
@@ -652,6 +773,21 @@
     const loginError = document.querySelector("#login-error");
     const authLoading = document.querySelector("#auth-loading");
     const chatPanel = document.querySelector("#chat-panel");
+    const chatMobileBtn = document.querySelector("#chat-mobile-btn");
+    const chatOverlayMobile = document.querySelector("#chat-overlay-mobile");
+    const chatOverlayClose = document.querySelector("#chat-overlay-close");
+    const chatOverlayBackdrop = document.querySelector("#chat-overlay-backdrop");
+
+    const openChatOverlay = () => {
+      if (chatOverlayMobile) chatOverlayMobile.classList.add("is-open");
+    };
+    const closeChatOverlay = () => {
+      if (chatOverlayMobile) chatOverlayMobile.classList.remove("is-open");
+    };
+
+    if (chatMobileBtn) chatMobileBtn.addEventListener("click", openChatOverlay);
+    if (chatOverlayClose) chatOverlayClose.addEventListener("click", closeChatOverlay);
+    if (chatOverlayBackdrop) chatOverlayBackdrop.addEventListener("click", closeChatOverlay);
     const chatMessages = document.querySelector("#chat-messages");
     const chatInput = document.querySelector("#chat-input");
     const chatSend = document.querySelector("#chat-send");
