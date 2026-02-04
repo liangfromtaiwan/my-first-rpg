@@ -2497,9 +2497,11 @@
         currentMap.decorations.forEach((d) => {
           const deco = decorationImages[d.imgIndex];
           if (deco && deco.img.complete) {
-            const x = d.tileX * tileSize;
-            const y = d.tileY * tileSize;
-            ctx.drawImage(deco.img, x, y, tileSize, tileSize);
+            const isHouse = d.imgIndex === 5 || d.imgIndex === 6;
+            const size = isHouse ? tileSize * 3 : tileSize;
+            const x = d.tileX * tileSize - (isHouse ? tileSize : 0);
+            const y = d.tileY * tileSize - (isHouse ? tileSize : 0);
+            ctx.drawImage(deco.img, x, y, size, size);
           }
         });
       }
