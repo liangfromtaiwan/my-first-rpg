@@ -2787,10 +2787,12 @@
 
       if (currentMap.crowd.length) {
         currentMap.crowd.forEach((member) => {
-          const x = member.tileX * tileSize;
-          const y = member.tileY * tileSize;
+          const treeSize = tileSize * 1.4;
+          const offset = (treeSize - tileSize) / 2;
+          const x = member.tileX * tileSize - offset;
+          const y = member.tileY * tileSize - offset;
           if (treeSpriteReady) {
-            ctx.drawImage(treeSprite, x, y, tileSize, tileSize);
+            ctx.drawImage(treeSprite, x, y, treeSize, treeSize);
           }
         });
       }
