@@ -627,7 +627,7 @@
 <body>
   <div class="auth-loading" id="auth-loading">載入中...</div>
   <div class="login-screen hidden" id="login-screen" aria-live="polite">
-    <div class="login-logo">村莊 RPG</div>
+    <div class="login-logo">抱石愛好者 RPG</div>
     <div class="login-tagline">探索地圖 · 與玩家聊天</div>
     <div class="login-desc">使用 Google 帳號登入開始遊戲</div>
     <button class="login-btn" id="login-google-btn" type="button">使用 Google 帳號登入</button>
@@ -675,7 +675,7 @@
         </div>
         <div class="chat-view is-active" id="chat-view-map">
           <div class="online-panel" id="online-panel">
-            <div class="online-title">村莊使用者</div>
+            <div class="online-title">抱石愛好者</div>
             <div class="online-list" id="online-list"></div>
           </div>
           <div class="chat-box">
@@ -1379,7 +1379,7 @@
         return;
       }
       const mapLabel =
-        currentMapName === "villageMap" ? "村莊" : "主世界";
+        currentMapName === "villageMap" ? "抱石愛好者村莊" : "主世界";
       tabMap.textContent = mapLabel;
     };
 
@@ -1429,7 +1429,7 @@
       onlineList.innerHTML = "";
       if (!onlineUsers.size) {
         const empty = document.createElement("div");
-        empty.textContent = "尚無村莊使用者";
+        empty.textContent = "尚無抱石愛好者";
         onlineList.appendChild(empty);
         return;
       }
@@ -1810,6 +1810,7 @@
     let dialogueStage = "question";
     let selectedOption = 0;
     let resultMessage = "";
+    let villageWelcomeUntil = 0;
 
     const keys = {
       ArrowUp: false,
@@ -2520,6 +2521,9 @@
       generateDecorationsForMap(mapName);
       generatePigsForMap(mapName);
       generateCowsForMap(mapName);
+      if (mapName === "villageMap") {
+        villageWelcomeUntil = Date.now() + 3500;
+      }
       isDialogueOpen = false;
       dialogueStage = "question";
       selectedOption = 0;
@@ -3248,6 +3252,18 @@
       ctx.restore();
 
       drawMinimap();
+
+      if (currentMapName === "villageMap" && Date.now() < villageWelcomeUntil) {
+        ctx.save();
+        ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+        ctx.fillRect(0, 0, viewportWidth, viewportHeight);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 24px Arial, Helvetica, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("歡迎進入抱石愛好者村莊", viewportWidth / 2, viewportHeight / 2);
+        ctx.restore();
+      }
 
       if (isDialogueOpen) {
         const boxWidth = canvas.width * 0.78;
