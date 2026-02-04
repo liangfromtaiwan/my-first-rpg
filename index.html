@@ -3080,9 +3080,11 @@
           const deco = decorationImages[d.imgIndex];
           if (deco && deco.img.complete) {
             const isHouse = d.imgIndex === 5 || d.imgIndex === 6;
-            const size = isHouse ? tileSize * 3 : tileSize;
-            const x = d.tileX * tileSize - (isHouse ? tileSize : 0);
-            const y = d.tileY * tileSize - (isHouse ? tileSize : 0);
+            const isChicken = d.imgIndex === 3;
+            let size = isHouse ? tileSize * 3 : tileSize;
+            if (isChicken) size = tileSize * 0.6;
+            const x = d.tileX * tileSize - (isHouse ? tileSize : 0) + (isChicken ? (tileSize - size) / 2 : 0);
+            const y = d.tileY * tileSize - (isHouse ? tileSize : 0) + (isChicken ? (tileSize - size) / 2 : 0);
             drawImageProportional(ctx, deco.img, x, y, size, size);
           }
         });
