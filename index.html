@@ -1761,25 +1761,24 @@
     };
 
     const drawMinimap = () => {
-      const miniW = 140;
-      const miniH = 120;
+      const maxW = 140;
+      const maxH = 120;
       const pad = 12;
-      const miniX = viewportWidth - miniW - pad;
-      const miniY = viewportHeight - miniH - pad;
+      const scale = Math.min((maxW - 4) / mapWidth, (maxH - 4) / mapHeight);
+      const contentW = mapWidth * scale;
+      const contentH = mapHeight * scale;
+      const miniX = viewportWidth - contentW - pad - 4;
+      const miniY = viewportHeight - contentH - pad - 4;
+      const offX = miniX + 2;
+      const offY = miniY + 2;
 
       ctx.save();
       ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
       ctx.strokeStyle = "#c49a88";
       ctx.lineWidth = 2;
-      drawRoundedRect(ctx, miniX, miniY, miniW, miniH, 8);
+      drawRoundedRect(ctx, miniX, miniY, contentW + 4, contentH + 4, 8);
       ctx.fill();
       ctx.stroke();
-
-      const scaleX = (miniW - 4) / mapWidth;
-      const scaleY = (miniH - 4) / mapHeight;
-      const scale = Math.min(scaleX, scaleY);
-      const offX = miniX + 2 + (miniW - 4 - mapWidth * scale) / 2;
-      const offY = miniY + 2 + (miniH - 4 - mapHeight * scale) / 2;
 
       for (let row = 0; row < mapRows; row++) {
         for (let col = 0; col < mapCols; col++) {
