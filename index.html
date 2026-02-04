@@ -163,7 +163,7 @@
       flex: 1;
       overflow-y: auto;
       font-size: 16px;
-      min-height: 0;
+      min-height: 80px;
     }
 
     .chat-row {
@@ -1040,7 +1040,7 @@
     }
 
     const updateChatVisibility = () => {
-      chatPanel.style.display = "block";
+      if (chatPanel) chatPanel.style.display = "flex";
       startChatListener();
       startUsersListener();
       updateMapTabLabel();
@@ -1328,6 +1328,8 @@
         user.displayName ||
         (user.isAnonymous ? "匿名玩家" : "玩家");
       const photoURL = user.photoURL || "";
+
+      appendChatMessage({ userName, photoURL, text });
 
       try {
         // 將新訊息寫入 Firestore
