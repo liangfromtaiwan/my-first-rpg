@@ -1654,12 +1654,18 @@
         if (mapName === "worldMap") {
           const castleRect = getCastleRect();
           if (castleRect) {
-            const tileCenter = {
-              x: tileX * tileSize + tileSize / 2,
-              y: tileY * tileSize + tileSize / 2,
-              size: 1,
+            const pad = tileSize;
+            const castleWithPadding = {
+              x: castleRect.x - pad,
+              y: castleRect.y - pad,
+              size: castleRect.size + pad * 2,
             };
-            if (rectsOverlap(tileCenter, castleRect)) {
+            const tileRect = {
+              x: tileX * tileSize,
+              y: tileY * tileSize,
+              size: tileSize,
+            };
+            if (rectsOverlap(tileRect, castleWithPadding)) {
               continue;
             }
           }
