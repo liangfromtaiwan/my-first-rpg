@@ -486,6 +486,56 @@
       box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
     }
 
+    .village-welcome-overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: 35;
+    }
+
+    .village-welcome-overlay.visible {
+      display: flex;
+    }
+
+    .village-welcome-backdrop {
+      position: absolute;
+      inset: 0;
+      cursor: pointer;
+    }
+
+    .village-welcome-card {
+      position: relative;
+      z-index: 1;
+      width: min(360px, 90vw);
+      background: var(--palette-white);
+      border: 2px solid var(--palette-mauve);
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .village-welcome-text {
+      font-size: 20px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .village-welcome-close {
+      font-size: 16px;
+      padding: 10px 32px;
+      border: 1px solid var(--palette-mauve);
+      background: var(--palette-peach);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
     .notice-overlay {
       position: fixed;
       inset: 0;
@@ -708,6 +758,13 @@
 
   </div>
   </div>
+  <div class="village-welcome-overlay" id="village-welcome-overlay" aria-live="polite">
+    <div class="village-welcome-backdrop"></div>
+    <div class="village-welcome-card">
+      <div class="village-welcome-text">歡迎進入抱石愛好者村莊</div>
+      <button class="village-welcome-close" id="village-welcome-close" type="button">確定</button>
+    </div>
+  </div>
   <div class="notice-overlay" id="notice-overlay" aria-live="polite">
     <div class="notice-card">
       <div class="notice-title">抱石行程表</div>
@@ -805,6 +862,8 @@
     const boardAction = document.querySelector("#board-action");
     const noticeOverlay = document.querySelector("#notice-overlay");
     const noticeClose = document.querySelector("#notice-close");
+    const villageWelcomeOverlay = document.querySelector("#village-welcome-overlay");
+    const villageWelcomeClose = document.querySelector("#village-welcome-close");
     const noticeBody = document.querySelector("#notice-body");
     const privateChat = document.querySelector("#private-chat");
     const privateMessagesEl = document.querySelector("#private-messages");
@@ -1261,6 +1320,15 @@
       noticeClose.addEventListener("click", () => {
         closeNotice();
       });
+    }
+
+    const closeVillageWelcome = () => villageWelcomeOverlay?.classList.remove("visible");
+    if (villageWelcomeClose) {
+      villageWelcomeClose.addEventListener("click", closeVillageWelcome);
+    }
+    const villageWelcomeBackdrop = document.querySelector(".village-welcome-backdrop");
+    if (villageWelcomeBackdrop) {
+      villageWelcomeBackdrop.addEventListener("click", closeVillageWelcome);
     }
 
     const setCallStartVisibility = (visible) => {
@@ -1810,8 +1878,6 @@
     let dialogueStage = "question";
     let selectedOption = 0;
     let resultMessage = "";
-    let villageWelcomeUntil = 0;
-
     const keys = {
       ArrowUp: false,
       ArrowDown: false,
@@ -2522,7 +2588,7 @@
       generatePigsForMap(mapName);
       generateCowsForMap(mapName);
       if (mapName === "villageMap") {
-        villageWelcomeUntil = Date.now() + 3500;
+        villageWelcomeOverlay?.classList.add("visible");
       }
       isDialogueOpen = false;
       dialogueStage = "question";
@@ -3254,18 +3320,6 @@
       ctx.restore();
 
       drawMinimap();
-
-      if (currentMapName === "villageMap" && Date.now() < villageWelcomeUntil) {
-        ctx.save();
-        ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-        ctx.fillRect(0, 0, viewportWidth, viewportHeight);
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 24px Arial, Helvetica, sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("歡迎進入抱石愛好者村莊", viewportWidth / 2, viewportHeight / 2);
-        ctx.restore();
-      }
 
       if (isDialogueOpen) {
         const boxWidth = canvas.width * 0.78;
