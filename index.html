@@ -1689,6 +1689,7 @@
         crowd: [],
         decorations: [],
         pigs: [],
+        cows: [],
       },
       villageMap: {
         tiles: villageMap,
@@ -1704,6 +1705,7 @@
         crowd: [],
         decorations: [],
         pigs: [],
+        cows: [],
       },
     };
 
@@ -1745,6 +1747,17 @@
     pigImages.down.src = "image/pigFront.png";
     pigImages.left.src = "image/pigLeft.png";
     pigImages.right.src = "image/pigRight.png";
+
+    const cowImages = {
+      up: new Image(),
+      down: new Image(),
+      left: new Image(),
+      right: new Image(),
+    };
+    cowImages.up.src = "image/cowBack.png";
+    cowImages.down.src = "image/cowfront.png";
+    cowImages.left.src = "image/cowLeft.png";
+    cowImages.right.src = "image/cowRight.png";
 
     const decorationImages = [
       { img: new Image(), src: "image/bigTree.png" },
@@ -1965,7 +1978,7 @@
 
     const HOUSE_01_INDEX = 5;
     const HOUSE_02_INDEX = 6;
-    const NON_HOUSE_INDICES = [0, 1, 2, 3, 4, 7];
+    const NON_HOUSE_INDICES = [0, 1, 2, 3, 7];
 
     const generateDecorationsForMap = (mapName) => {
       const mapData = maps[mapName];
@@ -2191,6 +2204,102 @@
       });
     };
 
+    const generateCowsForMap = (mapName) => {
+      const mapData = maps[mapName];
+      if (!mapData || !mapData.cows) return;
+      mapData.cows.length = 0;
+      const cowCount = getRandomInt(2, 4);
+      const usedTiles = new Set();
+      if (mapData.npc) usedTiles.add(`${mapData.npc.tileX},${mapData.npc.tileY}`);
+      if (mapData.entrance) usedTiles.add(`${mapData.entrance.x},${mapData.entrance.y}`);
+      if (mapData.exit) usedTiles.add(`${mapData.exit.x},${mapData.exit.y}`);
+      if (mapData.exitArea) mapData.exitArea.forEach((t) => usedTiles.add(`${t.x},${t.y}`));
+      if (mapData.spawn) usedTiles.add(`${mapData.spawn.x},${mapData.spawn.y}`);
+      mapData.crowd.forEach((m) => {
+        for (let dy = -1; dy <= 1; dy++)
+          for (let dx = -1; dx <= 1; dx++)
+            usedTiles.add(`${m.tileX + dx},${m.tileY + dy}`);
+      });
+      mapData.decorations.forEach((d) => {
+        const isHouse = d.imgIndex === 5 || d.imgIndex === 6;
+        if (isHouse) {
+          for (let dy = -1; dy <= 1; dy++)
+            for (let dx = -1; dx <= 1; dx++)
+              usedTiles.add(`${d.tileX + dx},${d.tileY + dy}`);
+        } else {
+          for (let dy = 0; dy <= 1; dy++)
+            for (let dx = 0; dx <= 1; dx++)
+              usedTiles.add(`${d.tileX + dx},${d.tileY + dy}`);
+        }
+      });
+      mapData.pigs.forEach((p) => {
+        const tx = Math.floor(p.x / tileSize);
+        const ty = Math.floor(p.y / tileSize);
+        usedTiles.add(`${tx},${ty}`);
+      });
+      let attempts = 0;
+      while (mapData.cows.length < cowCount && attempts < 100) {
+        attempts++;
+        const tileX = getRandomInt(2, mapCols - 3);
+        const tileY = getRandomInt(2, mapRows - 3);
+        const key = `${tileX},${tileY}`;
+        if (usedTiles.has(key) || mapData.tiles[tileY][tileX] === 1) continue;
+        if (mapName === "worldMap" && getCastleRect()) {
+          const castleRect = getCastleRect();
+          const pad = tileSize;
+          const tileRect = { x: tileX * tileSize, y: tileY * tileSize, size: tileSize };
+          if (rectsOverlap(tileRect, {
+            x: castleRect.x - pad,
+            y: castleRect.y - pad,
+            size: castleRect.size + pad * 2,
+          })) continue;
+        }
+        usedTiles.add(key);
+        mapData.cows.push({
+          x: tileX * tileSize + (tileSize - tileSize * 0.8) / 2,
+          y: tileY * tileSize + (tileSize - tileSize * 0.8) / 2,
+          dir: getRandomInt(0, 3),
+          nextDirChange: getRandomInt(60, 120),
+          speed: 0.6,
+          size: tileSize * 0.8,
+        });
+      }
+    };
+
+    const updateCows = () => {
+      if (!currentMap.cows || currentMap.cows.length === 0) return;
+      const dirs = [{ dx: 0, dy: -1 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }, { dx: 1, dy: 0 }];
+      const dirKeys = ["up", "down", "left", "right"];
+      currentMap.cows.forEach((cow) => {
+        cow.nextDirChange--;
+        if (cow.nextDirChange <= 0) {
+          cow.dir = getRandomInt(0, 3);
+          cow.nextDirChange = getRandomInt(60, 120);
+        }
+        const d = dirs[cow.dir];
+        const nextX = cow.x + d.dx * cow.speed;
+        const nextY = cow.y + d.dy * cow.speed;
+        const left = Math.floor(nextX / tileSize);
+        const right = Math.floor((nextX + cow.size - 1) / tileSize);
+        const top = Math.floor(nextY / tileSize);
+        const bottom = Math.floor((nextY + cow.size - 1) / tileSize);
+        let canMove = true;
+        for (let ty = top; ty <= bottom; ty++) {
+          for (let tx = left; tx <= right; tx++) {
+            if (tx < 0 || tx >= mapCols || ty < 0 || ty >= mapRows) canMove = false;
+            else if (currentMap.tiles[ty][tx] === 1) canMove = false;
+          }
+        }
+        if (canMove) {
+          cow.x = clamp(nextX, 0, mapWidth - cow.size);
+          cow.y = clamp(nextY, 0, mapHeight - cow.size);
+        } else {
+          cow.dir = getRandomInt(0, 3);
+          cow.nextDirChange = getRandomInt(30, 60);
+        }
+      });
+    };
+
     const drawMinimap = () => {
       const maxW = 140;
       const maxH = 120;
@@ -2389,6 +2498,7 @@
       generateCrowdForMap(mapName);
       generateDecorationsForMap(mapName);
       generatePigsForMap(mapName);
+      generateCowsForMap(mapName);
       isDialogueOpen = false;
       dialogueStage = "question";
       selectedOption = 0;
@@ -2729,6 +2839,7 @@
         resultMessage = "";
       }
       updatePigs();
+      updateCows();
       if (isNoticeOpen) {
         return;
       }
@@ -2962,6 +3073,16 @@
           const img = pigImages[dirKeys[pig.dir]];
           if (img && img.complete) {
             drawImageProportional(ctx, img, pig.x, pig.y, pig.size, pig.size);
+          }
+        });
+      }
+
+      if (currentMap.cows && currentMap.cows.length) {
+        const dirKeys = ["up", "down", "left", "right"];
+        currentMap.cows.forEach((cow) => {
+          const img = cowImages[dirKeys[cow.dir]];
+          if (img && img.complete) {
+            drawImageProportional(ctx, img, cow.x, cow.y, cow.size, cow.size);
           }
         });
       }
