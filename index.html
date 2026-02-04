@@ -2059,11 +2059,9 @@
       const offY = miniY + 2;
 
       ctx.save();
-      ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
       ctx.strokeStyle = "#c49a88";
       ctx.lineWidth = 2;
       drawRoundedRect(ctx, miniX, miniY, contentW + 4, contentH + 4, 8);
-      ctx.fill();
       ctx.stroke();
 
       for (let row = 0; row < mapRows; row++) {
