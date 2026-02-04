@@ -2116,11 +2116,8 @@
         const cx = offX + (castleRect.x + castleRect.size / 2) * scale;
         const cy = offY + (castleRect.y + castleRect.size / 2) * scale;
         const s = Math.max(16, castleRect.size * scale * 0.65);
-        ctx.strokeStyle = "#2d1f14";
-        ctx.lineWidth = 1.5;
         ctx.fillStyle = "#8b7355";
         ctx.fillRect(cx - s / 2, cy - s * 0.6, s, s * 0.8);
-        ctx.strokeRect(cx - s / 2, cy - s * 0.6, s, s * 0.8);
         ctx.fillStyle = "#a0522d";
         ctx.beginPath();
         ctx.moveTo(cx - s * 0.6, cy - s * 0.2);
@@ -2128,7 +2125,6 @@
         ctx.lineTo(cx + s * 0.6, cy - s * 0.2);
         ctx.closePath();
         ctx.fill();
-        ctx.stroke();
       }
 
       if (currentMap.decorations) {
@@ -2141,9 +2137,6 @@
           const cy = offY + (d.tileY + 0.5) * tileSize * scale;
           const hx = cx - houseSize / 2;
           const hy = cy - houseSize / 2;
-          ctx.strokeStyle = "#2d1f14";
-          ctx.lineWidth = 1.5;
-          ctx.strokeRect(hx, hy, houseSize, houseSize);
           ctx.drawImage(deco.img, hx, hy, houseSize, houseSize);
         });
       }
