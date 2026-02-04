@@ -1612,7 +1612,7 @@
         return;
       }
 
-      const crowdCount = getRandomInt(3, 5);
+      const crowdCount = getRandomInt(35, 55);
       const usedTiles = new Set();
       const blockedTiles = new Set();
 
@@ -1670,6 +1670,57 @@
           color: colors[mapData.crowd.length % colors.length],
         });
       }
+    };
+
+    const drawMinimap = () => {
+      const miniW = 140;
+      const miniH = 120;
+      const pad = 12;
+      const miniX = viewportWidth - miniW - pad;
+      const miniY = viewportHeight - miniH - pad;
+
+      ctx.save();
+      ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+      ctx.strokeStyle = "#c49a88";
+      ctx.lineWidth = 2;
+      drawRoundedRect(ctx, miniX, miniY, miniW, miniH, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      const scaleX = (miniW - 4) / mapWidth;
+      const scaleY = (miniH - 4) / mapHeight;
+      const scale = Math.min(scaleX, scaleY);
+      const offX = miniX + 2 + (miniW - 4 - mapWidth * scale) / 2;
+      const offY = miniY + 2 + (miniH - 4 - mapHeight * scale) / 2;
+
+      for (let row = 0; row < mapRows; row++) {
+        for (let col = 0; col < mapCols; col++) {
+          const tile = currentMap.tiles[row][col];
+          ctx.fillStyle = tile === 1 ? "#2d5016" : (currentMapName === "villageMap" ? "#8a7b4a" : "#3d7a5c");
+          ctx.fillRect(offX + col * tileSize * scale, offY + row * tileSize * scale, tileSize * scale + 0.5, tileSize * scale + 0.5);
+        }
+      }
+
+      currentMap.crowd.forEach((m) => {
+        ctx.fillStyle = "#1a4d0e";
+        ctx.fillRect(offX + m.tileX * tileSize * scale, offY + m.tileY * tileSize * scale, Math.max(1.5, tileSize * scale * 0.5), Math.max(1.5, tileSize * scale * 0.5));
+      });
+
+      otherPlayers.forEach((playerData) => {
+        if (typeof playerData.x === "number" && typeof playerData.y === "number") {
+          ctx.fillStyle = "#3498db";
+          ctx.beginPath();
+          ctx.arc(offX + (playerData.x + player.size / 2) * scale, offY + (playerData.y + player.size / 2) * scale, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+
+      ctx.fillStyle = "#e74c3c";
+      ctx.beginPath();
+      ctx.arc(offX + (player.x + player.size / 2) * scale, offY + (player.y + player.size / 2) * scale, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
     };
 
     window.addEventListener("keydown", (event) => handleKey(event, true));
@@ -2487,6 +2538,8 @@
       );
       ctx.stroke();
       ctx.restore();
+
+      drawMinimap();
 
       if (isDialogueOpen) {
         const boxWidth = canvas.width * 0.78;
