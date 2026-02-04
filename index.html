@@ -2510,6 +2510,12 @@
           return;
         }
 
+        if (villageWelcomeOverlay?.classList.contains("visible")) {
+          closeVillageWelcome();
+          event.preventDefault();
+          return;
+        }
+
         if (isPlayerNearWhiteboard()) {
           openNotice();
           event.preventDefault();
