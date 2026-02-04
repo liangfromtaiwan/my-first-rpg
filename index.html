@@ -444,6 +444,22 @@
       display: none;
     }
 
+    .auth-loading {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--palette-peach);
+      z-index: 99;
+      font-size: 18px;
+      color: #333;
+    }
+
+    .auth-loading.hidden {
+      display: none;
+    }
+
     .login-logo {
       font-size: 42px;
       font-weight: bold;
@@ -496,7 +512,8 @@
 </head>
 
 <body>
-  <div class="login-screen" id="login-screen" aria-live="polite">
+  <div class="auth-loading" id="auth-loading">載入中...</div>
+  <div class="login-screen hidden" id="login-screen" aria-live="polite">
     <div class="login-logo">村莊 RPG</div>
     <div class="login-tagline">探索地圖 · 與玩家聊天</div>
     <div class="login-desc">使用 Google 帳號登入開始遊戲</div>
@@ -633,6 +650,7 @@
     const loginGoogleBtn = document.querySelector("#login-google-btn");
     const gameContent = document.querySelector("#game-content");
     const loginError = document.querySelector("#login-error");
+    const authLoading = document.querySelector("#auth-loading");
     const chatPanel = document.querySelector("#chat-panel");
     const chatMessages = document.querySelector("#chat-messages");
     const chatInput = document.querySelector("#chat-input");
@@ -688,6 +706,7 @@
     const presenceIntervalMs = 800;
 
     const setAuthStatus = (user) => {
+      if (authLoading) authLoading.classList.add("hidden");
       if (user) {
         if (loginScreen) loginScreen.classList.add("hidden");
         if (gameContent) gameContent.classList.add("visible");
