@@ -2177,14 +2177,6 @@
           event.preventDefault();
           return;
         }
-
-        if (isPlayerFacingNpc()) {
-          isDialogueOpen = true;
-          dialogueStage = "question";
-          selectedOption = 0;
-          resultMessage = "";
-          event.preventDefault();
-        }
       }
     });
 
@@ -2576,6 +2568,12 @@
     };
 
     const update = () => {
+      if (npc.active && isPlayerNearNpc() && !isDialogueOpen && !isNoticeOpen) {
+        isDialogueOpen = true;
+        dialogueStage = "question";
+        selectedOption = 0;
+        resultMessage = "";
+      }
       if (isDialogueOpen || isNoticeOpen) {
         return;
       }
@@ -2919,20 +2917,6 @@
           playerLabel,
           isUserOnline(auth.currentUser?.uid)
         );
-      }
-
-      if (!isDialogueOpen && npc.active && isPlayerNearNpc()) {
-        const npcCenterX = npcPixel.x + npc.size / 2;
-        const npcTopY = npcPixel.y - tileSize * 0.2;
-        ctx.save();
-        ctx.fillStyle = "#000000";
-        ctx.font = "18px Arial, Helvetica, sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "bottom";
-        ctx.fillText("👋", npcCenterX, npcTopY);
-        ctx.fillStyle = "#000000";
-        ctx.fillText("按 Enter 互動", npcCenterX, npcTopY - 18);
-        ctx.restore();
       }
 
       ctx.restore();
