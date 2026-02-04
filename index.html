@@ -1932,6 +1932,13 @@
           for (let dx = -1; dx <= 1; dx++)
             blockedTiles.add(`${4 + dx},${2 + dy}`);
       }
+      if (mapName === "worldMap") {
+        for (const [hx, hy] of [[4, 8], [4, 18]]) {
+          for (let dy = -1; dy <= 1; dy++)
+            for (let dx = -1; dx <= 1; dx++)
+              blockedTiles.add(`${hx + dx},${hy + dy}`);
+        }
+      }
 
       const colors = ["#3498db", "#9b59b6", "#e67e22", "#1abc9c", "#f1c40f"];
       let attempts = 0;
