@@ -1946,6 +1946,10 @@
       }
     };
 
+    const HOUSE_01_INDEX = 5;
+    const HOUSE_02_INDEX = 6;
+    const NON_HOUSE_INDICES = [0, 1, 2, 3, 4, 7];
+
     const generateDecorationsForMap = (mapName) => {
       const mapData = maps[mapName];
       if (!mapData || !mapData.decorations || mapData.decorations.length) {
@@ -1976,39 +1980,69 @@
         usedTiles.add(`${m.tileX},${m.tileY}`);
       });
 
+      const tryAddTile = (tileX, tileY, imgIndex, isHouse = false) => {
+        const checkTile = (tx, ty) => {
+          if (tx < 1 || tx >= mapCols - 1 || ty < 1 || ty >= mapRows - 1) return false;
+          const k = `${tx},${ty}`;
+          if (blockedTiles.has(k) || usedTiles.has(k)) return false;
+          if (mapData.tiles[ty][tx] === 1) return false;
+          if (mapName === "worldMap") {
+            const castleRect = getCastleRect();
+            if (castleRect) {
+              const pad = tileSize;
+              const castleWithPadding = {
+                x: castleRect.x - pad,
+                y: castleRect.y - pad,
+                size: castleRect.size + pad * 2,
+              };
+              const tileRect = { x: tx * tileSize, y: ty * tileSize, size: tileSize };
+              if (rectsOverlap(tileRect, castleWithPadding)) return false;
+            }
+          }
+          return true;
+        };
+        if (isHouse) {
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              if (!checkTile(tileX + dx, tileY + dy)) return false;
+            }
+          }
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              usedTiles.add(`${tileX + dx},${tileY + dy}`);
+            }
+          }
+        } else {
+          if (!checkTile(tileX, tileY)) return false;
+          usedTiles.add(`${tileX},${tileY}`);
+        }
+        mapData.decorations.push({ tileX, tileY, imgIndex });
+        return true;
+      };
+
+      if (mapName === "worldMap") {
+        for (let a = 0; a < 200; a++) {
+          const tx = getRandomInt(2, mapCols - 3);
+          const ty = getRandomInt(2, mapRows - 3);
+          if (tryAddTile(tx, ty, HOUSE_01_INDEX, true)) break;
+        }
+        for (let a = 0; a < 200; a++) {
+          const tx = getRandomInt(2, mapCols - 3);
+          const ty = getRandomInt(2, mapRows - 3);
+          if (tryAddTile(tx, ty, HOUSE_02_INDEX, true)) break;
+        }
+      }
+
       const decoCount = getRandomInt(20, 35);
       let attempts = 0;
+      const pool = mapName === "villageMap" ? NON_HOUSE_INDICES : NON_HOUSE_INDICES;
 
       while (mapData.decorations.length < decoCount && attempts < 400) {
         attempts += 1;
         const tileX = getRandomInt(1, mapCols - 2);
         const tileY = getRandomInt(1, mapRows - 2);
-        const key = `${tileX},${tileY}`;
-
-        if (blockedTiles.has(key) || usedTiles.has(key)) continue;
-        if (mapData.tiles[tileY][tileX] === 1) continue;
-
-        if (mapName === "worldMap") {
-          const castleRect = getCastleRect();
-          if (castleRect) {
-            const pad = tileSize;
-            const castleWithPadding = {
-              x: castleRect.x - pad,
-              y: castleRect.y - pad,
-              size: castleRect.size + pad * 2,
-            };
-            const tileRect = {
-              x: tileX * tileSize,
-              y: tileY * tileSize,
-              size: tileSize,
-            };
-            if (rectsOverlap(tileRect, castleWithPadding)) continue;
-          }
-        }
-
-        usedTiles.add(key);
-        const imgIndex = getRandomInt(0, decorationImages.length - 1);
-        mapData.decorations.push({ tileX, tileY, imgIndex });
+        const imgIndex = pool[getRandomInt(0, pool.length - 1)];
+        tryAddTile(tileX, tileY, imgIndex);
       }
     };
 
@@ -2059,6 +2093,18 @@
         ctx.lineTo(cx + s * 0.6, cy - s * 0.2);
         ctx.closePath();
         ctx.fill();
+      }
+
+      if (currentMap.decorations) {
+        const houseSize = Math.max(6, tileSize * scale * 0.6);
+        currentMap.decorations.forEach((d) => {
+          if (d.imgIndex !== HOUSE_01_INDEX && d.imgIndex !== HOUSE_02_INDEX) return;
+          const deco = decorationImages[d.imgIndex];
+          if (!deco || !deco.img.complete) return;
+          const cx = offX + (d.tileX + 0.5) * tileSize * scale;
+          const cy = offY + (d.tileY + 0.5) * tileSize * scale;
+          ctx.drawImage(deco.img, cx - houseSize / 2, cy - houseSize / 2, houseSize, houseSize);
+        });
       }
 
       otherPlayers.forEach((playerData) => {
