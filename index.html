@@ -1708,6 +1708,22 @@
         ctx.fillRect(offX + m.tileX * tileSize * scale, offY + m.tileY * tileSize * scale, Math.max(1.5, tileSize * scale * 0.5), Math.max(1.5, tileSize * scale * 0.5));
       });
 
+      const castleRect = getCastleRect();
+      if (castleRect) {
+        const cx = offX + (castleRect.x + castleRect.size / 2) * scale;
+        const cy = offY + (castleRect.y + castleRect.size / 2) * scale;
+        const s = Math.max(5, castleRect.size * scale * 0.2);
+        ctx.fillStyle = "#8b7355";
+        ctx.fillRect(cx - s / 2, cy - s * 0.6, s, s * 0.8);
+        ctx.fillStyle = "#a0522d";
+        ctx.beginPath();
+        ctx.moveTo(cx - s * 0.6, cy - s * 0.2);
+        ctx.lineTo(cx, cy - s);
+        ctx.lineTo(cx + s * 0.6, cy - s * 0.2);
+        ctx.closePath();
+        ctx.fill();
+      }
+
       otherPlayers.forEach((playerData) => {
         if (typeof playerData.x === "number" && typeof playerData.y === "number") {
           ctx.fillStyle = "#3498db";
