@@ -2722,8 +2722,14 @@
         selectedOption = 0;
         resultMessage = "";
       }
+      if (isDialogueOpen && npc.active && !isPlayerNearNpc()) {
+        isDialogueOpen = false;
+        dialogueStage = "question";
+        selectedOption = 0;
+        resultMessage = "";
+      }
       updatePigs();
-      if (isDialogueOpen || isNoticeOpen) {
+      if (isNoticeOpen) {
         return;
       }
 
