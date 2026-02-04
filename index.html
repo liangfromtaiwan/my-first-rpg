@@ -2054,17 +2054,8 @@
       };
 
       if (mapName === "worldMap") {
-        const leftHalfMax = Math.floor(mapCols / 2) - 2;
-        for (let a = 0; a < 200; a++) {
-          const tx = getRandomInt(2, Math.max(2, leftHalfMax));
-          const ty = getRandomInt(2, mapRows - 3);
-          if (tryAddTile(tx, ty, HOUSE_01_INDEX, true)) break;
-        }
-        for (let a = 0; a < 200; a++) {
-          const tx = getRandomInt(2, mapCols - 3);
-          const ty = getRandomInt(2, mapRows - 3);
-          if (tryAddTile(tx, ty, HOUSE_02_INDEX, true)) break;
-        }
+        tryAddTile(6, 8, HOUSE_01_INDEX, true);
+        tryAddTile(6, 16, HOUSE_02_INDEX, true);
       }
 
       const decoCount = getRandomInt(20, 35);
