@@ -1937,7 +1937,11 @@
           }
         }
 
-        usedTiles.add(key);
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            usedTiles.add(`${tileX + dx},${tileY + dy}`);
+          }
+        }
         mapData.crowd.push({
           tileX,
           tileY,
@@ -1977,7 +1981,11 @@
         blockedTiles.add(`${mapData.spawn.x},${mapData.spawn.y}`);
       }
       mapData.crowd.forEach((m) => {
-        usedTiles.add(`${m.tileX},${m.tileY}`);
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            usedTiles.add(`${m.tileX + dx},${m.tileY + dy}`);
+          }
+        }
       });
 
       const tryAddTile = (tileX, tileY, imgIndex, isHouse = false) => {
@@ -2013,8 +2021,33 @@
             }
           }
         } else {
-          if (!checkTile(tileX, tileY)) return false;
-          usedTiles.add(`${tileX},${tileY}`);
+          for (let dy = 0; dy <= 1; dy++) {
+            for (let dx = 0; dx <= 1; dx++) {
+              const tx = tileX + dx, ty = tileY + dy;
+              if (tx < 1 || tx >= mapCols - 1 || ty < 1 || ty >= mapRows - 1) return false;
+              const k = `${tx},${ty}`;
+              if (blockedTiles.has(k) || usedTiles.has(k)) return false;
+              if (mapData.tiles[ty][tx] === 1) return false;
+              if (mapName === "worldMap") {
+                const castleRect = getCastleRect();
+                if (castleRect) {
+                  const pad = tileSize;
+                  const castleWithPadding = {
+                    x: castleRect.x - pad,
+                    y: castleRect.y - pad,
+                    size: castleRect.size + pad * 2,
+                  };
+                  const tileRect = { x: tx * tileSize, y: ty * tileSize, size: tileSize };
+                  if (rectsOverlap(tileRect, castleWithPadding)) return false;
+                }
+              }
+            }
+          }
+          for (let dy = 0; dy <= 1; dy++) {
+            for (let dx = 0; dx <= 1; dx++) {
+              usedTiles.add(`${tileX + dx},${tileY + dy}`);
+            }
+          }
         }
         mapData.decorations.push({ tileX, tileY, imgIndex });
         return true;
