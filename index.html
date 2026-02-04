@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" href="door.png" />
+  <link rel="icon" href="image/door.png" />
   <title>2D RPG 地圖範例</title>
   <style>
     :root {
@@ -510,10 +510,10 @@
       </button>
     </div>
   </div>
-  <audio id="message-send-audio" src="message-send.mp3" preload="auto"></audio>
+  <audio id="message-send-audio" src="sound/message-send.mp3" preload="auto"></audio>
   <audio
     id="message-receive-audio"
-    src="bright-notification.mp3"
+    src="sound/bright-notification.mp3"
     preload="auto"
   ></audio>
 
@@ -1462,22 +1462,22 @@
     canvas.height = viewportHeight;
 
     const playerImage = new Image();
-    playerImage.src = "player.png";
+    playerImage.src = "image/player.png";
 
     const npcImage = new Image();
-    npcImage.src = "npc.png";
+    npcImage.src = "image/npc.png";
 
     const doorImage = new Image();
-    doorImage.src = "door.png";
+    doorImage.src = "image/door.png";
 
     const treeImage = new Image();
-    treeImage.src = "tree.png";
+    treeImage.src = "image/tree.png";
 
     const castleImage = new Image();
-    castleImage.src = "castle.png";
+    castleImage.src = "image/castle.png";
 
     const whiteboardImage = new Image();
-    whiteboardImage.src = "whirteboard.png";
+    whiteboardImage.src = "image/whirteboard.png";
 
     const treeSprite = document.createElement("canvas");
     const treeSpriteCtx = treeSprite.getContext("2d");
