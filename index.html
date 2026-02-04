@@ -3056,12 +3056,14 @@
         if (currentMapName === "villageMap") {
           const doorTile = currentMap.exit || currentMap.exitArea?.[0];
           if (doorTile) {
+            const doorSize = tileSize * 1.6;
+            const offset = (doorSize - tileSize) / 2;
             ctx.drawImage(
               doorImage,
-              doorTile.x * tileSize,
-              doorTile.y * tileSize,
-              tileSize,
-              tileSize
+              doorTile.x * tileSize - offset,
+              doorTile.y * tileSize - offset,
+              doorSize,
+              doorSize
             );
           }
         }
