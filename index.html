@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-Hant">
+<html lang="en">
 
 <head>
   <meta charset="utf-8" />
@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <title>抱石愛好者村莊</title>
+  <title>Bouldering Village RPG</title>
   <style>
     :root {
       color-scheme: light;
@@ -17,7 +17,7 @@
       --palette-mauve: #c49a88;
       --palette-olive: #b3a45d;
       --palette-teal: #4e9c7c;
-      /* 像素風社交遊戲主色 */
+      /* Pixel-style social game palette */
       --game-bg: #e8dfd4;
       --game-bg-warm: #d4c4b0;
       --game-primary: #c85a54;
@@ -892,26 +892,26 @@
 </head>
 
 <body>
-  <div class="auth-loading" id="auth-loading">載入中...</div>
+  <div class="auth-loading" id="auth-loading">Loading...</div>
   <div class="login-screen hidden" id="login-screen" aria-live="polite">
-    <div class="login-logo">抱石愛好者 RPG</div>
-    <div class="login-tagline">探索地圖 · 與玩家聊天</div>
-    <div class="login-desc">使用 Google 帳號登入開始遊戲</div>
-    <button class="login-btn" id="login-google-btn" type="button">使用 Google 帳號登入</button>
+    <div class="login-logo">Bouldering Village RPG</div>
+    <div class="login-tagline">Explore the map · Chat with players</div>
+    <div class="login-desc">Sign in with Google to start playing</div>
+    <button class="login-btn" id="login-google-btn" type="button">Sign in with Google</button>
     <span id="login-error" style="color: #c0392b; font-size: 14px;"></span>
   </div>
 
   <div class="game-content" id="game-content">
   <div class="game-wrap">
     <div class="auth-bar" aria-live="polite">
-      <span id="auth-status">尚未登入</span>
-      <button id="google-login" type="button">Google 登入</button>
+      <span id="auth-status">Not signed in</span>
+      <button id="google-login" type="button">Google Sign in</button>
     </div>
     <div class="main-layout">
       <div class="map-column">
         <div class="video-wrap" id="video-wrap">
           <div class="video-placeholder" id="video-placeholder">
-            視訊準備中...
+            Preparing video...
           </div>
           <div class="video-room-url" id="video-room-url"></div>
           <iframe
@@ -920,38 +920,38 @@
           ></iframe>
         </div>
         <div class="game-canvas-wrap">
-          <canvas id="game" width="720" height="560" aria-label="遊戲畫面"></canvas>
+          <canvas id="game" width="720" height="560" aria-label="Game canvas"></canvas>
         </div>
-        <div class="hint">方向鍵移動，面向 NPC 按 Enter 對話</div>
-        <button class="call-start" id="call-start" type="button" title="開始通話">📹</button>
+        <div class="hint">Arrow keys to move, face NPC and press Enter to talk</div>
+        <button class="call-start" id="call-start" type="button" title="Start call">📹</button>
         <button class="board-action" id="board-action" type="button">
-          查看公布欄 ↲
+          View Bulletin Board ↲
         </button>
       </div>
       <div class="chat-overlay-mobile" id="chat-overlay-mobile">
         <div class="chat-overlay-backdrop" id="chat-overlay-backdrop"></div>
         <div class="chat-overlay-content">
-          <button class="chat-overlay-close" id="chat-overlay-close" type="button" aria-label="關閉">✕</button>
+          <button class="chat-overlay-close" id="chat-overlay-close" type="button" aria-label="Close">✕</button>
           <div class="chat-panel" id="chat-panel" aria-live="polite">
         <div class="chat-tabs">
           <button class="chat-tab is-active" id="tab-map" type="button">
-            地圖
+            Map
           </button>
           <button class="chat-tab" id="tab-private" type="button">
-            兩人對話
+            Private Chat
           </button>
         </div>
         <div class="chat-view is-active" id="chat-view-map">
           <div class="online-panel" id="online-panel">
-            <div class="online-title">抱石愛好者</div>
+            <div class="online-title">Online Players</div>
             <div class="online-list" id="online-list"></div>
           </div>
           <div class="chat-box">
             <div class="chat-messages" id="chat-messages"></div>
           </div>
           <div class="chat-input-row">
-            <input id="chat-input" type="text" maxlength="120" placeholder="輸入訊息..." />
-            <button id="chat-send" type="button">送出</button>
+            <input id="chat-input" type="text" maxlength="120" placeholder="Type a message..." />
+            <button id="chat-send" type="button">Send</button>
           </div>
         </div>
         <div class="chat-view" id="chat-view-private">
@@ -960,11 +960,11 @@
               <div class="private-messages" id="private-messages"></div>
             </div>
             <div class="private-empty" id="private-empty">
-              靠近玩家即可開始私聊
+              Walk near a player to start private chat
             </div>
             <div class="private-input-row">
-              <input id="private-input" type="text" maxlength="60" placeholder="私聊..." />
-              <button id="private-send" type="button">送出</button>
+              <input id="private-input" type="text" maxlength="60" placeholder="Private message..." />
+              <button id="private-send" type="button">Send</button>
             </div>
           </div>
         </div>
@@ -972,27 +972,27 @@
       </div>
       </div>
     </div>
-    <button class="chat-mobile-btn" id="chat-mobile-btn" type="button">聊天室💬</button>
+    <button class="chat-mobile-btn" id="chat-mobile-btn" type="button">Chat 💬</button>
 
   </div>
   </div>
   <div class="village-welcome-overlay" id="village-welcome-overlay" aria-live="polite">
     <div class="village-welcome-backdrop"></div>
     <div class="village-welcome-card">
-      <div class="village-welcome-text">歡迎進入抱石愛好者村莊</div>
-      <button class="village-welcome-close" id="village-welcome-close" type="button">確定</button>
+      <div class="village-welcome-text">Welcome to Bouldering Village</div>
+      <button class="village-welcome-close" id="village-welcome-close" type="button">OK</button>
     </div>
   </div>
   <div class="notice-overlay" id="notice-overlay" aria-live="polite">
     <div class="notice-card">
-      <div class="notice-title">抱石行程表</div>
+      <div class="notice-title">Bouldering Schedule</div>
       <div class="notice-body" id="notice-body">
-禮拜一 noborock 新宿
-禮拜三 noborock 高田馬場
-禮拜五 noborock 涉谷
+Monday: noborock Shinjuku
+Wednesday: noborock Takadanobaba
+Friday: noborock Shibuya
       </div>
       <button class="notice-close" id="notice-close" type="button">
-        關閉 ↲
+        Close ↲
       </button>
     </div>
   </div>
@@ -1094,7 +1094,7 @@
     );
     const nicknameStorageKey = "playerNickname";
     let playerNickname = localStorage.getItem(nicknameStorageKey) || "";
-    // 主世界聊天室（主世界與村莊都顯示同一個對話）
+    // Main world chat (shared between main world and village)
     const villageId = "worldMap";
     let unsubscribeChat = null;
     let unsubscribePlayers = null;
@@ -1125,45 +1125,45 @@
         if (gameContent) gameContent.classList.add("visible");
         const name =
           user.displayName ||
-          (user.isAnonymous ? "匿名玩家" : "玩家");
-        if (authStatus) authStatus.textContent = `你好，${name}`;
+          (user.isAnonymous ? "Anonymous" : "Player");
+        if (authStatus) authStatus.textContent = `Hi, ${name}`;
         if (googleLoginButton) {
           googleLoginButton.disabled = false;
-          googleLoginButton.textContent = "使用其他帳號";
+          googleLoginButton.textContent = "Switch account";
         }
         if (loginError) loginError.textContent = "";
       } else {
         if (loginScreen) loginScreen.classList.remove("hidden");
         if (gameContent) gameContent.classList.remove("visible");
-        if (authStatus) authStatus.textContent = "尚未登入";
+        if (authStatus) authStatus.textContent = "Not signed in";
         if (googleLoginButton) {
           googleLoginButton.disabled = false;
-          googleLoginButton.textContent = "Google 登入";
+          googleLoginButton.textContent = "Google Sign in";
         }
       }
     };
 
     const handleAuthError = (error) => {
       const code = error?.code || "unknown";
-      let message = "登入失敗，請稍後再試。";
+      let message = "Sign in failed. Please try again.";
       if (code === "auth/unauthorized-domain") {
-        message = "此網域未授權，請到 Firebase 加入此網域。";
+        message = "This domain is not authorized. Add it in Firebase console.";
       } else if (code === "auth/popup-blocked") {
-        message = "瀏覽器阻擋彈窗，請允許彈窗再試。";
+        message = "Popup blocked. Please allow popups and try again.";
       } else if (code === "auth/popup-closed-by-user") {
-        message = "你已關閉登入視窗。";
+        message = "You closed the sign-in window.";
       } else if (code === "auth/operation-not-allowed") {
-        message = "此登入方式未啟用，請到 Firebase 開啟。";
+        message = "This sign-in method is not enabled. Enable it in Firebase.";
       } else if (code === "auth/network-request-failed") {
-        message = "網路連線失敗，請檢查網路。";
+        message = "Network error. Please check your connection.";
       } else if (code === "auth/invalid-api-key") {
-        message = "Firebase 設定有誤，請確認 apiKey。";
+        message = "Firebase config error. Check your apiKey.";
       }
       if (authStatus) authStatus.textContent = message;
       if (loginError) loginError.textContent = message;
       if (googleLoginButton) googleLoginButton.disabled = false;
       if (loginGoogleBtn) loginGoogleBtn.disabled = false;
-      console.error("登入失敗", error);
+      console.error("Sign in failed", error);
     };
 
     const doGoogleLogin = async () => {
@@ -1192,7 +1192,7 @@
     });
 
     if (window.location.protocol === "file:") {
-      const msg = "Google 登入需要 http/https，請用本機伺服器或 GitHub Pages 開啟。";
+      const msg = "Google sign-in requires http/https. Use a local server or GitHub Pages.";
       if (authStatus) authStatus.textContent = msg;
       if (loginError) loginError.textContent = msg;
     }
@@ -1239,9 +1239,9 @@
       clearChatMessages();
       let chatInitialized = false;
 
-      // 即時監聽村莊訊息，依時間排序
+      // Listen to village messages, sorted by time
       const messagesRef = collection(db, "messages");
-      // 不使用 orderBy 以避免需要建立索引
+      // No orderBy to avoid needing an index
       const messagesQuery = query(messagesRef, where("villageId", "==", villageId));
 
       unsubscribeChat = onSnapshot(
@@ -1264,7 +1264,7 @@
           }
           clearChatMessages();
           if (snapshot.empty) {
-            showChatStatus("目前還沒有訊息");
+            showChatStatus("No messages yet");
             return;
           }
           const rows = [];
@@ -1281,11 +1281,11 @@
         (error) => {
           clearChatMessages();
           if (error?.code === "permission-denied") {
-            showChatStatus("讀取被 Firebase 規則擋住，請確認 rules。");
+            showChatStatus("Read blocked by Firebase rules. Check your rules.");
           } else {
-            showChatStatus("讀取訊息失敗，請稍後再試。");
+            showChatStatus("Failed to load messages. Please try again.");
           }
-          console.error("聊天室讀取失敗", error);
+          console.error("Chat read failed", error);
         }
       );
     };
@@ -1333,7 +1333,7 @@
           renderPrivateMessages();
         },
         (error) => {
-          console.error("私聊讀取失敗", error);
+          console.error("Private chat read failed", error);
         }
       );
     };
@@ -1368,7 +1368,7 @@
 
         const bubble = document.createElement("div");
         bubble.className = "chat-bubble";
-        bubble.textContent = `${message.fromName || "玩家"}：${message.text || ""}`;
+        bubble.textContent = `${message.fromName || "Player"}：${message.text || ""}`;
 
         row.appendChild(avatar);
         row.appendChild(bubble);
@@ -1438,7 +1438,7 @@
                 status: "active",
                 roomUrl: desiredRoomUrl,
               }).catch((error) => {
-                console.error("更新通話房間失敗", error);
+                console.error("Failed to update call room", error);
               });
             }
           }
@@ -1451,7 +1451,7 @@
           positionCallStart();
         },
         (error) => {
-          console.error("通話狀態讀取失敗", error);
+          console.error("Call status read failed", error);
         }
       );
     };
@@ -1492,7 +1492,7 @@
           { merge: true }
         );
       } catch (error) {
-        console.error("接受通話失敗", error);
+        console.error("Failed to accept call", error);
       }
     };
 
@@ -1644,7 +1644,7 @@
         videoWrap.style.display = "block";
         dailyFrame.style.display = "none";
         videoPlaceholder.style.display = "block";
-        setVideoPlaceholder("正在建立視訊房間...");
+        setVideoPlaceholder("Creating video room...");
         setVideoRoomUrl("");
         return;
       }
@@ -1673,7 +1673,7 @@
         return;
       }
       const mapLabel =
-        currentMapName === "villageMap" ? "抱石愛好者村莊" : "主世界";
+        currentMapName === "villageMap" ? "Bouldering Village" : "Main World";
       tabMap.textContent = mapLabel;
     };
 
@@ -1698,7 +1698,7 @@
       const displayName =
         playerNickname ||
         user.displayName ||
-        (user.isAnonymous ? "匿名玩家" : "玩家");
+        (user.isAnonymous ? "Anonymous" : "Player");
       try {
         await setDoc(
           doc(db, "users", user.uid),
@@ -1711,7 +1711,7 @@
           { merge: true }
         );
       } catch (error) {
-        console.error("更新在線狀態失敗", error);
+        console.error("Failed to update presence", error);
       }
     };
 
@@ -1723,7 +1723,7 @@
       onlineList.innerHTML = "";
       if (!onlineUsers.size) {
         const empty = document.createElement("div");
-        empty.textContent = "尚無抱石愛好者";
+        empty.textContent = "No players online";
         onlineList.appendChild(empty);
         return;
       }
@@ -1747,7 +1747,7 @@
           row.appendChild(dot);
         }
         const name = document.createElement("span");
-        name.textContent = userData.displayName || "玩家";
+        name.textContent = userData.displayName || "Player";
         row.appendChild(name);
         row.addEventListener("click", async () => {
           try {
@@ -1769,7 +1769,7 @@
               updateChatTabs();
             }
           } catch (err) {
-            console.error("無法取得玩家位置", err);
+            console.error("Cannot get player position", err);
           }
         });
         onlineList.appendChild(row);
@@ -1796,7 +1796,7 @@
           renderOnlineUsers();
         },
         (error) => {
-          console.error("線上名單讀取失敗", error);
+          console.error("Online list read failed", error);
         }
       );
       onlineRefreshTimer = setInterval(renderOnlineUsers, 30000);
@@ -1823,7 +1823,7 @@
       otherPlayers.clear();
       otherPlayerRender.clear();
 
-      // 即時監聽同地圖玩家，排除自己
+      // Listen to players on same map, exclude self
       const playersRef = collection(db, "players");
       const playersQuery = query(
         playersRef,
@@ -1849,7 +1849,7 @@
           });
         },
         (error) => {
-          console.error("玩家清單讀取失敗", error);
+          console.error("Player list read failed", error);
         }
       );
     };
@@ -1870,7 +1870,7 @@
       const text = chatInput.value.trim();
       const user = auth.currentUser;
       if (!user) {
-        showChatStatus("請先登入再送出訊息。");
+        showChatStatus("Please sign in to send messages.");
         return;
       }
       if (!text) {
@@ -1880,13 +1880,13 @@
       const userName =
         playerNickname ||
         user.displayName ||
-        (user.isAnonymous ? "匿名玩家" : "玩家");
+        (user.isAnonymous ? "Anonymous" : "Player");
       const photoURL = user.photoURL || "";
 
       appendChatMessage({ userName, photoURL, text, uid: user.uid });
 
       try {
-        // 將新訊息寫入 Firestore
+        // Write new message to Firestore
         await addDoc(collection(db, "messages"), {
           villageId,
           uid: user.uid,
@@ -1902,8 +1902,8 @@
         updateUserPresence();
       } catch (error) {
         chatInput.value = text;
-        showChatStatus(`送出失敗：${error?.code || "未知錯誤"}`);
-        console.error("訊息送出失敗", error);
+        showChatStatus(`Send failed: ${error?.code || "unknown error"}`);
+        console.error("Message send failed", error);
       }
     };
 
@@ -1927,7 +1927,7 @@
       const userName =
         playerNickname ||
         user.displayName ||
-        (user.isAnonymous ? "匿名玩家" : "玩家");
+        (user.isAnonymous ? "Anonymous" : "Player");
       const photoURL = user.photoURL || "";
       try {
         await addDoc(collection(db, "privateMessages"), {
@@ -1945,7 +1945,7 @@
         }
       } catch (error) {
         privateInput.value = text;
-        console.error("私聊送出失敗", error);
+        console.error("Private message send failed", error);
       }
     };
 
@@ -2102,11 +2102,11 @@
     };
 
     const npcQuiz = {
-      question: "歡迎來到女同志友善世界。想聊就選一個心情：",
-      options: ["1. 我先隨意看看", "2. 我想聊聊天", "3. 我先去別處逛逛"],
+      question: "Welcome to the LGBTQ-friendly world. Pick a mood:",
+      options: ["1. I'll look around first", "2. I'd like to chat", "3. I'll explore elsewhere"],
       correctIndex: 1,
-      correctMessage: "好呀～我在這裡陪你，慢慢來就好。",
-      wrongMessage: "沒關係，想去哪都可以，我會在這裡等你。",
+      correctMessage: "Sure～I'm here for you, take your time.",
+      wrongMessage: "No worries, go wherever you like. I'll be here when you're back.",
     };
     let isDialogueOpen = false;
     let dialogueStage = "question";
@@ -3227,7 +3227,7 @@
 
       checkMapTransition();
 
-      // 將玩家位置同步到 Firestore（簡單多人同步）
+      // Sync player position to Firestore (simple multiplayer sync)
       const now = performance.now();
       if (auth.currentUser && now - lastPresenceUpdate > presenceIntervalMs) {
         lastPresenceUpdate = now;
@@ -3237,7 +3237,7 @@
             userName:
               playerNickname ||
               auth.currentUser.displayName ||
-              (auth.currentUser.isAnonymous ? "匿名玩家" : "玩家"),
+              (auth.currentUser.isAnonymous ? "Anonymous" : "Player"),
             photoURL: auth.currentUser.photoURL || "",
             mapName: currentMapName,
             x: player.x,
@@ -3246,11 +3246,11 @@
           },
           { merge: true }
         ).catch((error) => {
-          console.error("玩家位置同步失敗", error);
+          console.error("Player position sync failed", error);
         });
       }
 
-      // 依距離決定是否開啟私聊
+      // Decide whether to open private chat based on distance
       let nearest = null;
       let nearestDist = Infinity;
       otherPlayers.forEach((playerData, playerId) => {
@@ -3277,7 +3277,7 @@
             activePrivateChatId = conversationId;
             activePrivatePartner = {
               uid: nearest.id,
-              name: nearest.data.userName || "玩家",
+              name: nearest.data.userName || "Player",
               x: nearest.data.x,
               y: nearest.data.y,
             };
@@ -3339,7 +3339,7 @@
           ctx.textAlign = "center";
           ctx.textBaseline = "bottom";
           ctx.fillText(
-            "查看公布欄↲",
+            "View Bulletin Board↲",
             whiteboardDraw.x + whiteboardDraw.size / 2,
             whiteboardDraw.y - 4
           );
@@ -3475,7 +3475,7 @@
           const otherName =
             playerData.userName ||
             playerData.displayName ||
-            "玩家";
+            "Player";
           if (otherName) {
             drawNameBubble(
               ctx,
@@ -3488,7 +3488,7 @@
         });
       }
 
-      // 私聊訊息改顯示在右側面板，避免與名字重疊
+      // Private chat messages shown on right panel to avoid overlapping names
 
       // Tree NPCs no longer show greeting hints.
 
@@ -3609,7 +3609,7 @@
           ctx.fillStyle = subTextColor;
           ctx.textBaseline = "bottom";
           ctx.fillText(
-            "左右選擇，Enter 確認",
+            "Left/Right to select, Enter to confirm",
             canvas.width / 2,
             boxY + boxHeight - 14
           );
@@ -3624,7 +3624,7 @@
           ctx.fillStyle = subTextColor;
           ctx.textBaseline = "bottom";
           ctx.fillText(
-            "按 Enter 關閉",
+            "Press Enter to close",
             canvas.width / 2,
             boxY + boxHeight - 14
           );
