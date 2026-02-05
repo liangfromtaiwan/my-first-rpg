@@ -41,8 +41,6 @@
       display: flex;
       flex-direction: column;
       min-height: 100vh;
-      max-height: 100vh;
-      overflow: hidden;
     }
 
     .game-wrap {
@@ -127,6 +125,7 @@
     .chat-tabs {
       display: flex;
       gap: 6px;
+      flex-shrink: 0;
     }
 
     .chat-tab {
@@ -170,6 +169,7 @@
       padding: 8px;
       display: grid;
       gap: 6px;
+      flex-shrink: 0;
     }
 
     .online-title {
@@ -183,7 +183,7 @@
     .online-list {
       display: grid;
       gap: 4px;
-      max-height: 100px;
+      max-height: 80px;
       overflow-y: auto;
       font-size: 13px;
     }
@@ -376,6 +376,7 @@
     .chat-input-row {
       display: flex;
       gap: 8px;
+      flex-shrink: 0;
     }
 
     .chat-input-row input {
@@ -492,7 +493,7 @@
       flex-shrink: 0;
       align-self: stretch;
       min-height: 0;
-      overflow: hidden;
+      max-height: calc(100vh - 80px);
     }
 
     .chat-overlay-backdrop {
