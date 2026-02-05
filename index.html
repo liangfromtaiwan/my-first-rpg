@@ -21,49 +21,82 @@
       font-family: Arial, Helvetica, sans-serif;
       background: var(--palette-peach);
       color: #000000;
-      display: grid;
-      place-items: center;
       min-height: 100vh;
       font-size: 18px;
     }
 
+    .game-content {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
     .game-wrap {
-      display: grid;
-      gap: 12px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
       text-align: center;
       position: relative;
+      min-height: 0;
     }
 
     .main-layout {
+      flex: 1;
       display: flex;
       gap: 16px;
-      align-items: flex-start;
+      align-items: stretch;
       justify-content: center;
-      flex-wrap: wrap;
+      min-height: 0;
+      padding: 0 12px 12px;
     }
 
     .map-column {
-      display: grid;
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       gap: 8px;
-      justify-items: center;
       position: relative;
+    }
+
+    .game-canvas-wrap {
+      flex: 1;
+      min-height: 0;
+      min-width: 0;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #game {
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      aspect-ratio: 720 / 560;
+      object-fit: contain;
     }
 
     .chat-panel {
       display: none;
-      width: min(360px, 92vw);
+      width: 360px;
+      flex-shrink: 0;
       background: var(--palette-white);
       border: 1px solid var(--palette-mauve);
       border-radius: 6px;
       padding: 10px;
       text-align: left;
-      height: 566px;
-      align-self: flex-start;
+      align-self: stretch;
       display: flex;
       flex-direction: column;
       overflow: hidden;
       box-sizing: border-box;
       gap: 8px;
+      min-height: 0;
     }
 
     .chat-tabs {
@@ -262,11 +295,12 @@
     @media (max-width: 900px) {
       .main-layout {
         flex-direction: column;
-        align-items: center;
+        align-items: stretch;
       }
-      .chat-panel {
-        width: min(720px, 92vw);
-        height: auto;
+      .chat-overlay-mobile {
+        width: 360px;
+        align-self: center;
+        min-height: 300px;
       }
     }
 
@@ -331,8 +365,10 @@
     .chat-overlay-mobile {
       display: flex;
       flex-direction: column;
-      width: min(360px, 92vw);
-      height: 566px;
+      width: 360px;
+      flex-shrink: 0;
+      align-self: stretch;
+      min-height: 0;
     }
 
     .chat-overlay-backdrop {
@@ -668,7 +704,9 @@
     }
 
     .game-content.visible {
-      display: block;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
     }
 
   </style>
@@ -703,7 +741,9 @@
             allow="camera; microphone; fullscreen; display-capture"
           ></iframe>
         </div>
-        <canvas id="game" width="400" height="300" aria-label="遊戲畫面"></canvas>
+        <div class="game-canvas-wrap">
+          <canvas id="game" width="720" height="560" aria-label="遊戲畫面"></canvas>
+        </div>
         <div class="hint">方向鍵移動，面向 NPC 按 Enter 對話</div>
         <button class="call-start" id="call-start" type="button">開始通話 ↲</button>
         <button class="board-action" id="board-action" type="button">
