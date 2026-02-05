@@ -41,6 +41,8 @@
       display: flex;
       flex-direction: column;
       min-height: 100vh;
+      max-height: 100vh;
+      overflow: hidden;
     }
 
     .game-wrap {
@@ -253,9 +255,9 @@
 
     .chat-messages {
       flex: 1;
+      min-height: 0;
       overflow-y: auto;
       font-size: 13px;
-      min-height: 80px;
       display: flex;
       flex-direction: column;
       gap: 6px;
@@ -490,7 +492,6 @@
       flex-shrink: 0;
       align-self: stretch;
       min-height: 0;
-      max-height: calc(100vh - 100px);
       overflow: hidden;
     }
 
