@@ -259,7 +259,9 @@
     .chat-messages {
       flex: 1;
       min-height: 0;
+      overflow-x: hidden;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       font-size: 13px;
       display: flex;
       flex-direction: column;
@@ -273,6 +275,7 @@
       align-items: flex-end;
       gap: 8px;
       max-width: 100%;
+      flex-shrink: 0;
     }
 
     .chat-row.is-self {
@@ -315,8 +318,9 @@
 
     .private-chat {
       display: none;
+      flex: 1;
       flex-direction: column;
-      height: 100%;
+      min-height: 0;
       justify-content: space-between;
       gap: 8px;
     }
@@ -336,7 +340,9 @@
     .private-messages {
       flex: 1;
       min-height: 0;
+      overflow-x: hidden;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       font-size: 13px;
       display: flex;
       flex-direction: column;
