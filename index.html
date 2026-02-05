@@ -5,7 +5,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" href="image/door.png" />
-  <title>2D RPG 地圖範例</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <title>抱石愛好者村莊</title>
   <style>
     :root {
       color-scheme: light;
@@ -14,15 +17,24 @@
       --palette-mauve: #c49a88;
       --palette-olive: #b3a45d;
       --palette-teal: #4e9c7c;
+      /* 像素風社交遊戲主色 */
+      --game-bg: #e8dfd4;
+      --game-bg-warm: #d4c4b0;
+      --game-primary: #c85a54;
+      --game-primary-hover: #b34a44;
+      --game-accent: #6b8e6b;
+      --game-text: #3d3829;
+      --game-text-muted: #6b6355;
     }
 
     body {
       margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      background: var(--palette-peach);
-      color: #000000;
+      font-family: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", sans-serif;
+      font-weight: 500;
+      background: var(--game-bg);
+      color: var(--game-text);
       min-height: 100vh;
-      font-size: 18px;
+      font-size: 16px;
     }
 
     .game-content {
@@ -48,7 +60,7 @@
       align-items: stretch;
       justify-content: center;
       min-height: 0;
-      padding: 0 12px 12px;
+      padding: 0 0 12px;
     }
 
     .map-column {
@@ -56,10 +68,11 @@
       min-width: 0;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      align-items: stretch;
+      justify-content: flex-start;
       gap: 8px;
       position: relative;
+      padding: 0;
     }
 
     .game-canvas-wrap {
@@ -68,8 +81,9 @@
       min-width: 0;
       width: 100%;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
+      padding: 8px;
     }
 
     #game {
@@ -79,24 +93,30 @@
       height: auto;
       aspect-ratio: 720 / 560;
       object-fit: contain;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), 0 0 0 4px var(--game-bg-warm);
+      border-radius: 12px;
     }
 
     .chat-panel {
       display: none;
-      width: 360px;
+      width: 280px;
       flex-shrink: 0;
-      background: var(--palette-white);
-      border: 1px solid var(--palette-mauve);
-      border-radius: 6px;
-      padding: 10px;
+      background: rgba(212, 196, 176, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 2px solid rgba(61, 56, 41, 0.15);
+      border-radius: 16px;
+      padding: 12px;
       text-align: left;
       align-self: stretch;
       display: flex;
       flex-direction: column;
       overflow: hidden;
       box-sizing: border-box;
-      gap: 8px;
+      gap: 10px;
       min-height: 0;
+      box-shadow: -4px 4px 16px rgba(0, 0, 0, 0.12);
+      margin: 8px 8px 8px 0;
     }
 
     .chat-tabs {
@@ -106,17 +126,23 @@
 
     .chat-tab {
       flex: 1;
-      padding: 6px 8px;
-      border: 1px solid var(--palette-mauve);
-      background: var(--palette-white);
-      border-radius: 6px;
-      font-size: 14px;
+      padding: 8px 10px;
+      border: none;
+      background: rgba(61, 56, 41, 0.12);
+      color: var(--game-text);
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
       cursor: pointer;
     }
 
+    .chat-tab:hover {
+      background: rgba(61, 56, 41, 0.2);
+    }
+
     .chat-tab.is-active {
-      background: var(--palette-peach);
-      font-weight: bold;
+      background: var(--game-primary);
+      color: #fff;
     }
 
     .chat-view {
@@ -133,60 +159,90 @@
     }
 
     .online-panel {
-      border: 1px solid var(--palette-mauve);
-      background: var(--palette-white);
-      border-radius: 6px;
-      padding: 6px;
+      border: 2px solid rgba(61, 56, 41, 0.12);
+      background: rgba(255, 255, 255, 0.4);
+      border-radius: 12px;
+      padding: 8px;
       display: grid;
       gap: 6px;
     }
 
     .online-title {
-      font-weight: bold;
-      font-size: 14px;
+      font-weight: 600;
+      font-size: 11px;
+      color: var(--game-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .online-list {
       display: grid;
-      gap: 6px;
-      max-height: 120px;
+      gap: 4px;
+      max-height: 100px;
       overflow-y: auto;
-      font-size: 14px;
+      font-size: 13px;
+    }
+
+    .online-list > div:not(.online-row) {
+      font-size: 12px;
+      color: var(--game-text-muted);
+      padding: 8px;
+      text-align: center;
     }
 
     .online-row {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       cursor: pointer;
-      padding: 2px 0;
-      border-radius: 4px;
+      padding: 6px 10px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.6);
+      border: 2px solid rgba(61, 56, 41, 0.1);
+      color: var(--game-text);
+      transition: transform 0.15s ease;
     }
 
     .online-row:hover {
-      background: rgba(0, 0, 0, 0.05);
+      background: rgba(255, 255, 255, 0.9);
+      transform: translateX(2px);
+      border-color: var(--game-primary);
+    }
+
+    .online-row.is-online {
+      border-left: 3px solid var(--game-accent);
+    }
+
+    .online-row .online-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--game-bg-warm);
+      flex-shrink: 0;
     }
 
     .online-dot {
-      width: 10px;
-      height: 10px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background: #9b9b9b;
-      border: 1px solid #7a7a7a;
       flex-shrink: 0;
     }
 
     .online-dot.is-online {
-      background: #1f7a5f;
+      background: var(--game-accent);
+      box-shadow: 0 0 0 2px rgba(107, 142, 107, 0.3);
     }
 
     .chat-box {
       flex: 1;
       display: flex;
       flex-direction: column;
-      border: 1px solid var(--palette-mauve);
-      background: var(--palette-white);
-      padding: 6px;
+      border: 2px solid rgba(61, 56, 41, 0.1);
+      background: rgba(255, 255, 255, 0.35);
+      border-radius: 12px;
+      padding: 8px;
       gap: 8px;
       min-height: 0;
       overflow: hidden;
@@ -195,51 +251,84 @@
     .chat-messages {
       flex: 1;
       overflow-y: auto;
-      font-size: 16px;
+      font-size: 13px;
       min-height: 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
 
     .chat-row {
       display: flex;
-      align-items: center;
+      align-items: flex-end;
       gap: 8px;
-      margin-bottom: 6px;
+      max-width: 100%;
     }
 
-    .chat-avatar {
+    .chat-row.is-self {
+      flex-direction: row-reverse;
+    }
+
+    .chat-row .chat-bubble {
+      max-width: 85%;
+      padding: 8px 12px;
+      border-radius: 14px 14px 4px 14px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 2px solid rgba(61, 56, 41, 0.15);
+      color: var(--game-text);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .chat-row.is-self .chat-bubble {
+      border-radius: 14px 14px 14px 4px;
+      background: var(--game-primary);
+      color: #fff;
+      border-color: var(--game-primary-hover);
+    }
+
+    .chat-row .chat-avatar {
       width: 24px;
       height: 24px;
       border-radius: 50%;
       object-fit: cover;
-      background: var(--palette-mauve);
+      background: var(--game-bg-warm);
       flex-shrink: 0;
+    }
+
+    .chat-status {
+      font-size: 12px;
+      color: var(--game-text-muted);
+      text-align: center;
+      padding: 8px 0;
     }
 
     .private-chat {
       display: none;
       flex-direction: column;
-      gap: 6px;
-      border: 1px solid var(--palette-mauve);
-      border-radius: 8px;
-      padding: 6px;
-      background: var(--palette-white);
+      gap: 8px;
+      border: 2px solid rgba(61, 56, 41, 0.1);
+      border-radius: 12px;
+      padding: 8px;
+      background: rgba(255, 255, 255, 0.35);
     }
 
     .private-box {
-      border: 1px solid var(--palette-mauve);
-      background: var(--palette-white);
-      border-radius: 6px;
-      padding: 4px;
-      max-height: 220px;
+      border: 2px solid rgba(61, 56, 41, 0.1);
+      background: rgba(255, 255, 255, 0.4);
+      border-radius: 12px;
+      padding: 8px;
+      max-height: 200px;
       overflow: hidden;
     }
 
     .private-messages {
-      max-height: 210px;
+      max-height: 190px;
       overflow-y: auto;
-      font-size: 14px;
-      line-height: 1.4;
-      text-align: left;
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
 
     .private-input-row {
@@ -249,46 +338,69 @@
 
     .private-input-row input {
       flex: 1;
-      font-size: 14px;
-      padding: 4px 6px;
-      border: 1px solid var(--palette-mauve);
-      border-radius: 4px;
+      font-size: 13px;
+      padding: 8px 12px;
+      border: 2px solid rgba(61, 56, 41, 0.2);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.8);
+      color: var(--game-text);
+    }
+
+    .private-input-row input::placeholder {
+      color: var(--game-text-muted);
     }
 
     .private-input-row button {
-      font-size: 14px;
-      padding: 4px 8px;
-      border: 1px solid var(--palette-mauve);
-      background: var(--palette-white);
+      font-size: 13px;
+      padding: 8px 14px;
+      border: none;
+      background: var(--game-primary);
+      color: #fff;
+      border-radius: 10px;
       cursor: pointer;
+      font-weight: 600;
     }
 
     .private-empty {
-      font-size: 14px;
-      color: #666;
+      font-size: 13px;
+      color: var(--game-text-muted);
       text-align: center;
-      padding: 8px 0;
+      padding: 12px 0;
     }
 
     .chat-input-row {
       display: flex;
-      gap: 6px;
+      gap: 8px;
     }
 
     .chat-input-row input {
       flex: 1;
-      font-size: 16px;
-      padding: 6px 8px;
-      border: 1px solid var(--palette-mauve);
-      border-radius: 4px;
+      font-size: 13px;
+      padding: 8px 12px;
+      border: 2px solid rgba(61, 56, 41, 0.2);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.8);
+      color: var(--game-text);
+    }
+
+    .chat-input-row input::placeholder {
+      color: var(--game-text-muted);
     }
 
     .chat-input-row button {
-      font-size: 16px;
-      padding: 6px 12px;
-      border: 1px solid var(--palette-mauve);
-      background: var(--palette-white);
+      font-size: 13px;
+      padding: 8px 14px;
+      border: none;
+      background: var(--game-primary);
+      color: #fff;
+      border-radius: 10px;
       cursor: pointer;
+      font-weight: 600;
+    }
+
+    .chat-input-row button:hover,
+    .private-input-row button:hover {
+      background: var(--game-primary-hover);
     }
 
 
@@ -298,7 +410,7 @@
         align-items: stretch;
       }
       .chat-overlay-mobile {
-        width: 360px;
+        width: 280px;
         align-self: center;
         min-height: 300px;
       }
@@ -355,11 +467,17 @@
       z-index: 50;
       padding: 12px 20px;
       font-size: 16px;
-      background: var(--palette-peach);
-      border: 2px solid var(--palette-mauve);
+      font-weight: 600;
+      background: var(--game-primary);
+      color: #fff;
+      border: none;
       border-radius: 12px;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 4px 12px rgba(200, 90, 84, 0.4);
+    }
+
+    .chat-mobile-btn:hover {
+      background: var(--game-primary-hover);
     }
 
     .chat-overlay-mobile {
@@ -392,13 +510,14 @@
         left: 50%;
         top: 50%;
         transform: translate(-50%, -50%);
-        width: min(360px, 92vw);
+        width: min(320px, 92vw);
         max-height: 85vh;
-        background: var(--palette-white);
-        border: 1px solid var(--palette-mauve);
-        border-radius: 12px;
+        background: rgba(212, 196, 176, 0.95);
+        backdrop-filter: blur(12px);
+        border: 2px solid rgba(61, 56, 41, 0.2);
+        border-radius: 16px;
         padding: 12px;
-        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
         z-index: 2;
       }
     }
@@ -413,10 +532,14 @@
       background: transparent;
       font-size: 24px;
       cursor: pointer;
-      color: #666;
+      color: var(--game-text-muted);
       line-height: 1;
       padding: 0;
       z-index: 10;
+    }
+
+    .chat-overlay-close:hover {
+      color: var(--game-primary);
     }
 
     .auth-bar {
@@ -425,15 +548,26 @@
       gap: 8px;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
+      font-size: 14px;
+      color: var(--game-text);
+      padding: 8px;
     }
 
     .auth-bar button {
-      font-size: 18px;
-      padding: 6px 12px;
-      border: 1px solid var(--palette-mauve);
-      background: var(--palette-white);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 8px 16px;
+      border: 2px solid rgba(61, 56, 41, 0.2);
+      background: rgba(255, 255, 255, 0.8);
+      color: var(--game-text);
+      border-radius: 10px;
       cursor: pointer;
+    }
+
+    .auth-bar button:hover:not(:disabled) {
+      background: #fff;
+      border-color: var(--game-primary);
+      color: var(--game-primary);
     }
 
     .auth-bar button:disabled {
@@ -444,27 +578,32 @@
     .nickname-field {
       display: none;
       align-items: center;
-      gap: 6px;
-      font-size: 18px;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--game-text);
     }
 
     .nickname-field input {
-      font-size: 18px;
-      padding: 4px 8px;
-      border: 1px solid var(--palette-mauve);
-      border-radius: 4px;
+      font-size: 14px;
+      padding: 6px 12px;
+      border: 2px solid rgba(61, 56, 41, 0.2);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--game-text);
     }
 
     h1 {
       font-size: 18px;
+      font-weight: 600;
       margin: 0;
+      color: var(--game-text);
     }
 
     canvas {
-      background: var(--palette-white);
+      background: #f5f0e8;
       border: none;
       image-rendering: pixelated;
-      border-radius: 12px;
+      -ms-interpolation-mode: nearest-neighbor;
     }
 
     .video-wrap {
@@ -498,28 +637,53 @@
 
     .call-start {
       position: fixed;
-      z-index: 25;
-      padding: 6px 10px;
-      font-size: 14px;
-      border: 2px solid var(--palette-mauve);
-      background: var(--palette-white);
-      border-radius: 8px;
+      z-index: 40;
+      width: 48px;
+      height: 48px;
+      padding: 0;
+      font-size: 24px;
+      line-height: 1;
+      border: none;
+      background: var(--game-primary);
+      color: #fff;
+      border-radius: 50%;
       cursor: pointer;
       display: none;
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(200, 90, 84, 0.5);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .call-start:hover {
+      background: var(--game-primary-hover);
+      transform: scale(1.1);
+      box-shadow: 0 6px 16px rgba(200, 90, 84, 0.6);
+    }
+
+    .call-start:active {
+      transform: scale(0.95);
     }
 
     .board-action {
       position: fixed;
-      z-index: 25;
-      padding: 6px 10px;
-      font-size: 14px;
-      border: 2px solid var(--palette-mauve);
-      background: var(--palette-white);
-      border-radius: 8px;
+      z-index: 35;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      border: 2px solid rgba(61, 56, 41, 0.2);
+      background: rgba(255, 255, 255, 0.95);
+      color: var(--game-text);
+      border-radius: 10px;
       cursor: pointer;
       display: none;
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transition: transform 0.15s ease;
+    }
+
+    .board-action:hover {
+      transform: translateY(-2px);
+      border-color: var(--game-accent);
     }
 
     .village-welcome-overlay {
@@ -546,30 +710,37 @@
       position: relative;
       z-index: 1;
       width: min(360px, 90vw);
-      background: var(--palette-white);
-      border: 2px solid var(--palette-mauve);
-      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.98);
+      border: 2px solid rgba(61, 56, 41, 0.2);
+      border-radius: 16px;
       padding: 24px;
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 20px;
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
     }
 
     .village-welcome-text {
       font-size: 20px;
-      font-weight: bold;
+      font-weight: 600;
       text-align: center;
+      color: var(--game-text);
     }
 
     .village-welcome-close {
       font-size: 16px;
+      font-weight: 600;
       padding: 10px 32px;
-      border: 1px solid var(--palette-mauve);
-      background: var(--palette-peach);
-      border-radius: 8px;
+      border: none;
+      background: var(--game-primary);
+      color: #fff;
+      border-radius: 10px;
       cursor: pointer;
+    }
+
+    .village-welcome-close:hover {
+      background: var(--game-primary-hover);
     }
 
     .notice-overlay {
@@ -584,34 +755,42 @@
 
     .notice-card {
       width: min(720px, 92vw);
-      background: var(--palette-white);
-      border: 1px solid var(--palette-mauve);
-      border-radius: 12px;
-      padding: 16px;
+      background: rgba(255, 255, 255, 0.98);
+      border: 2px solid rgba(61, 56, 41, 0.2);
+      border-radius: 16px;
+      padding: 20px;
       display: grid;
       gap: 12px;
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
     }
 
     .notice-title {
-      font-weight: bold;
+      font-weight: 600;
       font-size: 18px;
+      color: var(--game-text);
     }
 
     .notice-body {
       font-size: 16px;
-      line-height: 1.5;
+      line-height: 1.6;
       white-space: pre-line;
+      color: var(--game-text);
     }
 
     .notice-close {
       justify-self: end;
       font-size: 14px;
-      padding: 6px 10px;
-      border: 1px solid var(--palette-mauve);
-      background: var(--palette-white);
-      border-radius: 8px;
+      font-weight: 600;
+      padding: 8px 16px;
+      border: none;
+      background: var(--game-primary);
+      color: #fff;
+      border-radius: 10px;
       cursor: pointer;
+    }
+
+    .notice-close:hover {
+      background: var(--game-primary-hover);
     }
 
     .video-room-url {
@@ -623,8 +802,8 @@
     }
 
     .hint {
-      font-size: 18px;
-      color: #000000;
+      font-size: 14px;
+      color: var(--game-text-muted);
     }
 
     .login-screen {
@@ -649,10 +828,10 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: var(--palette-peach);
+      background: var(--game-bg);
       z-index: 99;
       font-size: 18px;
-      color: #333;
+      color: var(--game-text);
     }
 
     .auth-loading.hidden {
@@ -744,7 +923,7 @@
           <canvas id="game" width="720" height="560" aria-label="遊戲畫面"></canvas>
         </div>
         <div class="hint">方向鍵移動，面向 NPC 按 Enter 對話</div>
-        <button class="call-start" id="call-start" type="button">開始通話 ↲</button>
+        <button class="call-start" id="call-start" type="button" title="開始通話">📹</button>
         <button class="board-action" id="board-action" type="button">
           查看公布欄 ↲
         </button>
@@ -1021,6 +1200,9 @@
     const appendChatMessage = (message) => {
       const row = document.createElement("div");
       row.className = "chat-row";
+      if (message.uid && auth.currentUser && message.uid === auth.currentUser.uid) {
+        row.classList.add("is-self");
+      }
 
       const avatar = document.createElement("img");
       avatar.className = "chat-avatar";
@@ -1029,11 +1211,12 @@
         avatar.src = message.photoURL;
       }
 
-      const text = document.createElement("div");
-      text.textContent = `${message.userName}: ${message.text}`;
+      const bubble = document.createElement("div");
+      bubble.className = "chat-bubble";
+      bubble.textContent = `${message.userName}: ${message.text}`;
 
       row.appendChild(avatar);
-      row.appendChild(text);
+      row.appendChild(bubble);
       chatMessages.appendChild(row);
       chatMessages.scrollTop = chatMessages.scrollHeight;
     };
@@ -1044,8 +1227,8 @@
 
     const showChatStatus = (text) => {
       const row = document.createElement("div");
+      row.className = "chat-status";
       row.textContent = text;
-      row.style.color = "#666";
       chatMessages.appendChild(row);
     };
 
@@ -1172,6 +1355,9 @@
       privateMessages.forEach((message) => {
         const row = document.createElement("div");
         row.className = "chat-row";
+        if (message.fromUid && auth.currentUser && message.fromUid === auth.currentUser.uid) {
+          row.classList.add("is-self");
+        }
 
         const avatar = document.createElement("img");
         avatar.className = "chat-avatar";
@@ -1180,11 +1366,12 @@
           avatar.src = message.fromPhotoURL;
         }
 
-        const text = document.createElement("div");
-        text.textContent = `${message.fromName || "玩家"}：${message.text || ""}`;
+        const bubble = document.createElement("div");
+        bubble.className = "chat-bubble";
+        bubble.textContent = `${message.fromName || "玩家"}：${message.text || ""}`;
 
         row.appendChild(avatar);
-        row.appendChild(text);
+        row.appendChild(bubble);
         privateMessagesEl.appendChild(row);
       });
       privateMessagesEl.scrollTop = privateMessagesEl.scrollHeight;
@@ -1374,7 +1561,7 @@
       if (!callStart) {
         return;
       }
-      callStart.style.display = visible ? "inline-flex" : "none";
+      callStart.style.display = visible ? "flex" : "none";
     };
 
     const positionCallStart = () => {
@@ -1386,7 +1573,7 @@
       const scaleY = rect.height / viewportHeight;
       const x = rect.left + (player.x + player.size / 2 - camera.x) * scaleX;
       const y = rect.top + (player.y + player.size + 6 - camera.y) * scaleY;
-      callStart.style.left = `${Math.max(8, x - 30)}px`;
+      callStart.style.left = `${Math.max(8, x - 24)}px`;
       callStart.style.top = `${Math.max(8, y)}px`;
     };
 
@@ -1547,12 +1734,20 @@
           : 0;
         const isOnline = now - lastActiveMs < 5 * 60 * 1000;
         const row = document.createElement("div");
-        row.className = "online-row";
-        const dot = document.createElement("span");
-        dot.className = `online-dot${isOnline ? " is-online" : ""}`;
+        row.className = "online-row" + (isOnline ? " is-online" : "");
+        if (userData.photoURL) {
+          const avatar = document.createElement("img");
+          avatar.className = "online-avatar";
+          avatar.src = userData.photoURL;
+          avatar.alt = "";
+          row.appendChild(avatar);
+        } else {
+          const dot = document.createElement("span");
+          dot.className = `online-dot${isOnline ? " is-online" : ""}`;
+          row.appendChild(dot);
+        }
         const name = document.createElement("span");
         name.textContent = userData.displayName || "玩家";
-        row.appendChild(dot);
         row.appendChild(name);
         row.addEventListener("click", async () => {
           try {
@@ -1688,7 +1883,7 @@
         (user.isAnonymous ? "匿名玩家" : "玩家");
       const photoURL = user.photoURL || "";
 
-      appendChatMessage({ userName, photoURL, text });
+      appendChatMessage({ userName, photoURL, text, uid: user.uid });
 
       try {
         // 將新訊息寫入 Firestore
