@@ -1165,7 +1165,11 @@ Friday: noborock Shibuya
     let userSelectedTab = false;
     const jitsiRoomBaseUrl = "https://meet.jit.si";
     let lastPresenceUpdate = 0;
-    const presenceIntervalMs = 800;
+    const presenceIntervalMs = 2500;
+    let lastSyncedX = -1;
+    let lastSyncedY = -1;
+    let lastUserPresenceWrite = 0;
+    const userPresenceThrottleMs = 30000;
 
     const setAuthStatus = (user) => {
       if (authLoading) authLoading.classList.add("hidden");
@@ -1744,6 +1748,11 @@ Friday: noborock Shibuya
       if (!user) {
         return;
       }
+      const now = Date.now();
+      if (now - lastUserPresenceWrite < userPresenceThrottleMs) {
+        return;
+      }
+      lastUserPresenceWrite = now;
       const displayName =
         playerNickname ||
         user.displayName ||
@@ -2886,6 +2895,9 @@ Friday: noborock Shibuya
       updateChatVisibility();
       startPlayersListener();
       updateUserPresence();
+      lastSyncedX = -1;
+      lastSyncedY = -1;
+      lastPresenceUpdate = 0;
     };
 
     const isWall = (tileX, tileY) => {
@@ -3278,9 +3290,18 @@ Friday: noborock Shibuya
       checkMapTransition();
 
       // Sync player position to Firestore (simple multiplayer sync)
+      // Only sync when moved and at throttled interval to reduce Firestore usage
+      const hasMoved =
+        Math.abs(player.x - lastSyncedX) > 2 || Math.abs(player.y - lastSyncedY) > 2;
       const now = performance.now();
-      if (auth.currentUser && now - lastPresenceUpdate > presenceIntervalMs) {
+      if (
+        auth.currentUser &&
+        hasMoved &&
+        now - lastPresenceUpdate > presenceIntervalMs
+      ) {
         lastPresenceUpdate = now;
+        lastSyncedX = player.x;
+        lastSyncedY = player.y;
         setDoc(
           doc(db, "players", auth.currentUser.uid),
           {
