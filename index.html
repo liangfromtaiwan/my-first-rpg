@@ -327,7 +327,6 @@
     .private-box {
       flex: 1;
       min-height: 0;
-      height: 0;
       border: 2px solid rgba(61, 56, 41, 0.1);
       background: rgba(255, 255, 255, 0.4);
       border-radius: 12px;
@@ -338,10 +337,10 @@
     }
 
     .private-messages {
-      flex: 1;
+      flex: 1 1 0;
       min-height: 0;
       overflow-x: hidden;
-      overflow-y: auto;
+      overflow-y: scroll;
       -webkit-overflow-scrolling: touch;
       font-size: 13px;
       display: block;
@@ -372,6 +371,7 @@
     .private-input-row {
       display: flex;
       gap: 6px;
+      flex-shrink: 0;
     }
 
     .private-input-row input {
@@ -1436,7 +1436,7 @@ Friday: noborock Shibuya
       }
       if (privateMessagesEl) {
         privateMessagesEl.parentElement.style.display = isAvailable
-          ? "block"
+          ? "flex"
           : "none";
       }
       if (privateInput) {
@@ -2130,7 +2130,7 @@ Friday: noborock Shibuya
       x: tileSize * 1,
       y: tileSize * 1,
       size: tileSize,
-      speed: 10,
+      speed: 320,
     };
     player.facing = "down";
 
@@ -3205,7 +3205,7 @@ Friday: noborock Shibuya
       }
     };
 
-    const update = () => {
+    const update = (deltaMs = 16) => {
       if (npc.active && isPlayerNearNpc() && !isDialogueOpen && !isNoticeOpen) {
         isDialogueOpen = true;
         dialogueStage = "question";
@@ -3227,23 +3227,24 @@ Friday: noborock Shibuya
       let dx = 0;
       let dy = 0;
 
-      if (keys.ArrowUp) dy -= player.speed;
-      if (keys.ArrowDown) dy += player.speed;
-      if (keys.ArrowLeft) dx -= player.speed;
-      if (keys.ArrowRight) dx += player.speed;
+      const speed = (player.speed / 1000) * deltaMs;
+      if (keys.ArrowUp) dy -= speed;
+      if (keys.ArrowDown) dy += speed;
+      if (keys.ArrowLeft) dx -= speed;
+      if (keys.ArrowRight) dx += speed;
 
       if (dx === 0 && dy === 0 && moveTarget.x !== null) {
         const diffX = moveTarget.x - player.x;
         const diffY = moveTarget.y - player.y;
         const distance = Math.hypot(diffX, diffY);
-        if (distance <= player.speed) {
+        if (distance <= speed) {
           dx = diffX;
           dy = diffY;
           moveTarget.x = null;
           moveTarget.y = null;
         } else {
-          dx = (diffX / distance) * player.speed;
-          dy = (diffY / distance) * player.speed;
+          dx = (diffX / distance) * speed;
+          dy = (diffY / distance) * speed;
         }
       }
 
@@ -3683,8 +3684,11 @@ Friday: noborock Shibuya
     };
 
 
-    const loop = () => {
-      update();
+    let lastFrameTime = performance.now();
+    const loop = (now) => {
+      const deltaMs = now - lastFrameTime;
+      lastFrameTime = now;
+      update(Math.min(deltaMs, 50));
       render();
       if (activePrivatePartner && canAcceptCall()) {
         positionCallStart();
@@ -3695,7 +3699,7 @@ Friday: noborock Shibuya
       requestAnimationFrame(loop);
     };
 
-    loop();
+    requestAnimationFrame(loop);
   </script>
 </body>
 
