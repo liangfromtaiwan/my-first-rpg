@@ -463,11 +463,11 @@
         background: transparent !important;
         align-items: center !important;
         justify-content: center !important;
-        z-index: 60 !important;
+        z-index: 1000 !important;
       }
       .chat-overlay-mobile.is-open {
         display: flex !important;
-        background: rgba(0, 0, 0, 0.4) !important;
+        background: rgba(0, 0, 0, 0.5) !important;
       }
       .chat-overlay-backdrop {
         display: block !important;
@@ -479,6 +479,9 @@
       }
       .chat-mobile-btn {
         display: flex !important;
+      }
+      .chat-overlay-content {
+        z-index: 1001 !important;
       }
     }
 
@@ -501,18 +504,21 @@
     .chat-mobile-btn {
       display: none;
       position: fixed;
-      bottom: 16px;
-      left: 16px;
-      z-index: 50;
-      padding: 12px 20px;
-      font-size: 16px;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 999;
+      padding: 14px 24px;
+      font-size: 18px;
       font-weight: 600;
       background: var(--game-primary);
       color: #fff;
       border: none;
       border-radius: 12px;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(200, 90, 84, 0.4);
+      box-shadow: 0 4px 16px rgba(200, 90, 84, 0.5);
+      align-items: center;
+      justify-content: center;
     }
 
     .chat-mobile-btn:hover {
