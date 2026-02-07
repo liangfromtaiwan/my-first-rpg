@@ -554,15 +554,19 @@
       .chat-overlay-content {
         position: absolute;
         left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
+        top: 0;
+        transform: translateX(-50%);
         width: min(320px, 92vw);
         height: 100vh;
+        height: 100dvh;
+        padding-top: max(12px, env(safe-area-inset-top));
+        padding-left: 12px;
+        padding-right: 12px;
+        padding-bottom: 12px;
         background: rgba(212, 196, 176, 0.98);
         backdrop-filter: blur(12px);
         border: 2px solid rgba(61, 56, 41, 0.2);
         border-radius: 16px;
-        padding: 12px;
         box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
         z-index: 2;
         overflow: hidden;
