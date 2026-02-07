@@ -557,8 +557,9 @@
         top: 50%;
         transform: translate(-50%, -50%);
         width: min(320px, 92vw);
+        height: min(500px, 80vh);
         max-height: 85vh;
-        background: rgba(212, 196, 176, 0.95);
+        background: rgba(212, 196, 176, 0.98);
         backdrop-filter: blur(12px);
         border: 2px solid rgba(61, 56, 41, 0.2);
         border-radius: 16px;
@@ -572,8 +573,17 @@
       .chat-panel {
         width: 100%;
         max-width: 100%;
+        height: auto !important;
         flex: 1;
+        min-height: 200px;
+        overflow: hidden;
+      }
+      .chat-view.is-active {
         min-height: 0;
+      }
+      .chat-messages,
+      .private-messages {
+        min-height: 120px;
       }
     }
 
