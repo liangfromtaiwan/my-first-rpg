@@ -2761,8 +2761,14 @@ Friday: noborock Shibuya
       }
 
       otherPlayers.forEach((playerData) => {
-        if (typeof playerData.x === "number" && typeof playerData.y === "number") {
-          ctx.fillStyle = "#3498db";
+        if (
+          !isPlayerOnlineOnMap(playerData) ||
+          typeof playerData.x !== "number" ||
+          typeof playerData.y !== "number"
+        ) {
+          return;
+        }
+        ctx.fillStyle = "#3498db";
           ctx.beginPath();
           ctx.arc(offX + (playerData.x + player.size / 2) * scale, offY + (playerData.y + player.size / 2) * scale, 3, 0, Math.PI * 2);
           ctx.fill();
@@ -2992,6 +2998,15 @@ Friday: noborock Shibuya
         ? data.lastActiveAt.toMillis()
         : 0;
       return Date.now() - lastActiveMs < 5 * 60 * 1000;
+    };
+
+    const OFFLINE_THRESHOLD_MS = 15000;
+    const isPlayerOnlineOnMap = (playerData) => {
+      if (!playerData) return false;
+      const updatedMs = playerData.updatedAt?.toMillis
+        ? playerData.updatedAt.toMillis()
+        : 0;
+      return Date.now() - updatedMs < OFFLINE_THRESHOLD_MS;
     };
 
     const rectsOverlap = (a, b) =>
@@ -3345,6 +3360,7 @@ Friday: noborock Shibuya
       let nearestDist = Infinity;
       otherPlayers.forEach((playerData, playerId) => {
         if (
+          !isPlayerOnlineOnMap(playerData) ||
           typeof playerData.x !== "number" ||
           typeof playerData.y !== "number"
         ) {
@@ -3515,6 +3531,7 @@ Friday: noborock Shibuya
       if (otherPlayers.size) {
         otherPlayers.forEach((playerData, playerId) => {
           if (
+            !isPlayerOnlineOnMap(playerData) ||
             typeof playerData.x !== "number" ||
             typeof playerData.y !== "number"
           ) {
