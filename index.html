@@ -1833,6 +1833,7 @@ Friday: noborock Shibuya
       }
       onlineUsers.forEach((userData, uid) => {
         if (uid === auth.currentUser?.uid) return;
+        if (!userData.displayName && !userData.userName) return;
         const lastActiveMs = userData.lastActiveAt?.toMillis
           ? userData.lastActiveAt.toMillis()
           : 0;
@@ -1851,7 +1852,7 @@ Friday: noborock Shibuya
           row.appendChild(dot);
         }
         const name = document.createElement("span");
-        name.textContent = userData.displayName || "Player";
+        name.textContent = userData.displayName || userData.userName || "Player";
         row.appendChild(name);
         row.addEventListener("click", async () => {
           try {
@@ -3607,8 +3608,7 @@ Friday: noborock Shibuya
 
           const otherName =
             playerData.userName ||
-            playerData.displayName ||
-            "Player";
+            playerData.displayName;
           if (otherName) {
             drawNameBubble(
               ctx,
