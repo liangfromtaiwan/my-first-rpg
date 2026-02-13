@@ -1236,7 +1236,7 @@ Friday: noborock Shibuya
         message = "Firebase config error. Check your apiKey.";
       }
       if (authStatus) authStatus.textContent = message;
-      const fullMessage = code !== "unknown" ? `${message} (${code})` : message;
+      const fullMessage = code !== "unknown" ? message + " (" + code + ")" : message;
       if (loginError) loginError.textContent = fullMessage;
       if (googleLoginButton) googleLoginButton.disabled = false;
       if (loginGoogleBtn) loginGoogleBtn.disabled = false;
@@ -1263,8 +1263,10 @@ Friday: noborock Shibuya
       }
     };
 
-    getRedirectResult(auth).catch((err) => {
-      if (err?.code && !err.message?.includes("no redirect")) console.error("Redirect sign-in error", err);
+    getRedirectResult(auth).catch(function (err) {
+      if (err && err.code && (!err.message || err.message.indexOf("no redirect") === -1)) {
+        console.error("Redirect sign-in error", err);
+      }
     });
 
     if (loginGoogleBtn) {
