@@ -967,6 +967,7 @@
     <div class="login-desc">Sign in with Google to start playing</div>
     <button class="login-btn" id="login-google-btn" type="button">Sign in with Google</button>
     <span id="login-error" style="color: #c0392b; font-size: 14px;"></span>
+    <p class="login-hint" style="margin-top:16px;font-size:13px;color:#666;max-width:320px;">若無法登入：請用 Chrome 或 Safari 直接開啟此網址；或在 Firebase Console 將此網域加入「授權網域」。</p>
   </div>
 
   <div class="game-content" id="game-content">
@@ -1078,6 +1079,8 @@ Friday: noborock Shibuya
       GoogleAuthProvider,
       onAuthStateChanged,
       signInWithPopup,
+      signInWithRedirect,
+      getRedirectResult,
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
     import {
       addDoc,
@@ -1232,7 +1235,8 @@ Friday: noborock Shibuya
         message = "Firebase config error. Check your apiKey.";
       }
       if (authStatus) authStatus.textContent = message;
-      if (loginError) loginError.textContent = message;
+      const fullMessage = code !== "unknown" ? `${message} (${code})` : message;
+      if (loginError) loginError.textContent = fullMessage;
       if (googleLoginButton) googleLoginButton.disabled = false;
       if (loginGoogleBtn) loginGoogleBtn.disabled = false;
       console.error("Sign in failed", error);
@@ -1244,11 +1248,23 @@ Friday: noborock Shibuya
         if (loginGoogleBtn) loginGoogleBtn.disabled = true;
         if (googleLoginButton) googleLoginButton.disabled = true;
         if (loginError) loginError.textContent = "";
-        await signInWithPopup(auth, provider);
+        try {
+          await signInWithPopup(auth, provider);
+        } catch (popupErr) {
+          if (popupErr?.code === "auth/popup-blocked" || popupErr?.code === "auth/cancelled-popup-request") {
+            await signInWithRedirect(auth, provider);
+            return;
+          }
+          throw popupErr;
+        }
       } catch (error) {
         handleAuthError(error);
       }
     };
+
+    getRedirectResult(auth).catch((err) => {
+      if (err?.code && !err.message?.includes("no redirect")) console.error("Redirect sign-in error", err);
+    });
 
     if (loginGoogleBtn) {
       loginGoogleBtn.addEventListener("click", doGoogleLogin);
