@@ -901,11 +901,6 @@
       font-size: 18px;
       color: var(--game-text);
     }
-    .auth-loading-inner {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
 
     .auth-loading.hidden {
       display: none;
@@ -965,26 +960,8 @@
 </head>
 
 <body>
-  <div class="auth-loading" id="auth-loading">
-    <div class="auth-loading-inner">
-      <span>Loading...</span>
-      <button type="button" id="auth-loading-skip" style="margin-top:16px;padding:10px 20px;font-size:14px;cursor:pointer;background:#1f7a5f;color:#fff;border:none;border-radius:8px;">Continue to sign in</button>
-    </div>
-  </div>
-  <script>
-    (function () {
-      function hideLoadingShowLogin() {
-        var el = document.getElementById("auth-loading");
-        var login = document.getElementById("login-screen");
-        if (el) { el.classList.add("hidden"); el.style.display = "none"; }
-        if (login) { login.classList.remove("hidden"); login.style.display = "flex"; }
-      }
-      var skip = document.getElementById("auth-loading-skip");
-      if (skip) skip.addEventListener("click", hideLoadingShowLogin);
-      setTimeout(hideLoadingShowLogin, 2500);
-    })();
-  </script>
-  <div class="login-screen hidden" id="login-screen" aria-live="polite">
+  <div class="auth-loading hidden" id="auth-loading">Loading...</div>
+  <div class="login-screen" id="login-screen" aria-live="polite">
     <div class="login-logo">Bouldering Village RPG</div>
     <div class="login-tagline">Explore the map · Chat with players</div>
     <div class="login-desc">Sign in with Google to start playing</div>
