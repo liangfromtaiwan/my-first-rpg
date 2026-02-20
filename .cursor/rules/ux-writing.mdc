@@ -1,39 +1,40 @@
 ---
-description: 介面文案（UX writing）規範。撰寫按鈕、標籤、錯誤訊息、通知、引導、說明等使用者可見文案時，須遵守 company-design-system/ux-writing.md 與英文／日文 guideline。
+description: 介面文案（UX writing）規範。日文時必讀 Platform UXライティングガイドライン與用語索引；英文時必讀 Platform UX Writing Guideline。路徑見 company-design-system/ux-writing.md。
 globs: "**/*.html,**/*.tsx,**/*.jsx,**/*.vue,company-design-system/**"
 alwaysApply: false
 ---
 
 # UX Writing 規則
 
-凡撰寫**使用者可見的介面文案**（按鈕、標籤、tooltip、placeholder、錯誤訊息、通知、onboarding、說明文字等），須遵守 **`company-design-system/ux-writing.md`** 與下列要點。
+凡撰寫**使用者可見的介面文案**（按鈕、標籤、tooltip、placeholder、錯誤訊息、通知、onboarding、說明文字等），須遵守 **`company-design-system/ux-writing.md`**，並依語系讀取下列**必讀文件**。
 
 ---
 
-## 必讀文件
+## 語系與必讀文件路徑
 
-- **規則全文**：`company-design-system/ux-writing.md`（內含 skill-ux-writing 整合說明與英文／日文規範摘要）。
+### 撰寫日文時
 
----
+1. **Platform UX ライティングガイドライン**  
+   - 資料夾：`/Users/liang/Downloads/Private & Shared 3/Platform UXライティングガイドライン`  
+   - 主文件：`/Users/liang/Downloads/Private & Shared 3/Platform UXライティングガイドライン 22673b65c9148038a403e9c5e352b42f.md`
 
-## 英文文案
+2. **用語索引**  
+   - 資料夾：`/Users/liang/Downloads/Private & Shared 4/用語索引`  
+   - 主文件：`/Users/liang/Downloads/Private & Shared 4/用語索引 22673b65c91480418e22ed5dc6381255.md`  
+   - 用語須**優先採用索引內已核准者**。
 
-- **Voice**：helpful, professional, concise。  
-- **Tone**：supportive, clear, neutral。  
-- **對象**：成人專業者；可適度使用專業用語，但避免過於艱澀，以清晰與可及性為優先。  
-- 不確定用詞時可參考 [Google Trends](https://trends.google.com/trends/)。
+### 撰寫英文時
 
----
-
-## 日文文案
-
-- 須參照 skill 內 **Platform UX ライティングガイドライン** 與 **用語索引**（見 `ux-writing.md` 第三節）。  
-- 用語以索引內已核准者為優先，維持全產品一致。
+- **Platform UX Writing Guideline**  
+  - 資料夾：`/Users/liang/Downloads/Private & Shared 2/Platform UX Writing Guideline`  
+  - 主文件：`/Users/liang/Downloads/Private & Shared 2/Platform UX Writing Guideline 22673b65c91481778eaaec2abead2c1c.md`  
+  - Voice: helpful, professional, concise；Tone: supportive, clear, neutral；目標為成人專業者；必要時以 Google Trends 查證用詞。
 
 ---
 
 ## 實作時
 
 1. 先確認語系（英文／日文）。  
-2. 依 `company-design-system/ux-writing.md` 對應章節與 skill 內 assets 撰寫或修改文案。  
-3. 檢查是否符合 voice/tone 與術語一致。
+2. **日文**：讀取上述日文ガイドライン與用語索引（含同資料夾內 CSV／清單），再撰寫或修改文案。  
+3. **英文**：讀取上述英文 Guideline（含同資料夾內相關檔案），再撰寫或修改文案。  
+4. 檢查是否符合 voice/tone 與術語一致。
