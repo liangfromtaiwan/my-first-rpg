@@ -55,8 +55,7 @@
   內含登入、側邊選單、Drawer、平台主畫面、Dialog / Alert Dialog 等截圖與說明。
 
 - **Cursor 規則**  
-  - **company-design-system**：公司設計系統總則（tokens、元件、網格、Figma 流程、驗收）。  
-  - **poc-and-platform-design**：當你說「製作 poc」或做 admin/platform 時，會套用公司設計系統規則與本資料夾。
+  - **company-design-system**：公司設計系統總則（tokens、元件、網格、Figma 流程、驗收）。製作 POC、admin、platform 時一律啟用此規則即可。
 
 ---
 
