@@ -1,5 +1,5 @@
 ---
-description: 公司設計系統總則。含 tokens、Admin/Platform 元件與網格、從 Figma 實作流程、以及本專案 Figma 設計系統（xLwc3BIEzHKIkgEfMa3Zsm）與遊戲用 token。代表公司產品用 company tokens；本專案遊戲 UI 用 index.html :root tokens。
+description: 公司設計系統總則。含 tokens、Admin/Platform 元件與網格、從 Figma 實作公司產品時的流程與驗收。代表公司的產品一律使用 company-design-system/all-variables.css。
 globs: "**/*.html,**/*.css,**/*.tsx,**/*.jsx,company-design-system/**,image/**"
 alwaysApply: false
 ---
@@ -7,8 +7,7 @@ alwaysApply: false
 # 公司設計系統（Company Design System）
 
 **適用對象**：  
-- **代表公司的產品**（POC、admin、platform、後台、管理介面）：依本規則「公司 token」與 Admin 規格。  
-- **從 Figma 實作 UI**（含本專案 Figma Design System 或公司產品設計稿）：依本規則「從 Figma 實作」流程與對應 token。
+- **代表公司的產品**（POC、admin、platform、後台、管理介面）：依本規則的 token、Admin 規格與 Figma 實作流程。
 
 **原則**：一律使用設計系統的 tokens、元件規格與版面規範，**禁止**硬編碼色碼、魔術數字或偏離既有元件規格。
 
@@ -42,60 +41,34 @@ alwaysApply: false
 | 主要文字 | `var(--sem-text-primary)` | `--colors-gray-alpha-12` |
 | 邊框 | `var(--sem-border-default)` | `--colors-gray-alpha-6` |
 
-### 1.2 本專案（遊戲／非公司產品）從 Figma 實作時 — 使用 index.html :root
-
-當從 **本專案 Figma 設計系統** 實作遊戲或非公司產品 UI 時，token 使用 **`index.html` 內 `:root`** 的變數：
-
-```css
---palette-white: #ffffff;
---palette-peach: #e8c5a7;
---palette-mauve: #c49a88;
---palette-olive: #b3a45d;
---palette-teal: #4e9c7c;
---game-bg: #e8dfd4;
---game-bg-warm: #d4c4b0;
---game-primary: #c85a54;
---game-primary-hover: #b34a44;
---game-accent: #6b8e6b;
---game-text: #3d3829;
---game-text-muted: #6b6355;
-```
-
-- 顏色、背景、按鈕、文字等一律用 `var(--game-*)` 或 `var(--palette-*)`，不硬編碼。
-
 ---
 
-## 二、Figma 設計系統來源與從 Figma 實作流程
+## 二、從 Figma 實作公司產品時
 
-### 2.1 本專案 Figma 設計系統
+### 2.1 Figma 連結解析
 
-- **Figma 檔案**：[Design System](https://www.figma.com/design/xLwc3BIEzHKIkgEfMa3Zsm/Design-System?node-id=4585-2)
-- **File Key**：`xLwc3BIEzHKIkgEfMa3Zsm`
-- **設計系統主節點**：`4585-2` → 工具參數 `nodeId="4585:2"`  
-- 實作單一元件/畫面時，使用該節點的具體 node ID（Figma 連結的 `node-id`，傳入工具時將 `-` 改為 `:`）。
+- **fileKey** 與 **nodeId** 從 Figma 連結取得（例：`https://figma.com/design/{fileKey}/{fileName}?node-id={nodeId}`）。
+- 傳入工具時，`node-id` 的 `-` 須改為 `:`（例：`4585-2` → `4585:2`）。
 
-### 2.2 從 Figma 實作時必跑流程（不可省略）
+### 2.2 必跑流程（不可省略）
 
-不論公司產品或本專案 Figma，從 Figma 實作或調整 UI 時依序執行：
+從 Figma 實作或調整公司產品 UI 時依序執行：
 
-1. **取得設計脈絡**：`get_design_context(fileKey, nodeId)`；過大時先 `get_metadata` 再對子節點取 context。本專案 Figma 時 `fileKey="xLwc3BIEzHKIkgEfMa3Zsm"`。
+1. **取得設計脈絡**：`get_design_context(fileKey, nodeId)`；過大時先 `get_metadata` 再對子節點取 context。
 2. **取得視覺參考**：`get_screenshot(fileKey, nodeId)` 作為實作與驗收依據。
 3. **下載素材**：依 Figma 回傳的圖片/SVG 下載；若有 localhost 來源則直接使用，不替換為其他圖庫。存放於專案 `image/` 或既有約定目錄。
-4. **對應 token 並實作**：  
-   - **公司產品**：將 Figma 的顏色、間距、字級對應到 **`company-design-system/all-variables.css`** 的 `--sem-*` / `--tokens-*` / `--spacing-*` / `--radius-*` / `--colors-*`。  
-   - **本專案遊戲**：對應到 **`index.html`** 的 `--game-*` / `--palette-*`。  
-   Figma MCP 若產出 React/Tailwind，僅作設計與結構參考，最終產出依專案（HTML+CSS 或專案技術棧）。
-5. **驗收**：對照截圖檢查版面、字型、顏色、間距與互動狀態；確認皆使用對應 token，無硬編碼。
+4. **對應 token 並實作**：將 Figma 的顏色、間距、字級對應到 **`company-design-system/all-variables.css`** 的 `--sem-*` / `--tokens-*` / `--spacing-*` / `--radius-*` / `--colors-*`。Figma MCP 若產出 React/Tailwind，僅作設計與結構參考，最終產出依專案技術棧。
+5. **驗收**：對照截圖檢查版面、字型、顏色、間距與互動狀態；確認皆使用公司 token，無硬編碼。
 
 ### 2.3 技術棧與實作原則（從 Figma 實作時）
 
 - **標記**：HTML5；公司產品依專案可能為 React/TSX 等。
 - **樣式**：原生 CSS，使用 `:root` 或設計系統的 CSS 變數；公司產品引入 `all-variables.css`。
-- **字型**：Noto Sans TC（400/500/600/700），本專案已於 `index.html` 引入。
-- **重用**：先檢查既有 class（如 `.chat-tab`、`.login-btn`、`.main-layout`），能沿用就沿用或擴充。
+- **字型**：Noto Sans TC（400/500/600/700），依專案引入。
+- **重用**：先檢查既有 class，能沿用就沿用或擴充。
 - **元件與無障礙**：依設計系統階層與語意使用標籤（`button`、`nav`、`section`），必要時加 `aria-*`、`role`。
 - **視覺**：以 Figma 截圖為準，達成 1:1 視覺與狀態（hover、active、disabled）。
-- **素材**：不隨意新增 icon 套件；以 Figma 設計系統或 MCP 回傳資源為準。Class 命名維持小寫連字號（如 `game-content`、`chat-panel`）。
+- **素材**：不隨意新增 icon 套件；以 Figma 設計稿或 MCP 回傳資源為準。Class 命名維持小寫連字號。
 
 ---
 
@@ -181,7 +154,7 @@ Platform 範例含：登入、Sidebar 展開/收合、Drawer、平台主畫面+�
 
 - [ ] 版面、對齊、間距與 Figma 一致
 - [ ] 字型、字級、字重與設計系統一致
-- [ ] 顏色皆使用 `var(--*)` token（公司產品用 company-design-system；本專案遊戲用 index.html :root）
+- [ ] 顏色皆使用 `var(--*)` token（company-design-system/all-variables.css）
 - [ ] 互動狀態（hover / active / disabled）已實作
 - [ ] 素材路徑正確、不依賴未授權圖庫
 - [ ] 無障礙基本要求已滿足（可聚焦、語意標籤等）
