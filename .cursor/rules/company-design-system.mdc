@@ -1,0 +1,136 @@
+---
+description: 公司設計系統總則。凡製作代表公司的產品（POC、admin、platform 等）皆須遵守：tokens、元件規格、版面網格、Figma 流程與驗收清單。
+globs: "**/*.html,**/*.css,**/*.tsx,**/*.jsx,company-design-system/**"
+alwaysApply: false
+---
+
+# 公司設計系統（Company Design System）
+
+**適用對象**：所有以 Cursor 產出、需**代表公司**的產品（POC、admin、platform、後台、管理介面等）。
+
+**原則**：一律使用本設計系統的 tokens、元件規格與版面規範，**禁止**硬編碼色碼、魔術數字或偏離既有元件規格。
+
+---
+
+## 一、Design Tokens 來源與優先順序
+
+- **唯一 token 來源**：專案內 **`company-design-system/all-variables.css`**。  
+- 實作時必須引入此檔案，所有顏色、間距、圓角、字級等皆使用檔案內變數。
+
+**Token 使用優先順序（嚴格遵守）：**
+
+```
+1. --sem-*            ← 優先使用（語意化 token）
+2. --tokens-*         ← 元件專用 token
+3. --spacing-*, --radius-*  ← 間距、圓角
+4. --colors-*         ← 僅在無上述對應時使用
+❌ 禁止：硬編碼色碼、px 色值、#xxx
+```
+
+**常用對照：**
+
+| 用途 | ✅ 使用 | ❌ 禁止 |
+|------|--------|--------|
+| 主按鈕背景 | `var(--sem-btn-primary-bg)` | `--colors-blue-9`、`#0090ff` |
+| 危險按鈕 | `var(--sem-btn-danger-bg)` | `--colors-red-9` |
+| 頁面背景 | `var(--sem-bg-canvas)` | `#f5f5f5`、`white` |
+| 卡片/表層 | `var(--sem-layer-1)` | `white` |
+| 主要文字 | `var(--sem-text-primary)` | `--colors-gray-alpha-12` |
+| 邊框 | `var(--sem-border-default)` | `--colors-gray-alpha-6` |
+
+---
+
+## 二、核心元件規格（Admin / Platform）
+
+以下為公司統一規格，所有 admin、platform、後台類介面必須一致。
+
+### Sidebar（側邊導航）
+
+| 項目 | 規格 |
+|------|------|
+| 寬度（展開） | **256px** |
+| 寬度（收合） | **64px** |
+| 背景 | **`var(--colors-sand-1)`** (#fdfdfc) |
+| 右邊框 | **`var(--colors-sand-3)`** (#f1f2f2) |
+| 收合時 Tooltip | 位置 left: 64px；背景 `var(--colors-sand-12)`；文字 `var(--tokens-colors-white-contrast)`；字級 13px、字重 500；padding 8px 12px；圓角 4px；距側欄 8px；**動畫 150ms ease 淡入**；無箭頭；內容為選單標籤 |
+
+### Top Header（頂列）
+
+| 項目 | 規格 |
+|------|------|
+| 高度 | **56px** |
+| 背景 | **`var(--colors-sand-1)`** (#fdfdfc) |
+| 底邊框 | `var(--colors-gray-alpha-6)` |
+
+### Drawer（抽屜表單）
+
+| 項目 | 規格 |
+|------|------|
+| 寬度 | **720px** |
+| 背景 | **`var(--colors-sand-1)`** (#fdfdfc) |
+| 陰影 | `-4px 0 12px rgba(0,0,0,0.1)` |
+
+### Dialog 寬度
+
+| 類型 | 寬度 |
+|------|------|
+| Small | 400px |
+| Medium | 600px |
+| Large | 800px |
+
+---
+
+## 三、Admin 版面網格（Layout Grid）
+
+- **全域容器**：max-width 1440px；水平 padding 24px（`--sem-space-6`）；垂直間距 `--sem-space-8`。
+- **Desktop（≥1024px）**：12 欄；欄寬 32px；gap 20px。**允許 span 僅：12 / 8 / 6 / 4 / 3**（不可自訂其他欄數）。
+- **主內容區**：8–12 欄；**側邊面板**：3–4 欄；**表單欄位**：12（全幅）/ 6（半幅）/ 4（三分之一）。
+- **表格**：佔滿容器（span 12）；操作欄 80–120px、右對齊；溢位時水平捲動。
+- **RWD**：Mobile &lt;768px 單欄；Tablet 768–1023 為 8 欄；Desktop ≥1024 為 12 欄。
+- **垂直間距**：大區塊 `--sem-space-8`（48px）；相關群組 `--sem-space-6`（32px）；表單欄位間 `--sem-space-4`（16px）。
+- **Sidebar 行為**：Desktop 展開 256px / 收合 64px；Mobile 為 overlay drawer + backdrop。
+
+---
+
+## 四、從 Figma 實作時（公司產品）
+
+當設計稿來自 Figma 且產出需代表公司時：
+
+1. **取得設計脈絡**：`get_design_context(fileKey, nodeId)`；過大時先 `get_metadata` 再對子節點取 context。
+2. **取得視覺參考**：`get_screenshot(fileKey, nodeId)` 作為驗收依據。
+3. **對應到公司 token**：將 Figma 的顏色、間距、字級對應到 **`all-variables.css`** 的 `--sem-*` / `--tokens-*` / `--spacing-*` / `--radius-*` / `--colors-*`，不得沿用 Figma 內硬編碼值。
+4. **下載素材**：使用 Figma MCP 回傳的資源；若有 localhost 來源則直接使用，不替換為其他圖庫。
+5. **驗收**：對照截圖檢查版面、字型、顏色、互動狀態，並確認皆使用公司 token。
+
+---
+
+## 五、參考資源路徑
+
+| 用途 | 路徑 |
+|------|------|
+| Design tokens（必用） | `company-design-system/all-variables.css` |
+| 規格更新與檢查表 | `company-design-system/Claude-design-system-updates-2026-02-20.md` |
+| Platform 範例（layout、表格、表單、Dialog） | `/Users/liang/Desktop/Design files/company-design-system/examples/Platform` |
+
+Platform 範例含：登入、Sidebar 展開/收合、Drawer、平台主畫面+表格、Dialog / Alert Dialog。實作 admin/platform 時須與其 layout 結構、導航、表格、表單、對話框模式一致。
+
+---
+
+## 六、驗收檢查表（新畫面完成前必對）
+
+- [ ] Sidebar 寬度 256px（展開）/ 64px（收合）
+- [ ] Header 高度 56px
+- [ ] 背景色使用 `var(--colors-sand-1)`（或 `--sem-bg-canvas` 等語意 token）
+- [ ] 顏色一律為 `var(--sem-*)` / `var(--tokens-*)` / `var(--colors-*)`，無硬編碼
+- [ ] 版面依 12 欄網格，僅使用 span 12/8/6/4/3
+- [ ] 垂直間距使用 `--sem-space-*`
+- [ ] Drawer 寬度 720px（若有）
+- [ ] 收合 Sidebar 時 tooltip 依規格顯示（150ms 淡入等）
+- [ ] 互動狀態（hover、active、focus）已定義並使用 token
+
+---
+
+## 七、設計師使用方式
+
+- 在 Cursor 中進行**公司產品**相關任務時，請啟用或提及本規則（**company-design-system**）。
+- 製作 POC、admin、platform 時，一律依本規則與 `company-design-system/` 資料夾內檔案執行；細節與更新紀錄見 **`company-design-system/README.md`** 與 **`Claude-design-system-updates-2026-02-20.md`**。

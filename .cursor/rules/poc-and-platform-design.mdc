@@ -1,70 +1,18 @@
 ---
-description: 製作 POC 時使用 company-design-system/all-variables.css 與 Figma 規則；設計 admin/platform 時參考 Platform 範例與 design system updates。
-globs: "**/*.html,**/*.css,company-design-system/**"
+description: 當使用者說「製作 poc」或設計 admin/platform 時，套用公司設計系統總則（company-design-system.mdc）並使用 company-design-system 資料夾與 Platform 範例。
+globs: "**/*.html,**/*.css,**/*.tsx,**/*.jsx,company-design-system/**"
 alwaysApply: false
 ---
 
-# POC 與 Platform / Admin 設計規則
+# POC 與 Admin / Platform 觸發規則
 
-當使用者說「**製作 POC**」或要做概念驗證時，以及設計 **admin**、**platform** 類產品時，必須依本規則與下列檔案／路徑操作。
+當使用者說「**製作 POC**」、「**製作 poc**」或要設計 **admin**、**platform**、後台、管理介面等**代表公司的產品**時：
 
----
+1. **一律套用** **`.cursor/rules/company-design-system.mdc`**（公司設計系統總則）。  
+2. 依該規則使用 **`company-design-system/all-variables.css`** 與 **`company-design-system/Claude-design-system-updates-2026-02-20.md`**。  
+3. 若為 admin/platform 類產品，另須參考 **Platform 範例**的 layout 與使用方式：  
+   **`/Users/liang/Desktop/Design files/company-design-system/examples/Platform`**
 
-## 一、製作 POC 時（使用者說「製作 poc」等）
+**不重複定義**：tokens 優先順序、Sidebar/Header/Drawer/Dialog 規格、版面網格、Figma 流程、驗收檢查表等，皆以 **company-design-system.mdc** 與 **company-design-system/** 資料夾內文件為準。
 
-**必須同時使用：**
-
-1. **Design tokens / CSS 變數**  
-   - 使用專案內 **`company-design-system/all-variables.css`** 作為唯一 design tokens 來源。  
-   - 在 HTML 或專案 CSS 中引入此檔案（例如 `<link rel="stylesheet" href="company-design-system/all-variables.css">` 或對應路徑），所有顏色、間距、圓角、字級等一律使用該檔案內定義的變數（如 `--sem-*`、`--colors-*`、`--spacing-*`、`--radius-*`），**不得**硬編碼色碼或魔術數字。
-
-2. **Figma 設計系統規則**  
-   - 同時遵守 **`.cursor/rules/figma-design-system.mdc`** 的規定：  
-     - Figma 設計系統來源、必跑流程（get_design_context → get_screenshot → 實作 → 驗收）、  
-     - 技術棧（HTML5、原生 CSS、Noto Sans TC）、  
-     - 設計 token 對應、實作原則、素材與驗收檢查。  
-   - 若 Figma 與 `all-variables.css` 的 token 命名不同，以 **Figma 視覺為準**，在實作時對應到 `all-variables.css` 中已有的變數（優先 `--sem-*`，其次 `--tokens-*`、`--spacing-*`、`--radius-*`、`--colors-*`）。
-
-**總結**：POC = `company-design-system/all-variables.css` + `figma-design-system.mdc`。
-
----
-
-## 二、設計 Admin / Platform 類產品時
-
-當需求是設計 **admin**、**platform**、後台、管理介面等類似產品時，除上述 POC 規則外，還需：
-
-1. **Layout 與使用方式參考**  
-   - 參考 **`/Users/liang/Desktop/Design files/company-design-system/examples/Platform`** 資料夾內的範例與說明。  
-   - 該資料夾含：登入流程、側邊選單（展開/收合）、Drawer、平台主畫面（表格視圖）、Dialog / Alert Dialog 等截圖與設計重點。  
-   - 實作時需與這些範例的 **layout 結構、導航、表格、表單、對話框模式** 一致，並使用相同間距與視覺層級。
-
-2. **Design System 更新規範**  
-   - 參考專案內 **`company-design-system/Claude-design-system-updates-2026-02-20.md`**。  
-   - 重點包含：  
-     - **Sidebar**：展開寬度 256px、收合 64px；背景 `var(--colors-sand-1)`；邊框 `var(--colors-sand-3)`；收合時 tooltip 規格（位置、樣式、動畫 150ms）。  
-     - **Top Header**：高度 56px；背景 `var(--colors-sand-1)`。  
-     - **Drawer**：寬度 720px；背景 `var(--colors-sand-1)`。  
-     - **Token 優先順序**：`--sem-*` → `--tokens-*` → `--spacing-*` / `--radius-*` → `--colors-*`；禁止硬編碼。  
-     - **Admin Layout Grid**：12 欄、欄寬 32px、gap 20px；允許 span 僅 12/8/6/4/3；主內容 8–12 欄、側邊 3–4 欄；RWD breakpoints（mobile &lt;768px、tablet 768–1023、desktop ≥1024）；垂直間距使用 `--sem-space-*`。  
-     - Dialog 寬度：Small 400px、Medium 600px、Large 800px。  
-   - 實作 admin/platform 畫面時，需對照該文件中的 **Validation Checklist** 與 **Usage Guidelines**。
-
-**總結**：Admin/Platform = POC 規則 + Platform 範例資料夾（layout/用法）+ `Claude-design-system-updates-2026-02-20.md`（尺寸、token、網格、元件規範）。
-
----
-
-## 三、檔案與路徑速查
-
-| 用途 | 路徑 |
-|------|------|
-| POC 用 design tokens（必用） | `company-design-system/all-variables.css` |
-| Figma 設計系統規則（POC 必用） | `.cursor/rules/figma-design-system.mdc` |
-| Admin/Platform 範例（layout、用法） | `/Users/liang/Desktop/Design files/company-design-system/examples/Platform` |
-| Design system 更新（admin/platform 必讀） | `company-design-system/Claude-design-system-updates-2026-02-20.md` |
-
----
-
-## 四、實作時提醒
-
-- **製作 POC**：先確認已引入 `company-design-system/all-variables.css`，再依 `figma-design-system.mdc` 從 Figma 取脈絡與截圖並實作。  
-- **製作 Admin/Platform**：先讀 `Claude-design-system-updates-2026-02-20.md` 與 Platform 範例 README，再依 POC 規則 + 上述 layout/token/網格 產出介面。
+設計師只需啟用 **company-design-system** 規則即可；本規則確保「製作 poc」與「admin/platform」情境會自動套用公司設計系統。
