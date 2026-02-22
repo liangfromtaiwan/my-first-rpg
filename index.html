@@ -754,6 +754,227 @@
       border-color: var(--game-accent);
     }
 
+    /* 破冰問答小遊戲：🎲 按鈕（顯示在對方角色頭上） */
+    .icebreaker-dice-btn {
+      position: fixed;
+      z-index: 40;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      border: none;
+      border-radius: 50%;
+      background: var(--game-accent);
+      color: #fff;
+      font-size: 22px;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(107, 142, 107, 0.5);
+      transition: transform 0.15s ease;
+    }
+    .icebreaker-dice-btn:hover {
+      transform: scale(1.12);
+    }
+    .icebreaker-dice-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* 破冰問答 overlay modal */
+    .icebreaker-overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 50;
+    }
+    .icebreaker-overlay.visible {
+      display: flex;
+    }
+    .icebreaker-card {
+      width: min(400px, 92vw);
+      background: rgba(255, 255, 255, 0.98);
+      border: 2px solid rgba(61, 56, 41, 0.2);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+    }
+    .icebreaker-question {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--game-text);
+      text-align: center;
+    }
+    .icebreaker-input-row {
+      display: flex;
+      gap: 8px;
+    }
+    .icebreaker-input-row input {
+      flex: 1;
+      font-size: 15px;
+      padding: 10px 14px;
+      border: 2px solid rgba(61, 56, 41, 0.2);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--game-text);
+    }
+    .icebreaker-input-row input:disabled {
+      background: rgba(61, 56, 41, 0.08);
+      cursor: not-allowed;
+    }
+    .icebreaker-input-row button {
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 20px;
+      border: none;
+      background: var(--game-primary);
+      color: #fff;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .icebreaker-input-row button:hover:not(:disabled) {
+      background: var(--game-primary-hover);
+    }
+    .icebreaker-input-row button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .icebreaker-waiting {
+      font-size: 14px;
+      color: var(--game-text-muted);
+      text-align: center;
+    }
+    .icebreaker-results {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .icebreaker-result-box {
+      padding: 12px;
+      border-radius: 10px;
+      background: rgba(61, 56, 41, 0.06);
+      border: 2px solid rgba(61, 56, 41, 0.12);
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    .icebreaker-result-box .label {
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--game-text-muted);
+      margin-bottom: 4px;
+    }
+    .icebreaker-magic {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--game-accent);
+      text-align: center;
+      animation: icebreaker-pulse 1.2s ease-in-out 2;
+    }
+    @keyframes icebreaker-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.9; transform: scale(1.05); }
+    }
+    .icebreaker-end-btn {
+      align-self: center;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 24px;
+      border: none;
+      background: var(--game-primary);
+      color: #fff;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .icebreaker-end-btn:hover {
+      background: var(--game-primary-hover);
+    }
+
+    /* 破冰邀請小彈窗 */
+    .icebreaker-invite-overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: 55;
+    }
+    .icebreaker-invite-overlay.visible {
+      display: flex;
+    }
+    .icebreaker-invite-card {
+      width: min(320px, 92vw);
+      background: rgba(255, 255, 255, 0.98);
+      border: 2px solid rgba(61, 56, 41, 0.2);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+    }
+    .icebreaker-invite-card .message {
+      font-size: 16px;
+      color: var(--game-text);
+      text-align: center;
+    }
+    .icebreaker-invite-btns {
+      display: flex;
+      gap: 12px;
+    }
+    .icebreaker-invite-btns button {
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .icebreaker-invite-accept {
+      background: var(--game-accent);
+      color: #fff;
+    }
+    .icebreaker-invite-accept:hover {
+      filter: brightness(1.1);
+    }
+    .icebreaker-invite-reject {
+      background: rgba(61, 56, 41, 0.15);
+      color: var(--game-text);
+    }
+    .icebreaker-invite-reject:hover {
+      background: rgba(61, 56, 41, 0.25);
+    }
+
+    /* Toast 輕提示 */
+    .icebreaker-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 60;
+      padding: 12px 20px;
+      background: rgba(61, 56, 41, 0.9);
+      color: #fff;
+      font-size: 14px;
+      border-radius: 10px;
+      display: none;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+    .icebreaker-toast.visible {
+      display: block;
+      animation: icebreaker-toast-in 0.25s ease;
+    }
+    @keyframes icebreaker-toast-in {
+      from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
     .village-welcome-overlay {
       position: fixed;
       inset: 0;
@@ -997,6 +1218,7 @@
         <button class="board-action" id="board-action" type="button">
           View Bulletin Board ↲
         </button>
+        <button class="icebreaker-dice-btn" id="icebreaker-dice-btn" type="button" title="破冰問答">🎲</button>
       </div>
       <div class="chat-overlay-mobile" id="chat-overlay-mobile">
         <div class="chat-overlay-backdrop" id="chat-overlay-backdrop"></div>
@@ -1066,6 +1288,29 @@ Friday: noborock Shibuya
       </button>
     </div>
   </div>
+  <div class="icebreaker-overlay" id="icebreaker-overlay" aria-live="polite">
+    <div class="icebreaker-card">
+      <div class="icebreaker-question" id="icebreaker-question"></div>
+      <div class="icebreaker-input-row" id="icebreaker-input-row">
+        <input id="icebreaker-input" type="text" maxlength="100" placeholder="輸入你的回答..." />
+        <button id="icebreaker-submit" type="button">送出</button>
+      </div>
+      <div class="icebreaker-waiting" id="icebreaker-waiting" style="display:none;">等待對方回答中…</div>
+      <div class="icebreaker-results" id="icebreaker-results" style="display:none;"></div>
+      <div class="icebreaker-magic" id="icebreaker-magic" style="display:none;">✨ 默契 +1</div>
+      <button class="icebreaker-end-btn" id="icebreaker-end-btn" type="button" style="display:none;">結束</button>
+    </div>
+  </div>
+  <div class="icebreaker-invite-overlay" id="icebreaker-invite-overlay" aria-live="polite">
+    <div class="icebreaker-invite-card">
+      <div class="message" id="icebreaker-invite-message"></div>
+      <div class="icebreaker-invite-btns">
+        <button class="icebreaker-invite-accept" id="icebreaker-invite-accept" type="button">接受</button>
+        <button class="icebreaker-invite-reject" id="icebreaker-invite-reject" type="button">拒絕</button>
+      </div>
+    </div>
+  </div>
+  <div class="icebreaker-toast" id="icebreaker-toast" aria-live="polite"></div>
   <audio id="message-send-audio" src="sound/message-send.mp3" preload="auto"></audio>
   <audio
     id="message-receive-audio"
@@ -1155,6 +1400,21 @@ Friday: noborock Shibuya
     const villageWelcomeOverlay = document.querySelector("#village-welcome-overlay");
     const villageWelcomeClose = document.querySelector("#village-welcome-close");
     const noticeBody = document.querySelector("#notice-body");
+    const icebreakerDiceBtn = document.querySelector("#icebreaker-dice-btn");
+    const icebreakerOverlay = document.querySelector("#icebreaker-overlay");
+    const icebreakerQuestion = document.querySelector("#icebreaker-question");
+    const icebreakerInput = document.querySelector("#icebreaker-input");
+    const icebreakerSubmit = document.querySelector("#icebreaker-submit");
+    const icebreakerInputRow = document.querySelector("#icebreaker-input-row");
+    const icebreakerWaiting = document.querySelector("#icebreaker-waiting");
+    const icebreakerResults = document.querySelector("#icebreaker-results");
+    const icebreakerMagic = document.querySelector("#icebreaker-magic");
+    const icebreakerEndBtn = document.querySelector("#icebreaker-end-btn");
+    const icebreakerInviteOverlay = document.querySelector("#icebreaker-invite-overlay");
+    const icebreakerInviteMessage = document.querySelector("#icebreaker-invite-message");
+    const icebreakerInviteAccept = document.querySelector("#icebreaker-invite-accept");
+    const icebreakerInviteReject = document.querySelector("#icebreaker-invite-reject");
+    const icebreakerToast = document.querySelector("#icebreaker-toast");
     const privateChat = document.querySelector("#private-chat");
     const privateMessagesEl = document.querySelector("#private-messages");
     const privateEmpty = document.querySelector("#private-empty");
@@ -1168,6 +1428,21 @@ Friday: noborock Shibuya
     let playerNickname = localStorage.getItem(nicknameStorageKey) || "";
     // Main world chat (shared between main world and village)
     const villageId = "worldMap";
+
+    // --- 破冰問答小遊戲常數（易於調整）---
+    const ICEBREAKER_DISTANCE_THRESHOLD = 50; // 觸發 🎲 按鈕的玩家距離（px）
+    const ICEBREAKER_QUESTIONS = [
+      "最近一次讓你覺得開心的是什麼？",
+      "你最近沉迷的一件事是？",
+      "如果今天可以瞬移，你想去哪？",
+      "你偏早睡派還是夜貓派？",
+      "你最喜歡的放鬆方式是？",
+      "最近在聽什麼歌／看什麼劇？",
+      "你最喜歡的季節是？",
+      "你喜歡大城市還是小城市？",
+      "如果只能推薦一個興趣，你會推薦什麼？",
+      "今天的你需要更多：安靜 or 熱鬧？",
+    ];
     let unsubscribeChat = null;
     let unsubscribePlayers = null;
     const otherPlayers = new Map();
@@ -1193,6 +1468,14 @@ Friday: noborock Shibuya
     let lastSyncedY = -1;
     let lastUserPresenceWrite = 0;
     const userPresenceThrottleMs = 30000;
+
+    // 破冰問答小遊戲狀態
+    let icebreakerNearbyPlayerId = null; // 距離內最近的玩家 id，用於顯示 🎲
+    let currentInviteId = null; // 目前顯示的邀請 doc id（接收方用）
+    let currentInviteFromUid = null;
+    let currentSessionId = null; // 目前進行的 gameSession id
+    let unsubscribeGameInvites = null;
+    let unsubscribeGameSession = null;
 
     const setAuthStatus = (user) => {
       if (authLoading) authLoading.classList.add("hidden");
@@ -1280,6 +1563,7 @@ Friday: noborock Shibuya
     onAuthStateChanged(auth, setAuthStatus);
     onAuthStateChanged(auth, () => {
       startPlayersListener();
+      startIcebreakerListeners();
     });
 
     // If Firebase Auth doesn't resolve (e.g. network, persistence), stop loading after a timeout
@@ -1655,6 +1939,313 @@ Friday: noborock Shibuya
     if (villageWelcomeBackdrop) {
       villageWelcomeBackdrop.addEventListener("click", closeVillageWelcome);
     }
+
+    // ========== 破冰問答小遊戲 ==========
+    const showIcebreakerToast = (msg, durationMs = 2500) => {
+      if (!icebreakerToast) return;
+      icebreakerToast.textContent = msg;
+      icebreakerToast.classList.add("visible");
+      clearTimeout(showIcebreakerToast._timer);
+      showIcebreakerToast._timer = setTimeout(() => {
+        icebreakerToast.classList.remove("visible");
+      }, durationMs);
+    };
+
+    const getNearestPlayerWithinDistance = () => {
+      let nearest = null;
+      let nearestDist = Infinity;
+      otherPlayers.forEach((playerData, playerId) => {
+        if (
+          !isPlayerOnlineOnMap(playerData) ||
+          typeof playerData.x !== "number" ||
+          typeof playerData.y !== "number"
+        ) return;
+        const dx = playerData.x - player.x;
+        const dy = playerData.y - player.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < ICEBREAKER_DISTANCE_THRESHOLD && dist < nearestDist) {
+          nearestDist = dist;
+          nearest = { playerId, playerData };
+        }
+      });
+      return nearest;
+    };
+
+    const setIcebreakerDiceVisibility = (visible) => {
+      if (!icebreakerDiceBtn) return;
+      icebreakerDiceBtn.style.display = visible ? "flex" : "none";
+    };
+
+    const positionIcebreakerDice = () => {
+      if (!icebreakerDiceBtn || !icebreakerNearbyPlayerId) return;
+      const playerData = otherPlayers.get(icebreakerNearbyPlayerId);
+      const renderPos = otherPlayerRender.get(icebreakerNearbyPlayerId);
+      if (!playerData || !renderPos) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = rect.width / viewportWidth;
+      const scaleY = rect.height / viewportHeight;
+      const centerX = renderPos.x + player.size / 2;
+      const topY = renderPos.y - 8;
+      const x = rect.left + (centerX - camera.x) * scaleX - 20;
+      const y = rect.top + (topY - camera.y) * scaleY - 20;
+      icebreakerDiceBtn.style.left = `${Math.max(8, x)}px`;
+      icebreakerDiceBtn.style.top = `${Math.max(8, y)}px`;
+    };
+
+    const sendIcebreakerInvite = async () => {
+      const user = auth.currentUser;
+      if (!user || !icebreakerNearbyPlayerId) return;
+      try {
+        await addDoc(collection(db, "gameInvites"), {
+          fromUid: user.uid,
+          toUid: icebreakerNearbyPlayerId,
+          villageId,
+          type: "icebreaker",
+          status: "pending",
+          createdAt: serverTimestamp(),
+        });
+        showIcebreakerToast("已送出邀請");
+      } catch (err) {
+        console.error("Icebreaker invite failed", err);
+        showIcebreakerToast("送出失敗，請再試一次");
+      }
+    };
+
+    const showInviteDialog = (inviteId, fromUid, fromName) => {
+      currentInviteId = inviteId;
+      currentInviteFromUid = fromUid;
+      if (icebreakerInviteMessage) {
+        icebreakerInviteMessage.textContent = `${fromName || "對方"} 想和你玩破冰問答 🎲`;
+      }
+      if (icebreakerInviteOverlay) icebreakerInviteOverlay.classList.add("visible");
+    };
+
+    const hideInviteDialog = () => {
+      currentInviteId = null;
+      currentInviteFromUid = null;
+      if (icebreakerInviteOverlay) icebreakerInviteOverlay.classList.remove("visible");
+    };
+
+    const acceptIcebreakerInvite = async () => {
+      if (!currentInviteId || !currentInviteFromUid || !auth.currentUser) return;
+      const myUid = auth.currentUser.uid;
+      const players = [currentInviteFromUid, myUid].sort();
+      const qIndex = Math.floor(Math.random() * ICEBREAKER_QUESTIONS.length);
+      const questionText = ICEBREAKER_QUESTIONS[qIndex];
+      try {
+        const sessionRef = await addDoc(collection(db, "gameSessions"), {
+          players,
+          villageId,
+          type: "icebreaker",
+          questionId: String(qIndex),
+          questionText,
+          answers: {},
+          status: "active",
+          createdAt: serverTimestamp(),
+        });
+        await updateDoc(doc(db, "gameInvites", currentInviteId), {
+          status: "accepted",
+          sessionId: sessionRef.id,
+        });
+        hideInviteDialog();
+        currentSessionId = sessionRef.id;
+        openIcebreakerOverlay(questionText, null);
+        startIcebreakerSessionListener(sessionRef.id);
+      } catch (err) {
+        console.error("Accept icebreaker failed", err);
+        showIcebreakerToast("接受失敗，請再試一次");
+      }
+    };
+
+    const rejectIcebreakerInvite = async () => {
+      if (!currentInviteId) return;
+      try {
+        await updateDoc(doc(db, "gameInvites", currentInviteId), { status: "rejected" });
+      } catch (err) {
+        console.error("Reject icebreaker failed", err);
+      }
+      hideInviteDialog();
+    };
+
+    const openIcebreakerOverlay = (questionText, answers) => {
+      if (!icebreakerOverlay) return;
+      icebreakerOverlay.classList.add("visible");
+      if (icebreakerQuestion) icebreakerQuestion.textContent = questionText || "";
+      if (icebreakerInputRow) icebreakerInputRow.style.display = answers ? "none" : "flex";
+      if (icebreakerInput) {
+        icebreakerInput.value = "";
+        icebreakerInput.disabled = false;
+      }
+      if (icebreakerSubmit) {
+        icebreakerSubmit.disabled = false;
+        icebreakerSubmit.style.display = answers ? "none" : "block";
+      }
+      if (icebreakerWaiting) icebreakerWaiting.style.display = "none";
+      if (icebreakerResults) icebreakerResults.style.display = "none";
+      if (icebreakerMagic) icebreakerMagic.style.display = "none";
+      if (icebreakerEndBtn) icebreakerEndBtn.style.display = "none";
+      if (answers) {
+        renderIcebreakerResults(answers);
+      }
+    };
+
+    const escHtml = (t) =>
+      String(t || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    const renderIcebreakerResults = (answers, playersOrder) => {
+      if (!icebreakerResults) return;
+      const players = playersOrder && playersOrder.length ? playersOrder : Object.keys(answers);
+      const names = players.map((uid) => {
+        const p = otherPlayers.get(uid);
+        return escHtml(p?.userName || p?.displayName || "玩家");
+      });
+      icebreakerInputRow && (icebreakerInputRow.style.display = "none");
+      icebreakerSubmit && (icebreakerSubmit.style.display = "none");
+      icebreakerWaiting && (icebreakerWaiting.style.display = "none");
+      icebreakerResults.style.display = "grid";
+      icebreakerResults.innerHTML = players
+        .map(
+          (uid, i) =>
+            `<div class="icebreaker-result-box"><div class="label">${names[i]}</div><div>${escHtml(answers[uid] || "（未填寫）")}</div></div>`
+        )
+        .join("");
+      icebreakerMagic && (icebreakerMagic.style.display = "block");
+      icebreakerEndBtn && (icebreakerEndBtn.style.display = "block");
+    };
+
+    const closeIcebreakerOverlay = () => {
+      if (icebreakerOverlay) icebreakerOverlay.classList.remove("visible");
+      currentSessionId = null;
+    };
+
+    const submitIcebreakerAnswer = async () => {
+      const user = auth.currentUser;
+      if (!user || !currentSessionId || !icebreakerInput) return;
+      const text = icebreakerInput.value.trim();
+      if (!text) return;
+      try {
+        await updateDoc(doc(db, "gameSessions", currentSessionId), {
+          [`answers.${user.uid}`]: text,
+        });
+        icebreakerInput.disabled = true;
+        if (icebreakerSubmit) icebreakerSubmit.disabled = true;
+        if (icebreakerWaiting) icebreakerWaiting.style.display = "block";
+      } catch (err) {
+        console.error("Submit icebreaker answer failed", err);
+      }
+    };
+
+    const endIcebreakerSession = async () => {
+      if (!currentSessionId) return;
+      try {
+        await updateDoc(doc(db, "gameSessions", currentSessionId), {
+          status: "finished",
+          finishedAt: serverTimestamp(),
+        });
+      } catch (err) {
+        console.error("End icebreaker session failed", err);
+      }
+      closeIcebreakerOverlay();
+    };
+
+    const startIcebreakerListeners = () => {
+      const user = auth.currentUser;
+      if (!user) {
+        if (unsubscribeGameInvites) {
+          unsubscribeGameInvites();
+          unsubscribeGameInvites = null;
+        }
+        if (unsubscribeGameSession) {
+          unsubscribeGameSession();
+          unsubscribeGameSession = null;
+        }
+        return;
+      }
+      const myUid = user.uid;
+
+      if (unsubscribeGameInvites) unsubscribeGameInvites();
+      const invitesRef = collection(db, "gameInvites");
+      const invitesQuery = query(
+        invitesRef,
+        where("toUid", "==", myUid),
+        where("status", "==", "pending")
+      );
+      unsubscribeGameInvites = onSnapshot(
+        invitesQuery,
+        (snapshot) => {
+          snapshot.forEach((docSnap) => {
+            const d = docSnap.data();
+            if (d.status !== "pending") return;
+            const fromName = otherPlayers.get(d.fromUid)?.userName || otherPlayers.get(d.fromUid)?.displayName || "對方";
+            showInviteDialog(docSnap.id, d.fromUid, fromName);
+          });
+        },
+        (err) => console.error("gameInvites listener error", err)
+      );
+
+      const myInvitesQuery = query(
+        invitesRef,
+        where("fromUid", "==", myUid)
+      );
+      onSnapshot(myInvitesQuery, (snapshot) => {
+        snapshot.forEach((docSnap) => {
+          const d = docSnap.data();
+          if (d.status === "rejected") {
+            showIcebreakerToast("對方婉拒了邀請");
+          }
+          if (d.status === "accepted" && d.sessionId) {
+            currentSessionId = d.sessionId;
+            startIcebreakerSessionListener(d.sessionId);
+          }
+        });
+      });
+    };
+
+    const startIcebreakerSessionListener = (sessionId) => {
+      if (!sessionId || !auth.currentUser) return;
+      if (unsubscribeGameSession) unsubscribeGameSession();
+      const sessionRef = doc(db, "gameSessions", sessionId);
+      unsubscribeGameSession = onSnapshot(sessionRef, (sSnap) => {
+        const s = sSnap.data();
+        if (!s) return;
+        const myUid = auth.currentUser?.uid;
+        if (!s.players.includes(myUid)) return;
+        if (s.status === "active") {
+          const answers = s.answers || {};
+          const bothAnswered = s.players.every((uid) => answers[uid]);
+          const overlayOpen = icebreakerOverlay?.classList.contains("visible");
+          if (bothAnswered) {
+            if (!overlayOpen) openIcebreakerOverlay(s.questionText, null);
+            if (icebreakerInputRow) icebreakerInputRow.style.display = "none";
+            if (icebreakerSubmit) icebreakerSubmit.style.display = "none";
+            if (icebreakerWaiting) icebreakerWaiting.style.display = "none";
+            renderIcebreakerResults(answers, s.players);
+          } else {
+            if (!overlayOpen) openIcebreakerOverlay(s.questionText, null);
+            if (answers[myUid] && icebreakerWaiting) icebreakerWaiting.style.display = "block";
+          }
+        } else if (s.status === "finished") {
+          closeIcebreakerOverlay();
+          if (unsubscribeGameSession) {
+            unsubscribeGameSession();
+            unsubscribeGameSession = null;
+          }
+        }
+      });
+    };
+
+    if (icebreakerDiceBtn) {
+      icebreakerDiceBtn.addEventListener("click", () => {
+        if (icebreakerNearbyPlayerId) sendIcebreakerInvite();
+      });
+    }
+    if (icebreakerInviteAccept) icebreakerInviteAccept.addEventListener("click", acceptIcebreakerInvite);
+    if (icebreakerInviteReject) icebreakerInviteReject.addEventListener("click", rejectIcebreakerInvite);
+    if (icebreakerSubmit) icebreakerSubmit.addEventListener("click", submitIcebreakerAnswer);
+    if (icebreakerEndBtn) icebreakerEndBtn.addEventListener("click", endIcebreakerSession);
 
     const setCallStartVisibility = (visible) => {
       if (!callStart) {
@@ -3638,6 +4229,16 @@ Friday: noborock Shibuya
       } else {
         setBoardActionVisibility(false);
       }
+
+      // 破冰問答：距離內有玩家且無 overlay 時顯示 🎲
+      const nearestForIcebreaker = getNearestPlayerWithinDistance();
+      icebreakerNearbyPlayerId = nearestForIcebreaker ? nearestForIcebreaker.playerId : null;
+      const icebreakerOverlayOpen = icebreakerOverlay?.classList.contains("visible");
+      const icebreakerInviteOpen = icebreakerInviteOverlay?.classList.contains("visible");
+      const showIcebreakerDice =
+        icebreakerNearbyPlayerId && !icebreakerOverlayOpen && !icebreakerInviteOpen;
+      setIcebreakerDiceVisibility(showIcebreakerDice);
+      if (showIcebreakerDice) positionIcebreakerDice();
 
       if (npc.active && npcImage.complete) {
         ctx.drawImage(npcImage, npcPixel.x, npcPixel.y, npc.size, npc.size);
