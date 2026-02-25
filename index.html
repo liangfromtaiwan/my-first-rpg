@@ -2323,20 +2323,32 @@ Friday: noborock Shibuya
           }
           if (d.status === "accepted" && d.sessionId) {
             currentSessionId = d.sessionId;
-            // 邀請方也立即取得同一題並開啟 overlay，才能和對方同時回答
+            // 邀請方先訂閱 session，再取回同一場題目，確保和對方回答一樣的問題
+            startIcebreakerSessionListener(d.sessionId);
+            const tryOpenInviterOverlay = (s) => {
+              if (!s || s.status !== "active" || !s.players.includes(myUid)) return;
+              currentIcebreakerSession = s;
+              lastIcebreakerQuestionIndex = s.currentQuestionIndex ?? 0;
+              if (s.questions && s.questions.length) {
+                openIcebreakerOverlayForSession(s, null);
+                return true;
+              }
+              if (s.questionText) {
+                openIcebreakerOverlay(s.questionText, null);
+                return true;
+              }
+              return false;
+            };
             getDoc(doc(db, "gameSessions", d.sessionId)).then((sSnap) => {
               const s = sSnap.data();
-              if (s && s.status === "active" && s.players.includes(myUid)) {
-                currentIcebreakerSession = s;
-                lastIcebreakerQuestionIndex = s.currentQuestionIndex ?? 0;
-                if (s.questions && s.questions.length) {
-                  openIcebreakerOverlayForSession(s, null);
-                } else {
-                  openIcebreakerOverlay(s.questionText || "", null);
-                }
-              }
+              if (tryOpenInviterOverlay(s)) return;
+              // 若尚未有題目（對方剛寫入），短暫後再試一次
+              setTimeout(() => {
+                getDoc(doc(db, "gameSessions", d.sessionId)).then((retrySnap) => {
+                  tryOpenInviterOverlay(retrySnap.data());
+                }).catch(() => {});
+              }, 400);
             }).catch(() => {});
-            startIcebreakerSessionListener(d.sessionId);
           }
         });
       });
