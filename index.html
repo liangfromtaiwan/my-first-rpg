@@ -894,6 +894,21 @@
       background: var(--game-primary-hover);
     }
 
+    .icebreaker-next-btn {
+      align-self: center;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 24px;
+      border: none;
+      background: var(--game-accent);
+      color: #fff;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .icebreaker-next-btn:hover {
+      filter: brightness(1.1);
+    }
+
     .icebreaker-cancel-btn {
       font-size: 14px;
       font-weight: 600;
@@ -1315,6 +1330,7 @@ Friday: noborock Shibuya
       <div class="icebreaker-results" id="icebreaker-results" style="display:none;"></div>
       <div class="icebreaker-magic" id="icebreaker-magic" style="display:none;">✨ 默契 +1</div>
       <button class="icebreaker-end-btn" id="icebreaker-end-btn" type="button" style="display:none;">結束</button>
+      <button class="icebreaker-next-btn" id="icebreaker-next-btn" type="button" style="display:none;">下一題</button>
     </div>
   </div>
   <div class="icebreaker-invite-overlay" id="icebreaker-invite-overlay" aria-live="polite">
@@ -1427,6 +1443,7 @@ Friday: noborock Shibuya
     const icebreakerResults = document.querySelector("#icebreaker-results");
     const icebreakerMagic = document.querySelector("#icebreaker-magic");
     const icebreakerEndBtn = document.querySelector("#icebreaker-end-btn");
+    const icebreakerNextBtn = document.querySelector("#icebreaker-next-btn");
     const icebreakerInviteOverlay = document.querySelector("#icebreaker-invite-overlay");
     const icebreakerInviteMessage = document.querySelector("#icebreaker-invite-message");
     const icebreakerInviteAccept = document.querySelector("#icebreaker-invite-accept");
@@ -1448,6 +1465,7 @@ Friday: noborock Shibuya
 
     // --- 破冰問答小遊戲常數（易於調整）---
     const ICEBREAKER_DISTANCE_THRESHOLD = 50; // 觸發 🎲 按鈕的玩家距離（px）
+    const ICEBREAKER_NUM_QUESTIONS = 3; // 每場問幾題
     const ICEBREAKER_QUESTIONS = [
       "最近一次讓你覺得開心的是什麼？",
       "你最近沉迷的一件事是？",
@@ -1460,6 +1478,18 @@ Friday: noborock Shibuya
       "如果只能推薦一個興趣，你會推薦什麼？",
       "今天的你需要更多：安靜 or 熱鬧？",
     ];
+    /** 從題庫中隨機抽 N 題（不重複） */
+    const pickRandomQuestions = (n) => {
+      const indices = [];
+      while (indices.length < n && indices.length < ICEBREAKER_QUESTIONS.length) {
+        const i = Math.floor(Math.random() * ICEBREAKER_QUESTIONS.length);
+        if (!indices.includes(i)) indices.push(i);
+      }
+      return indices.map((i) => ({
+        questionId: String(i),
+        questionText: ICEBREAKER_QUESTIONS[i],
+      }));
+    };
     let unsubscribeChat = null;
     let unsubscribePlayers = null;
     const otherPlayers = new Map();
@@ -1491,6 +1521,9 @@ Friday: noborock Shibuya
     let currentInviteId = null; // 目前顯示的邀請 doc id（接收方用）
     let currentInviteFromUid = null;
     let currentSessionId = null; // 目前進行的 gameSession id
+    /** 目前 session 快取（questions, currentQuestionIndex, answers）供 UI 與 submit 使用 */
+    let currentIcebreakerSession = null;
+    let lastIcebreakerQuestionIndex = -1;
     let unsubscribeGameInvites = null;
     let unsubscribeGameSession = null;
 
@@ -2047,15 +2080,14 @@ Friday: noborock Shibuya
       if (!currentInviteId || !currentInviteFromUid || !auth.currentUser) return;
       const myUid = auth.currentUser.uid;
       const players = [currentInviteFromUid, myUid].sort();
-      const qIndex = Math.floor(Math.random() * ICEBREAKER_QUESTIONS.length);
-      const questionText = ICEBREAKER_QUESTIONS[qIndex];
+      const questions = pickRandomQuestions(ICEBREAKER_NUM_QUESTIONS);
       try {
         const sessionRef = await addDoc(collection(db, "gameSessions"), {
           players,
           villageId,
           type: "icebreaker",
-          questionId: String(qIndex),
-          questionText,
+          questions,
+          currentQuestionIndex: 0,
           answers: {},
           status: "active",
           createdAt: serverTimestamp(),
@@ -2066,7 +2098,9 @@ Friday: noborock Shibuya
         });
         hideInviteDialog();
         currentSessionId = sessionRef.id;
-        openIcebreakerOverlay(questionText, null);
+        currentIcebreakerSession = { questions, currentQuestionIndex: 0, answers: {}, players };
+        lastIcebreakerQuestionIndex = 0;
+        openIcebreakerOverlayForSession(currentIcebreakerSession, null);
         startIcebreakerSessionListener(sessionRef.id);
       } catch (err) {
         console.error("Accept icebreaker failed", err);
@@ -2082,6 +2116,39 @@ Friday: noborock Shibuya
         console.error("Reject icebreaker failed", err);
       }
       hideInviteDialog();
+    };
+
+    /** 依 session 狀態開啟 overlay：可顯示「目前題目」或「目前題目的結果」 */
+    const openIcebreakerOverlayForSession = (session, answersForCurrentQuestion) => {
+      if (!icebreakerOverlay) return;
+      icebreakerOverlay.classList.add("visible");
+      const idx = session.currentQuestionIndex ?? 0;
+      const questions = session.questions || [];
+      const total = Math.max(questions.length, ICEBREAKER_NUM_QUESTIONS);
+      const label = total > 1 ? `第 ${idx + 1}/${total} 題 · ` : "";
+      const questionText = questions[idx]?.questionText || "";
+      if (icebreakerQuestion) icebreakerQuestion.textContent = label + questionText;
+      if (icebreakerInputRow) icebreakerInputRow.style.display = answersForCurrentQuestion ? "none" : "flex";
+      if (icebreakerInput) {
+        icebreakerInput.value = "";
+        icebreakerInput.disabled = false;
+      }
+      if (icebreakerSubmit) {
+        icebreakerSubmit.disabled = false;
+        icebreakerSubmit.style.display = answersForCurrentQuestion ? "none" : "block";
+      }
+      if (icebreakerCancelBtn) {
+        icebreakerCancelBtn.style.display = answersForCurrentQuestion ? "none" : "block";
+      }
+      if (icebreakerWaiting) icebreakerWaiting.style.display = "none";
+      if (icebreakerResults) icebreakerResults.style.display = "none";
+      if (icebreakerMagic) icebreakerMagic.style.display = "none";
+      if (icebreakerEndBtn) icebreakerEndBtn.style.display = "none";
+      if (icebreakerNextBtn) icebreakerNextBtn.style.display = "none";
+      if (answersForCurrentQuestion) {
+        const isLast = idx >= total - 1;
+        renderIcebreakerResults(answersForCurrentQuestion, session.players, isLast);
+      }
     };
 
     const openIcebreakerOverlay = (questionText, answers) => {
@@ -2104,8 +2171,9 @@ Friday: noborock Shibuya
       if (icebreakerResults) icebreakerResults.style.display = "none";
       if (icebreakerMagic) icebreakerMagic.style.display = "none";
       if (icebreakerEndBtn) icebreakerEndBtn.style.display = "none";
+      if (icebreakerNextBtn) icebreakerNextBtn.style.display = "none";
       if (answers) {
-        renderIcebreakerResults(answers);
+        renderIcebreakerResults(answers, null, true);
       }
     };
 
@@ -2115,7 +2183,7 @@ Friday: noborock Shibuya
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;");
-    const renderIcebreakerResults = (answers, playersOrder) => {
+    const renderIcebreakerResults = (answers, playersOrder, isLastQuestion = true) => {
       if (!icebreakerResults) return;
       const players = playersOrder && playersOrder.length ? playersOrder : Object.keys(answers);
       const names = players.map((uid) => {
@@ -2134,22 +2202,37 @@ Friday: noborock Shibuya
         )
         .join("");
       icebreakerMagic && (icebreakerMagic.style.display = "block");
-      icebreakerEndBtn && (icebreakerEndBtn.style.display = "block");
+      if (isLastQuestion) {
+        if (icebreakerEndBtn) {
+          icebreakerEndBtn.textContent = "結束";
+          icebreakerEndBtn.style.display = "block";
+        }
+        if (icebreakerNextBtn) icebreakerNextBtn.style.display = "none";
+      } else {
+        if (icebreakerNextBtn) {
+          icebreakerNextBtn.textContent = "下一題";
+          icebreakerNextBtn.style.display = "block";
+        }
+        if (icebreakerEndBtn) icebreakerEndBtn.style.display = "none";
+      }
     };
 
     const closeIcebreakerOverlay = () => {
       if (icebreakerOverlay) icebreakerOverlay.classList.remove("visible");
       currentSessionId = null;
+      currentIcebreakerSession = null;
+      lastIcebreakerQuestionIndex = -1;
     };
 
     const submitIcebreakerAnswer = async () => {
       const user = auth.currentUser;
-      if (!user || !currentSessionId || !icebreakerInput) return;
+      if (!user || !currentSessionId || !icebreakerInput || !currentIcebreakerSession) return;
       const text = icebreakerInput.value.trim();
       if (!text) return;
+      const idx = currentIcebreakerSession.currentQuestionIndex ?? 0;
       try {
         await updateDoc(doc(db, "gameSessions", currentSessionId), {
-          [`answers.${user.uid}`]: text,
+          [`answers.${user.uid}.${idx}`]: text,
         });
         icebreakerInput.disabled = true;
         if (icebreakerSubmit) icebreakerSubmit.disabled = true;
@@ -2170,6 +2253,27 @@ Friday: noborock Shibuya
         console.error("End icebreaker session failed", err);
       }
       closeIcebreakerOverlay();
+    };
+
+    /** 下一題：推進 currentQuestionIndex，若已是最後一題則結束 session */
+    const advanceToNextQuestion = async () => {
+      if (!currentSessionId || !currentIcebreakerSession) return;
+      const idx = currentIcebreakerSession.currentQuestionIndex ?? 0;
+      const total = (currentIcebreakerSession.questions || []).length;
+      try {
+        if (idx >= total - 1) {
+          await updateDoc(doc(db, "gameSessions", currentSessionId), {
+            status: "finished",
+            finishedAt: serverTimestamp(),
+          });
+        } else {
+          await updateDoc(doc(db, "gameSessions", currentSessionId), {
+            currentQuestionIndex: idx + 1,
+          });
+        }
+      } catch (err) {
+        console.error("Advance icebreaker question failed", err);
+      }
     };
 
     const startIcebreakerListeners = () => {
@@ -2223,7 +2327,13 @@ Friday: noborock Shibuya
             getDoc(doc(db, "gameSessions", d.sessionId)).then((sSnap) => {
               const s = sSnap.data();
               if (s && s.status === "active" && s.players.includes(myUid)) {
-                openIcebreakerOverlay(s.questionText, null);
+                currentIcebreakerSession = s;
+                lastIcebreakerQuestionIndex = s.currentQuestionIndex ?? 0;
+                if (s.questions && s.questions.length) {
+                  openIcebreakerOverlayForSession(s, null);
+                } else {
+                  openIcebreakerOverlay(s.questionText || "", null);
+                }
               }
             }).catch(() => {});
             startIcebreakerSessionListener(d.sessionId);
@@ -2241,19 +2351,45 @@ Friday: noborock Shibuya
         if (!s) return;
         const myUid = auth.currentUser?.uid;
         if (!s.players.includes(myUid)) return;
+        currentIcebreakerSession = s;
         if (s.status === "active") {
           const answers = s.answers || {};
-          const bothAnswered = s.players.every((uid) => answers[uid]);
+          const idx = s.currentQuestionIndex ?? 0;
+          const questions = s.questions || [];
+          const hasMultiQuestion = questions.length > 0;
+          const bothAnsweredCurrent = hasMultiQuestion
+            ? s.players.every((uid) => answers[uid] && answers[uid][String(idx)] != null)
+            : s.players.every((uid) => answers[uid]);
           const overlayOpen = icebreakerOverlay?.classList.contains("visible");
-          if (bothAnswered) {
-            if (!overlayOpen) openIcebreakerOverlay(s.questionText, null);
-            if (icebreakerInputRow) icebreakerInputRow.style.display = "none";
-            if (icebreakerSubmit) icebreakerSubmit.style.display = "none";
-            if (icebreakerWaiting) icebreakerWaiting.style.display = "none";
-            renderIcebreakerResults(answers, s.players);
+          const questionText = hasMultiQuestion ? (questions[idx]?.questionText || "") : (s.questionText || "");
+          if (bothAnsweredCurrent) {
+            lastIcebreakerQuestionIndex = idx;
+            const answersForCurrent = hasMultiQuestion
+              ? Object.fromEntries(s.players.map((uid) => [uid, answers[uid]?.[String(idx)] ?? ""]))
+              : answers;
+            const total = questions.length || 1;
+            const isLast = idx >= total - 1;
+            if (!overlayOpen && hasMultiQuestion) {
+              openIcebreakerOverlayForSession(s, answersForCurrent);
+            } else if (!overlayOpen) {
+              openIcebreakerOverlay(questionText, answersForCurrent);
+            } else {
+              if (icebreakerInputRow) icebreakerInputRow.style.display = "none";
+              if (icebreakerSubmit) icebreakerSubmit.style.display = "none";
+              if (icebreakerCancelBtn) icebreakerCancelBtn.style.display = "none";
+              if (icebreakerWaiting) icebreakerWaiting.style.display = "none";
+              renderIcebreakerResults(answersForCurrent, s.players, isLast);
+            }
           } else {
-            if (!overlayOpen) openIcebreakerOverlay(s.questionText, null);
-            if (answers[myUid] && icebreakerWaiting) icebreakerWaiting.style.display = "block";
+            const needRefreshQuestion = hasMultiQuestion && (idx !== lastIcebreakerQuestionIndex || !overlayOpen);
+            if (needRefreshQuestion) {
+              lastIcebreakerQuestionIndex = idx;
+              openIcebreakerOverlayForSession(s, null);
+            } else if (!overlayOpen) {
+              openIcebreakerOverlay(questionText, null);
+            }
+            const myAnswerForCurrent = hasMultiQuestion ? answers[myUid]?.[String(idx)] : answers[myUid];
+            if (myAnswerForCurrent && icebreakerWaiting) icebreakerWaiting.style.display = "block";
           }
         } else if (s.status === "finished") {
           closeIcebreakerOverlay();
@@ -2275,6 +2411,7 @@ Friday: noborock Shibuya
     if (icebreakerSubmit) icebreakerSubmit.addEventListener("click", submitIcebreakerAnswer);
     if (icebreakerCancelBtn) icebreakerCancelBtn.addEventListener("click", endIcebreakerSession);
     if (icebreakerEndBtn) icebreakerEndBtn.addEventListener("click", endIcebreakerSession);
+    if (icebreakerNextBtn) icebreakerNextBtn.addEventListener("click", advanceToNextQuestion);
 
     const setCallStartVisibility = (visible) => {
       if (!callStart) {
