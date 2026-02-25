@@ -894,6 +894,21 @@
       background: var(--game-primary-hover);
     }
 
+    .icebreaker-cancel-btn {
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 16px;
+      border: 2px solid rgba(61, 56, 41, 0.25);
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--game-text);
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .icebreaker-cancel-btn:hover {
+      background: rgba(61, 56, 41, 0.1);
+      border-color: var(--game-text-muted);
+    }
+
     /* 破冰邀請小彈窗 */
     .icebreaker-invite-overlay {
       position: fixed;
@@ -1294,6 +1309,7 @@ Friday: noborock Shibuya
       <div class="icebreaker-input-row" id="icebreaker-input-row">
         <input id="icebreaker-input" type="text" maxlength="100" placeholder="輸入你的回答..." />
         <button id="icebreaker-submit" type="button">送出</button>
+        <button class="icebreaker-cancel-btn" id="icebreaker-cancel-btn" type="button">取消</button>
       </div>
       <div class="icebreaker-waiting" id="icebreaker-waiting" style="display:none;">等待對方回答中…</div>
       <div class="icebreaker-results" id="icebreaker-results" style="display:none;"></div>
@@ -1405,6 +1421,7 @@ Friday: noborock Shibuya
     const icebreakerQuestion = document.querySelector("#icebreaker-question");
     const icebreakerInput = document.querySelector("#icebreaker-input");
     const icebreakerSubmit = document.querySelector("#icebreaker-submit");
+    const icebreakerCancelBtn = document.querySelector("#icebreaker-cancel-btn");
     const icebreakerInputRow = document.querySelector("#icebreaker-input-row");
     const icebreakerWaiting = document.querySelector("#icebreaker-waiting");
     const icebreakerResults = document.querySelector("#icebreaker-results");
@@ -2080,6 +2097,9 @@ Friday: noborock Shibuya
         icebreakerSubmit.disabled = false;
         icebreakerSubmit.style.display = answers ? "none" : "block";
       }
+      if (icebreakerCancelBtn) {
+        icebreakerCancelBtn.style.display = answers ? "none" : "block";
+      }
       if (icebreakerWaiting) icebreakerWaiting.style.display = "none";
       if (icebreakerResults) icebreakerResults.style.display = "none";
       if (icebreakerMagic) icebreakerMagic.style.display = "none";
@@ -2104,6 +2124,7 @@ Friday: noborock Shibuya
       });
       icebreakerInputRow && (icebreakerInputRow.style.display = "none");
       icebreakerSubmit && (icebreakerSubmit.style.display = "none");
+      icebreakerCancelBtn && (icebreakerCancelBtn.style.display = "none");
       icebreakerWaiting && (icebreakerWaiting.style.display = "none");
       icebreakerResults.style.display = "grid";
       icebreakerResults.innerHTML = players
@@ -2245,6 +2266,7 @@ Friday: noborock Shibuya
     if (icebreakerInviteAccept) icebreakerInviteAccept.addEventListener("click", acceptIcebreakerInvite);
     if (icebreakerInviteReject) icebreakerInviteReject.addEventListener("click", rejectIcebreakerInvite);
     if (icebreakerSubmit) icebreakerSubmit.addEventListener("click", submitIcebreakerAnswer);
+    if (icebreakerCancelBtn) icebreakerCancelBtn.addEventListener("click", endIcebreakerSession);
     if (icebreakerEndBtn) icebreakerEndBtn.addEventListener("click", endIcebreakerSession);
 
     const setCallStartVisibility = (visible) => {
