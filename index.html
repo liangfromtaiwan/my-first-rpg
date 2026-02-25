@@ -2219,6 +2219,13 @@ Friday: noborock Shibuya
           }
           if (d.status === "accepted" && d.sessionId) {
             currentSessionId = d.sessionId;
+            // 邀請方也立即取得同一題並開啟 overlay，才能和對方同時回答
+            getDoc(doc(db, "gameSessions", d.sessionId)).then((sSnap) => {
+              const s = sSnap.data();
+              if (s && s.status === "active" && s.players.includes(myUid)) {
+                openIcebreakerOverlay(s.questionText, null);
+              }
+            }).catch(() => {});
             startIcebreakerSessionListener(d.sessionId);
           }
         });
