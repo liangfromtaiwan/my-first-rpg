@@ -1268,6 +1268,64 @@
       opacity: 0.7;
     }
 
+    .private-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--game-text);
+    }
+    .private-title {
+      flex: 1;
+      min-width: 0;
+      text-align: left;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .private-header button {
+      font-size: 12px;
+      padding: 4px 8px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(61, 56, 41, 0.12);
+      color: var(--game-text);
+      cursor: pointer;
+    }
+    .tool-btn {
+      position: relative;
+    }
+    .tool-badge {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      min-width: 16px;
+      height: 16px;
+      padding: 0 4px;
+      border-radius: 8px;
+      background: #e74c3c;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 16px;
+      box-sizing: border-box;
+    }
+    .online-action {
+      position: relative;
+    }
+    .online-action .unread-dot {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #e74c3c;
+    }
     .online-group {
       font-size: 11px;
       font-weight: 700;
@@ -2190,6 +2248,10 @@
         </div>
         <div class="chat-view" id="chat-view-private">
           <div class="private-chat" id="private-chat">
+            <div class="private-header" id="private-header" style="display:none">
+              <span class="private-title" id="private-title"></span>
+              <button type="button" id="private-close" title="結束私訊">✕ 結束私訊</button>
+            </div>
             <div class="private-box">
               <div class="private-messages" id="private-messages"></div>
             </div>
@@ -2248,7 +2310,7 @@
       <span class="toolbar-spacer"></span>
       <button id="build-btn" class="tool-btn" type="button" title="佈置我的家" aria-pressed="false" style="display:none">🔨<span class="tool-label">佈置</span></button>
       <button id="home-btn" class="tool-btn" type="button" title="回家">🏠<span class="tool-label">回家</span></button>
-      <button id="chat-toggle-btn" class="tool-btn" type="button" title="聊天">💬</button>
+      <button id="chat-toggle-btn" class="tool-btn" type="button" title="聊天">💬<span class="tool-badge" id="chat-badge" hidden></span></button>
       <button id="people-btn" class="tool-btn" type="button" title="參與者">👥<span class="tool-count" id="people-count">1</span></button>
     </nav>
 
@@ -2676,6 +2738,7 @@ Friday: noborock Shibuya
         startPlayersListener();
         startTableListeners();
         startKnockListener();
+        startInboxListener();
         lastUserPresenceWrite = 0;
         updateUserPresence();
         forcePositionSync = true;
@@ -2684,6 +2747,8 @@ Friday: noborock Shibuya
         stopPlayersListener();
         startKnockListener(); // clears any knock state
         cancelKnock();
+        dmTarget = null;
+        startInboxListener(); // clears unread state
         if (unsubscribeUsers) {
           unsubscribeUsers();
           unsubscribeUsers = null;
@@ -3751,6 +3816,90 @@ Friday: noborock Shibuya
       }
     };
 
+    // --- Direct messages from the player list (💬), plus unread notifications ---
+    let dmTarget = null; // { uid, name } — chat with this person even when far away
+    const unreadFrom = new Map(); // uid -> unread count
+    const chatBadge = document.querySelector("#chat-badge");
+    const privateHeader = document.querySelector("#private-header");
+    const privateTitle = document.querySelector("#private-title");
+    const updateUnreadBadge = () => {
+      let total = 0;
+      unreadFrom.forEach((n) => { total += n; });
+      if (chatBadge) {
+        chatBadge.hidden = total === 0;
+        chatBadge.textContent = total > 9 ? "9+" : String(total);
+      }
+    };
+    const clearUnread = (uid) => {
+      if (!unreadFrom.has(uid)) return;
+      unreadFrom.delete(uid);
+      updateUnreadBadge();
+      renderOnlineUsers();
+    };
+    const updatePrivateHeader = () => {
+      if (!privateHeader) return;
+      const showDm = Boolean(dmTarget && privateContext?.partner?.uid === dmTarget.uid);
+      privateHeader.style.display = showDm ? "flex" : "none";
+      if (showDm && privateTitle) privateTitle.textContent = `💬 和 ${dmTarget.name} 私訊中`;
+    };
+    const openDirectMessage = (uid, name) => {
+      if (!auth.currentUser) {
+        showIcebreakerToast("登入後才能私訊");
+        return;
+      }
+      dmTarget = { uid, name: name || "Player" };
+      clearUnread(uid);
+      renderOnlineUsers();
+      showChatPanel("private");
+      updatePrivateChatPartner(); // switch the private tab right away
+      setTimeout(() => privateInput?.focus(), 50);
+    };
+    const closeDirectMessage = () => {
+      dmTarget = null;
+      renderOnlineUsers();
+      updatePrivateChatPartner();
+      updatePrivateHeader();
+    };
+    document.querySelector("#private-close")?.addEventListener("click", closeDirectMessage);
+
+    // Inbox: any private message addressed to me, so I notice DMs sent from afar
+    let unsubscribeInbox = null;
+    const isViewingConversation = (conversationId) =>
+      activePrivateChatId === conversationId &&
+      activeChatTab === "private" &&
+      !mainLayout?.classList.contains("chat-hidden") &&
+      (!isMobileLayout() || chatOverlayMobile?.classList.contains("is-open"));
+    const startInboxListener = () => {
+      unsubscribeInbox?.();
+      unsubscribeInbox = null;
+      unreadFrom.clear();
+      updateUnreadBadge();
+      const user = auth.currentUser;
+      if (!user) return;
+      let initialized = false;
+      unsubscribeInbox = onSnapshot(
+        query(collection(db, "privateMessages"), where("toUid", "==", user.uid)),
+        (snapshot) => {
+          if (!initialized) {
+            initialized = true; // skip history on first load
+            return;
+          }
+          snapshot.docChanges().forEach((change) => {
+            if (change.type !== "added") return;
+            const d = change.doc.data();
+            if (!d.fromUid || d.fromUid === user.uid) return;
+            if (isViewingConversation(d.conversationId)) return;
+            unreadFrom.set(d.fromUid, (unreadFrom.get(d.fromUid) || 0) + 1);
+            showIcebreakerToast(`💬 ${d.fromName || "有人"} 傳了私訊給你`, 3500);
+            messageReceiveAudio?.play().catch(() => {});
+          });
+          updateUnreadBadge();
+          renderOnlineUsers();
+        },
+        (err) => console.error("Inbox listener error", err)
+      );
+    };
+
     const renderOnlineUsers = () => {
       if (!onlineList) {
         return;
@@ -3813,6 +3962,23 @@ Friday: noborock Shibuya
           name.appendChild(where);
         }
         row.appendChild(name);
+
+        const chatBtn = document.createElement("button");
+        chatBtn.type = "button";
+        chatBtn.className = "online-action" + (dmTarget?.uid === uid ? " is-active" : "");
+        chatBtn.textContent = "💬";
+        chatBtn.title = "私訊";
+        if (unreadFrom.has(uid)) {
+          const dot = document.createElement("span");
+          dot.className = "unread-dot";
+          chatBtn.appendChild(dot);
+          chatBtn.title = `私訊（${unreadFrom.get(uid)} 則未讀）`;
+        }
+        chatBtn.addEventListener("click", (event) => {
+          event.stopPropagation();
+          openDirectMessage(uid, userData.displayName || userData.userName);
+        });
+        row.appendChild(chatBtn);
 
         const locateBtn = document.createElement("button");
         locateBtn.type = "button";
@@ -5378,6 +5544,27 @@ Friday: noborock Shibuya
       ctx.beginPath();
       ctx.arc(offX + (player.x + player.size / 2) * scale, offY + (player.y + player.size / 2) * scale, 3, 0, Math.PI * 2);
       ctx.fill();
+
+      // 📍 Locate: pulsing yellow ring around the target on the minimap too
+      if (locateTarget && locateTarget.until > performance.now()) {
+        const pos = otherPlayerRender.get(locateTarget.uid) || otherPlayers.get(locateTarget.uid);
+        if (pos && typeof pos.x === "number" && typeof pos.y === "number") {
+          const t = performance.now();
+          const mx = offX + (pos.x + player.size / 2) * scale;
+          const my = offY + (pos.y + player.size / 2) * scale;
+          ctx.fillStyle = "#f2c14e";
+          ctx.beginPath();
+          ctx.arc(mx, my, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = "#f2c14e";
+          ctx.lineWidth = 2;
+          ctx.globalAlpha = 0.55 + 0.45 * Math.sin(t / 120);
+          ctx.beginPath();
+          ctx.arc(mx, my, 6 + 2.5 * Math.sin(t / 120), 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+      }
 
       ctx.restore();
     };
@@ -7075,7 +7262,7 @@ Friday: noborock Shibuya
       privateContext = context;
       privateContextSince = performance.now();
       activePrivateChatId = context.id;
-      activePrivatePartner = context.kind === "pair" ? context.partner : null;
+      activePrivatePartner = context.kind === "pair" || context.kind === "dm" ? context.partner : null;
       startPrivateListener(context.id);
       if (context.kind === "pair" && !autoVideoEnabled) {
         // Manual mode keeps the original 📹 accept flow
@@ -7136,7 +7323,17 @@ Friday: noborock Shibuya
     };
 
     const updatePrivateChatPartner = () => {
-      const next = computePrivateContext();
+      let next = computePrivateContext();
+      // A chosen DM wins over proximity, unless we're already standing next to that same person
+      if (dmTarget && auth.currentUser && !(next?.kind === "pair" && next.partner.uid === dmTarget.uid)) {
+        next = {
+          id: getConversationId(auth.currentUser.uid, dmTarget.uid),
+          kind: "dm",
+          title: dmTarget.name,
+          partner: { uid: dmTarget.uid, name: dmTarget.name },
+          memberIds: [], // far away: chat only, no auto video
+        };
+      }
       if (!next) {
         if (privateContext) leavePrivateContext();
         return;
@@ -7153,6 +7350,8 @@ Friday: noborock Shibuya
         }
       }
       updateAutoVideo(privateContext);
+      if (privateContext?.partner && isViewingConversation(privateContext.id)) clearUnread(privateContext.partner.uid);
+      updatePrivateHeader();
     };
 
     const update = (deltaMs = 16) => {
