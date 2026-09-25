@@ -7189,7 +7189,9 @@ Friday: noborock Shibuya
     // --- Proximity context (Gather-style) ---
     // Inside a private zone: everyone in that zone shares one chat + video room.
     // Outside zones: you pair with the nearest player (who is also outside a zone).
-    const PROXIMITY_RANGE = tileSize * 1.6;
+    const PROXIMITY_RANGE = tileSize * 1.6; // walk this close to start chatting / a call
+    // ...and the call ends once you're this far apart. The gap stops calls flickering on/off at the edge.
+    const PROXIMITY_LEAVE_RANGE = tileSize * 2.4;
     const AUTO_VIDEO_DELAY_MS = 1200;
     let privateContext = null; // { id, kind: "pair"|"zone", title, partner?, zone?, memberIds }
     let privateContextSince = 0;
@@ -7227,9 +7229,20 @@ Friday: noborock Shibuya
       }
       let nearest = null;
       let nearestDist = Infinity;
+      const currentPartnerId = privateContext?.kind === "pair" ? privateContext.partner.uid : null;
       others.forEach(({ id, data }) => {
         const z = zoneAt(currentMapName, data.x + tileSize / 2, data.y + tileSize / 2, tileSize);
         if (z && z.private) return; // people inside a private room can't be reached from outside
+        if (id === currentPartnerId) {
+          // Stay connected to the current partner until they're clearly out of range
+          const d = Math.hypot(data.x - player.x, data.y - player.y);
+          if (d < PROXIMITY_LEAVE_RANGE) {
+            nearest = { id, data };
+            nearestDist = -1; // wins over anyone else nearby
+          }
+          return;
+        }
+        if (nearestDist < 0) return;
         const dist = Math.hypot(data.x - player.x, data.y - player.y);
         if (dist < nearestDist) {
           nearestDist = dist;
@@ -7282,8 +7295,7 @@ Friday: noborock Shibuya
       activePrivatePartner = null;
       dismissedVideoContextId = null;
       stopPrivateListener();
-      stopCallListener();
-      hideVideoRoom();
+      endCallByDistance();
       setPrivateAvailability(false);
       updatePrivateTabLabel();
       if (!userSelectedTab && activeChatTab !== "map") {
@@ -7302,6 +7314,20 @@ Friday: noborock Shibuya
       hideVideoRoom();
     });
 
+    /** Hang up because people moved apart (or left the room). */
+    const endCallByDistance = () => {
+      if (!currentVideoRoom && !activeCallId) return;
+      const hadVideo = Boolean(currentVideoRoom);
+      const callId = activeCallId;
+      if (callId && activeCallData?.acceptedBy && Object.keys(activeCallData.acceptedBy).length) {
+        // Reset consent so the next time you meet, both people have to accept again
+        updateDoc(doc(db, "calls", callId), { acceptedBy: {}, status: "ended", roomUrl: "" }).catch(() => {});
+      }
+      stopCallListener();
+      hideVideoRoom();
+      if (hadVideo) showIcebreakerToast("📴 已離開通話範圍，通話自動結束");
+    };
+
     const updateAutoVideo = (context) => {
       if (!autoVideoEnabled || !context) return;
       const someoneBusy =
@@ -7318,7 +7344,9 @@ Friday: noborock Shibuya
           : context.title;
         showVideoRoom(buildJitsiRoomUrl(context.id), names);
       } else if (currentVideoRoom) {
-        hideVideoRoom();
+        // Nobody left in range (e.g. walked away from a DM partner, or the room emptied)
+        if (context.memberIds.length === 0) endCallByDistance();
+        else hideVideoRoom();
       }
     };
 
@@ -7342,6 +7370,19 @@ Friday: noborock Shibuya
         if (privateContext) leavePrivateContext();
         enterPrivateContext(next);
       } else {
+        // Same conversation. If it went from "standing together" (pair) to "far-away DM",
+        // keep the chat but hang up the call; coming back close re-enables calling.
+        if (privateContext.kind !== next.kind) {
+          const wasPair = privateContext.kind === "pair";
+          privateContext.kind = next.kind;
+          privateContextSince = performance.now();
+          if (wasPair) {
+            endCallByDistance();
+          } else if (next.kind === "pair" && !autoVideoEnabled) {
+            startCallListener(next.id, next.partner.uid);
+          }
+          updatePrivateTabLabel();
+        }
         // Same room: refresh membership / partner position without restarting listeners
         privateContext.memberIds = next.memberIds;
         if (next.partner) {
