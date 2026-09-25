@@ -32,6 +32,11 @@ export const GAME_TABLES = {
 };
 
 export const getZones = (mapName) => ZONES[mapName] || [];
+
+/** Register zones for maps created at runtime (e.g. each player's home). */
+export const registerZones = (mapName, zones) => {
+  ZONES[mapName] = zones;
+};
 export const getGameTables = (mapName) => GAME_TABLES[mapName] || [];
 
 /** True if tile (tx, ty) is inside any zone, optionally expanded by `pad` tiles. */
@@ -66,7 +71,7 @@ export const drawZones = (ctx, mapName, tileSize, activeZoneId) => {
         ctx.fillStyle = hexToRgba("#ffffff", 0.06);
         ctx.fillRect(x, y, w, h);
       }
-      drawZoneTag(ctx, z, x, y);
+      if (!z.hideTag) drawZoneTag(ctx, z, x, y);
       return;
     }
     ctx.fillStyle = hexToRgba(z.color, isActive ? 0.28 : 0.18);
