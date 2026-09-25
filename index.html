@@ -2484,6 +2484,14 @@ Friday: noborock Shibuya
       WALL_COLORS,
     } from "./js/home.js";
     import { FURNITURE_CATALOG, FURNITURE_TYPES, drawFurnitureItem } from "./js/furniture.js";
+    import {
+      buildResidentialLayer,
+      buildResidentialTiles,
+      computeResidentialLayout,
+      drawHouseFront,
+      drawResidentialGate,
+      residentialMinimapColor,
+    } from "./js/residential.js";
     import { EMPTY_BOARD, applyMove, getWinner, getWinningLine } from "./js/tictactoe.js";
     import {
       OFFICE_EXIT_TILES,
@@ -3780,7 +3788,7 @@ Friday: noborock Shibuya
       }
     };
 
-    const MAP_LABELS = { worldMap: "主世界", villageMap: "攀岩村", officeMap: "EQU 辦公室" };
+    const MAP_LABELS = { worldMap: "主世界", villageMap: "攀岩村", officeMap: "EQU 辦公室", residentialMap: "🏘️ 住宅區" };
 
     /** Locate a player: pan-free arrow on the map; switches map first if they're elsewhere. */
     const locatePlayer = async (uid, { follow = false } = {}) => {
@@ -4282,6 +4290,11 @@ Friday: noborock Shibuya
       }
     }
 
+    // 🏘️ Gate to the residential district (posts block, the two middle tiles lead in)
+    const RES_GATE = { tileX: 7, tileY: 29, w: 4 };
+    worldMap[RES_GATE.tileY][RES_GATE.tileX] = 1;
+    worldMap[RES_GATE.tileY][RES_GATE.tileX + RES_GATE.w - 1] = 1;
+
     const maps = {
       worldMap: {
         tiles: worldMap,
@@ -4291,6 +4304,13 @@ Friday: noborock Shibuya
         portals: [
           { x: 15, y: 29, to: "officeMap", spawn: OFFICE_SPAWN },
           { x: 16, y: 29, to: "officeMap", spawn: OFFICE_SPAWN },
+          { x: 8, y: 29, to: "residentialMap", spawn: null },
+          { x: 9, y: 29, to: "residentialMap", spawn: null },
+        ],
+        // Keep random trees / animals away from building entrances
+        reserved: [
+          { x: 13, y: 29, w: 6, h: 2 },
+          { x: 6, y: 27, w: 6, h: 4 },
         ],
         crowd: [],
         decorations: [],
@@ -4358,6 +4378,75 @@ Friday: noborock Shibuya
         blockedGridDirty = true;
       }
       return maps[name];
+    };
+
+    // --- 🏘️ Residential district: one house per home, rebuilt when homes change ---
+    let residentialHomes = [];
+    const registerResidentialMap = (homes) => {
+      residentialHomes = homes;
+      const layout = computeResidentialLayout(homes);
+      maps.residentialMap = {
+        tiles: buildResidentialTiles(layout),
+        noNature: true,
+        layout,
+        spawn: layout.spawn,
+        npc: null,
+        portals: [
+          ...layout.plots.filter((p) => p.home).map((p) => ({ x: p.doorX, y: p.doorY, to: "__visit", ownerUid: p.home.ownerUid })),
+          ...layout.exitTiles.map((t) => ({ ...t, to: "worldMap", spawn: { x: 8, y: 30 } })),
+        ],
+        crowd: [],
+        decorations: [],
+        pigs: [],
+        cows: [],
+        buildLayer: () => buildResidentialLayer(layout, tileSize),
+        minimapColor: residentialMinimapColor(layout),
+      };
+      floorLayers?.delete("residentialMap");
+      minimapCache?.delete("residentialMap");
+      if (currentMapName === "residentialMap") refreshCurrentMapGeometry();
+      return maps.residentialMap;
+    };
+    /** The current map's data was replaced (e.g. the street grew): refresh sizes & caches. */
+    const refreshCurrentMapGeometry = () => {
+      currentMap = maps[currentMapName];
+      mapCols = currentMap.tiles[0].length;
+      mapRows = currentMap.tiles.length;
+      mapWidth = mapCols * tileSize;
+      mapHeight = mapRows * tileSize;
+      player.x = clamp(player.x, 0, mapWidth - player.size);
+      player.y = clamp(player.y, 0, mapHeight - player.size);
+      blockedGridDirty = true;
+    };
+    let unsubscribeResidential = null;
+    const syncResidentialListener = () => {
+      const wanted = currentMapName === "residentialMap" && Boolean(auth.currentUser);
+      if (wanted === Boolean(unsubscribeResidential)) return;
+      if (!wanted) {
+        unsubscribeResidential?.();
+        unsubscribeResidential = null;
+        return;
+      }
+      unsubscribeResidential = onSnapshot(
+        collection(db, "homes"),
+        (snapshot) => {
+          const homes = snapshot.docs.map((d) => {
+            const data = d.data();
+            const home = normalizeHome(data, d.id, data.ownerName);
+            return {
+              ownerUid: d.id,
+              ownerName: home.ownerName,
+              wallColor: home.wallColor,
+              door: home.door,
+              createdMs: data.createdAt?.toMillis ? data.createdAt.toMillis() : Number.MAX_SAFE_INTEGER,
+            };
+          });
+          // Oldest homes first, so everyone's house keeps its spot on the street
+          homes.sort((a, b) => a.createdMs - b.createdMs || a.ownerUid.localeCompare(b.ownerUid));
+          registerResidentialMap(homes);
+        },
+        (err) => console.error("Residential listener error", err)
+      );
     };
 
     /** Walk into a home. Remembers where you came from so EXIT brings you back. */
@@ -4444,6 +4533,10 @@ Friday: noborock Shibuya
       if (isHomeMap(mapName)) return maps[mapName] ? `${maps[mapName].home.ownerName} 的家` : "玩家的家";
       return mapName;
     };
+
+    /** Tiles kept clear of random trees/animals (building fronts, gates). */
+    const isReservedTile = (mapName, tx, ty) =>
+      (maps[mapName]?.reserved || []).some((r) => tx >= r.x && tx < r.x + r.w && ty >= r.y && ty < r.y + r.h);
 
     let currentMapName = "worldMap";
     let currentMap = maps[currentMapName];
@@ -5019,7 +5112,7 @@ Friday: noborock Shibuya
 
     const generateCrowdForMap = (mapName) => {
       const mapData = maps[mapName];
-      if (!mapData || mapData.indoor || mapData.crowd.length) {
+      if (!mapData || mapData.indoor || mapData.noNature || mapData.crowd.length) {
         return;
       }
 
@@ -5066,7 +5159,7 @@ Friday: noborock Shibuya
         const tileY = getRandomInt(1, mapRows - 2);
         const key = `${tileX},${tileY}`;
 
-        if (blockedTiles.has(key) || usedTiles.has(key) || isZoneTile(mapName, tileX, tileY, 1)) {
+        if (blockedTiles.has(key) || usedTiles.has(key) || isZoneTile(mapName, tileX, tileY, 1) || isReservedTile(mapName, tileX, tileY)) {
           continue;
         }
         if (mapData.tiles[tileY][tileX] === 1) {
@@ -5111,7 +5204,7 @@ Friday: noborock Shibuya
 
     const generateDecorationsForMap = (mapName) => {
       const mapData = maps[mapName];
-      if (!mapData || mapData.indoor || !mapData.decorations || mapData.decorations.length) {
+      if (!mapData || mapData.indoor || mapData.noNature || !mapData.decorations || mapData.decorations.length) {
         return;
       }
       mapData.decorations.length = 0;
@@ -5152,7 +5245,7 @@ Friday: noborock Shibuya
         const checkTile = (tx, ty) => {
           if (tx < 1 || tx >= mapCols - 1 || ty < 1 || ty >= mapRows - 1) return false;
           const k = `${tx},${ty}`;
-          if (blockedTiles.has(k) || usedTiles.has(k) || isZoneTile(mapName, tx, ty, 1)) return false;
+          if (blockedTiles.has(k) || usedTiles.has(k) || isZoneTile(mapName, tx, ty, 1) || isReservedTile(mapName, tx, ty)) return false;
           if (mapData.tiles[ty][tx] === 1) return false;
           if (mapName === "worldMap") {
             const castleRect = getCastleRect();
@@ -5186,7 +5279,7 @@ Friday: noborock Shibuya
               const tx = tileX + dx, ty = tileY + dy;
               if (tx < 1 || tx >= mapCols - 1 || ty < 1 || ty >= mapRows - 1) return false;
               const k = `${tx},${ty}`;
-              if (blockedTiles.has(k) || usedTiles.has(k) || isZoneTile(mapName, tx, ty, 1)) return false;
+              if (blockedTiles.has(k) || usedTiles.has(k) || isZoneTile(mapName, tx, ty, 1) || isReservedTile(mapName, tx, ty)) return false;
               if (mapData.tiles[ty][tx] === 1) return false;
               if (mapName === "worldMap") {
                 const castleRect = getCastleRect();
@@ -5249,7 +5342,7 @@ Friday: noborock Shibuya
 
     const generatePigsForMap = (mapName) => {
       const mapData = maps[mapName];
-      if (!mapData || mapData.indoor || !mapData.pigs) return;
+      if (!mapData || mapData.indoor || mapData.noNature || !mapData.pigs) return;
       mapData.pigs.length = 0;
       const pigCount = getRandomInt(2, 4);
       const usedTiles = new Set();
@@ -5286,7 +5379,7 @@ Friday: noborock Shibuya
         const tileX = getRandomInt(2, mapCols - 3);
         const tileY = getRandomInt(2, mapRows - 3);
         const key = `${tileX},${tileY}`;
-        if (usedTiles.has(key) || mapData.tiles[tileY][tileX] === 1 || isZoneTile(mapName, tileX, tileY)) continue;
+        if (usedTiles.has(key) || mapData.tiles[tileY][tileX] === 1 || isZoneTile(mapName, tileX, tileY) || isReservedTile(mapName, tileX, tileY)) continue;
         if (mapName === "worldMap" && getCastleRect()) {
           const castleRect = getCastleRect();
           const pad = tileSize;
@@ -5346,7 +5439,7 @@ Friday: noborock Shibuya
 
     const generateCowsForMap = (mapName) => {
       const mapData = maps[mapName];
-      if (!mapData || mapData.indoor || !mapData.cows) return;
+      if (!mapData || mapData.indoor || mapData.noNature || !mapData.cows) return;
       mapData.cows.length = 0;
       const cowCount = getRandomInt(2, 4);
       const usedTiles = new Set();
@@ -5388,7 +5481,7 @@ Friday: noborock Shibuya
         const tileX = getRandomInt(2, mapCols - 3);
         const tileY = getRandomInt(2, mapRows - 3);
         const key = `${tileX},${tileY}`;
-        if (usedTiles.has(key) || mapData.tiles[tileY][tileX] === 1 || isZoneTile(mapName, tileX, tileY)) continue;
+        if (usedTiles.has(key) || mapData.tiles[tileY][tileX] === 1 || isZoneTile(mapName, tileX, tileY) || isReservedTile(mapName, tileX, tileY)) continue;
         if (mapName === "worldMap" && getCastleRect()) {
           const castleRect = getCastleRect();
           const pad = tileSize;
@@ -6761,6 +6854,7 @@ Friday: noborock Shibuya
       startPlayersListener();
       startTableListeners();
       syncHomeListener();
+      syncResidentialListener();
       lastUserPresenceWrite = 0; // map name in the player list should update right away
       updateUserPresence();
       lastSyncedX = -1;
@@ -7145,9 +7239,18 @@ Friday: noborock Shibuya
           player.facing = "down";
           return;
         }
+        if (portal.to === "__visit") {
+          // A house door on the residential street. Step back onto the street first, so we don't
+          // retrigger while waiting (knock / locked) and so leaving the home returns us here.
+          player.y = Math.min(player.y + tileSize, mapHeight - player.size);
+          player.facing = "down";
+          clearMovePath();
+          visitHome(portal.ownerUid);
+          return;
+        }
         const goingIndoors = Boolean(maps[portal.to]?.indoor);
-        setMap(portal.to, portal.spawn);
-        player.facing = goingIndoors ? "up" : "down";
+        setMap(portal.to, portal.spawn || maps[portal.to].spawn);
+        player.facing = goingIndoors || portal.to === "residentialMap" ? "up" : "down";
       }
     };
 
@@ -7737,6 +7840,23 @@ Friday: noborock Shibuya
         if (inView(b.tileX * tileSize - 8, b.tileY * tileSize, b.w * tileSize + 16, b.h * tileSize)) {
           addDrawable((b.tileY + b.h) * tileSize, () => drawOfficeBuilding(ctx, b.tileX, b.tileY, tileSize));
         }
+        const g = RES_GATE;
+        if (inView(g.tileX * tileSize, (g.tileY - 2) * tileSize, g.w * tileSize, 3 * tileSize)) {
+          addDrawable((g.tileY + 1) * tileSize, () => drawResidentialGate(ctx, g.tileX, g.tileY, tileSize));
+        }
+      }
+
+      if (currentMapName === "residentialMap") {
+        const myUid = auth.currentUser?.uid;
+        currentMap.layout.plots.forEach((plot) => {
+          if (!plot.home || !inView(plot.x * tileSize - 30, plot.y * tileSize - 40, 3 * tileSize + 60, 3 * tileSize)) return;
+          const uid = plot.home.ownerUid;
+          const online = uid === myUid || isUserOnline(uid);
+          const atHome = uid === myUid ? false : online && onlineUsers.get(uid)?.mapName === homeMapName(uid);
+          addDrawable((plot.y + 2) * tileSize, () =>
+            drawHouseFront(ctx, plot, tileSize, { online, atHome, isMine: uid === myUid })
+          );
+        });
       }
 
       const nearTable = getNearestTable();
@@ -8077,6 +8197,7 @@ Friday: noborock Shibuya
       }
     };
 
+    registerResidentialMap([]); // empty street until homes load
     // Initialize the first map only after every helper it touches has been defined
     setMap(currentMapName, maps[currentMapName].spawn);
 
