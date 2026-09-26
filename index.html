@@ -1112,44 +1112,130 @@
       z-index: 30;
     }
 
-    .notice-card {
-      width: min(720px, 92vw);
-      background: rgba(255, 255, 255, 0.98);
-      border: 2px solid rgba(61, 56, 41, 0.2);
-      border-radius: 16px;
-      padding: 20px;
-      display: grid;
-      gap: 12px;
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+    /* Corkboard bulletin board */
+    .notice-board {
+      width: min(640px, calc(100vw - 32px));
+      box-sizing: border-box;
+      padding: 20px 22px 18px;
+      border-radius: 8px;
+      border: 10px solid #8b5e3c;
+      box-shadow:
+        inset 0 0 0 3px #5b3a22,
+        inset 0 6px 18px rgba(0, 0, 0, 0.25),
+        0 0 0 3px #2a1f1a,
+        0 18px 36px rgba(0, 0, 0, 0.35);
+      background-color: #c49a6c;
+      background-image:
+        radial-gradient(rgba(90, 58, 30, 0.35) 1px, transparent 1.4px),
+        radial-gradient(rgba(255, 240, 210, 0.25) 1px, transparent 1.4px);
+      background-size: 11px 11px, 17px 17px;
+      background-position: 0 0, 5px 7px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
-
+    .notice-header {
+      align-self: center;
+      text-align: center;
+      padding: 8px 22px 10px;
+      background: #fdf6e3;
+      border: 3px solid #2a1f1a;
+      box-shadow: 3px 3px 0 rgba(42, 31, 26, 0.35);
+      transform: rotate(-1deg);
+    }
     .notice-title {
-      font-weight: 600;
-      font-size: 18px;
-      color: var(--game-text);
+      font-weight: 800;
+      font-size: 20px;
+      color: #2a1f1a;
     }
-
+    .notice-subtitle {
+      font-size: 12px;
+      color: #6b6355;
+      margin-top: 2px;
+    }
     .notice-body {
-      font-size: 16px;
-      line-height: 1.6;
-      white-space: pre-line;
-      color: var(--game-text);
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
     }
-
+    .notice-item {
+      position: relative;
+      padding: 20px 14px 14px;
+      background: var(--note, #f4e3a1);
+      color: #2a1f1a;
+      text-align: left;
+      transform: rotate(var(--tilt, 0deg));
+      box-shadow: 2px 4px 0 rgba(42, 31, 26, 0.25), 0 8px 14px rgba(0, 0, 0, 0.15);
+      transition: transform 0.15s ease;
+    }
+    .notice-item:hover {
+      transform: rotate(0deg) translateY(-3px);
+    }
+    .notice-tack {
+      position: absolute;
+      top: -7px;
+      left: 50%;
+      width: 16px;
+      height: 16px;
+      margin-left: -8px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #ff8a80, #c0392b 60%, #7b1f16);
+      box-shadow: 0 2px 2px rgba(0, 0, 0, 0.35);
+    }
+    .notice-day {
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .notice-day small {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      opacity: 0.6;
+      margin-left: 2px;
+    }
+    .notice-gym {
+      margin-top: 8px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .notice-place {
+      margin-top: 2px;
+      font-size: 13px;
+      opacity: 0.85;
+    }
+    .notice-footer {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .notice-hint {
+      flex: 1;
+      min-width: 180px;
+      font-size: 13px;
+      color: #2a1f1a;
+      background: rgba(253, 246, 227, 0.85);
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
     .notice-close {
-      justify-self: end;
       font-size: 14px;
-      font-weight: 600;
-      padding: 8px 16px;
-      border: none;
+      font-weight: 700;
+      padding: 9px 18px;
+      border: 3px solid #2a1f1a;
       background: var(--game-primary);
       color: #fff;
-      border-radius: 10px;
+      border-radius: 8px;
+      box-shadow: 2px 2px 0 #2a1f1a;
       cursor: pointer;
     }
-
     .notice-close:hover {
       background: var(--game-primary-hover);
+    }
+    .notice-close:active {
+      transform: translate(2px, 2px);
+      box-shadow: none;
     }
 
     .video-room-url {
@@ -2216,7 +2302,7 @@
         <div class="hint">方向鍵／WASD 移動 · Shift 跑步 · 點地圖自動尋路 · Enter／X 互動 · 1–7 表情 · H 舉手</div>
         <button class="call-start" id="call-start" type="button" title="Start call">📹</button>
         <button class="board-action" id="board-action" type="button">
-          View Bulletin Board ↲
+          📌 攀岩時間表 ↲
         </button>
         <button class="icebreaker-dice-btn" id="icebreaker-dice-btn" type="button" title="破冰問答">🎲</button>
       </div>
@@ -2323,17 +2409,36 @@
       <button class="village-welcome-close" id="village-welcome-close" type="button">OK</button>
     </div>
   </div>
-  <div class="notice-overlay" id="notice-overlay" aria-live="polite">
-    <div class="notice-card">
-      <div class="notice-title">Bouldering Schedule</div>
-      <div class="notice-body" id="notice-body">
-Monday: noborock Shinjuku
-Wednesday: noborock Takadanobaba
-Friday: noborock Shibuya
+  <div class="notice-overlay" id="notice-overlay" role="dialog" aria-modal="true" aria-labelledby="notice-title">
+    <div class="notice-board">
+      <div class="notice-header">
+        <div class="notice-title" id="notice-title">🧗 攀岩團時間表</div>
+        <div class="notice-subtitle">Bouldering Schedule · 想一起爬就來！</div>
       </div>
-      <button class="notice-close" id="notice-close" type="button">
-        Close ↲
-      </button>
+      <div class="notice-body" id="notice-body">
+        <article class="notice-item" style="--note: #f7c6d0; --tilt: -2deg">
+          <span class="notice-tack" aria-hidden="true"></span>
+          <div class="notice-day">週一 <small>MON</small></div>
+          <div class="notice-gym">noborock</div>
+          <div class="notice-place">📍 新宿 Shinjuku</div>
+        </article>
+        <article class="notice-item" style="--note: #cfe6f7; --tilt: 1.5deg">
+          <span class="notice-tack" aria-hidden="true"></span>
+          <div class="notice-day">週三 <small>WED</small></div>
+          <div class="notice-gym">noborock</div>
+          <div class="notice-place">📍 高田馬場 Takadanobaba</div>
+        </article>
+        <article class="notice-item" style="--note: #f4e3a1; --tilt: -1deg">
+          <span class="notice-tack" aria-hidden="true"></span>
+          <div class="notice-day">週五 <small>FRI</small></div>
+          <div class="notice-gym">noborock</div>
+          <div class="notice-place">📍 渋谷 Shibuya</div>
+        </article>
+      </div>
+      <div class="notice-footer">
+        <span class="notice-hint">💬 想參加？在聊天室喊一聲，或按名單上的 💬 私訊大家！</span>
+        <button class="notice-close" id="notice-close" type="button">關閉 ↲</button>
+      </div>
     </div>
   </div>
   <div class="icebreaker-overlay" id="icebreaker-overlay" aria-live="polite">
@@ -4307,10 +4412,19 @@ Friday: noborock Shibuya
           { x: 8, y: 29, to: "residentialMap", spawn: null },
           { x: 9, y: 29, to: "residentialMap", spawn: null },
         ],
-        // Keep random trees / animals away from building entrances
+        // Keep random trees / animals away from building entrances (the space in front of every door)
         reserved: [
-          { x: 13, y: 29, w: 6, h: 2 },
-          { x: 6, y: 27, w: 6, h: 4 },
+          { x: 13, y: 29, w: 6, h: 2 }, // EQU office door
+          { x: 6, y: 27, w: 6, h: 4 }, // residential gate
+          { x: 36, y: 21, w: 7, h: 3 }, // castle entrance
+          { x: 2, y: 10, w: 5, h: 2 }, // house (4, 8) front
+          { x: 2, y: 20, w: 5, h: 2 }, // house (4, 18) front
+          { x: 11, y: 13, w: 3, h: 1 }, // in front of the NPC
+        ],
+        // Building lots: trees must not take these, but the buildings themselves go here
+        houseLots: [
+          { x: 3, y: 7, w: 3, h: 3 },
+          { x: 3, y: 17, w: 3, h: 3 },
         ],
         crowd: [],
         decorations: [],
@@ -4328,6 +4442,11 @@ Friday: noborock Shibuya
         ],
         spawn: { x: 5, y: 5 },
         npc: { tileX: 20, tileY: 14 },
+        reserved: [
+          { x: 1, y: 1, w: 3, h: 4 }, // exit door and the path in front of it
+          { x: 3, y: 4, w: 3, h: 2 }, // in front of the bulletin board
+          { x: 19, y: 15, w: 3, h: 1 }, // in front of the NPC
+        ],
         crowd: [],
         decorations: [],
         pigs: [],
@@ -4535,8 +4654,10 @@ Friday: noborock Shibuya
     };
 
     /** Tiles kept clear of random trees/animals (building fronts, gates). */
-    const isReservedTile = (mapName, tx, ty) =>
-      (maps[mapName]?.reserved || []).some((r) => tx >= r.x && tx < r.x + r.w && ty >= r.y && ty < r.y + r.h);
+    const inRects = (rects, tx, ty) => (rects || []).some((r) => tx >= r.x && tx < r.x + r.w && ty >= r.y && ty < r.y + r.h);
+    const isReservedTile = (mapName, tx, ty) => inRects(maps[mapName]?.reserved, tx, ty);
+    /** Trees never grow on a building lot (houses are placed there afterwards). */
+    const isHouseLotTile = (mapName, tx, ty) => inRects(maps[mapName]?.houseLots, tx, ty);
 
     let currentMapName = "worldMap";
     let currentMap = maps[currentMapName];
@@ -5159,7 +5280,17 @@ Friday: noborock Shibuya
         const tileY = getRandomInt(1, mapRows - 2);
         const key = `${tileX},${tileY}`;
 
-        if (blockedTiles.has(key) || usedTiles.has(key) || isZoneTile(mapName, tileX, tileY, 1) || isReservedTile(mapName, tileX, tileY)) {
+        if (
+          blockedTiles.has(key) ||
+          usedTiles.has(key) ||
+          isZoneTile(mapName, tileX, tileY, 1) ||
+          isReservedTile(mapName, tileX, tileY) ||
+          isHouseLotTile(mapName, tileX, tileY)
+        ) {
+          continue;
+        }
+        // A tree's canopy is ~1.4 tiles: keep the tile below each reserved doorway strip clear too
+        if (isReservedTile(mapName, tileX, tileY + 1)) {
           continue;
         }
         if (mapData.tiles[tileY][tileX] === 1) {
@@ -5402,40 +5533,127 @@ Friday: noborock Shibuya
       }
     };
 
-    const updatePigs = (deltaMs = 16.67) => {
-      const step = deltaMs / 16.67; // speeds/timers were tuned per 60fps frame
-      if (!currentMap.pigs || currentMap.pigs.length === 0) return;
-      const dirs = [{ dx: 0, dy: -1 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }, { dx: 1, dy: 0 }];
-      currentMap.pigs.forEach((pig) => {
-        pig.nextDirChange -= step;
-        if (pig.nextDirChange <= 0) {
-          pig.dir = getRandomInt(0, 3);
-          pig.nextDirChange = getRandomInt(60, 120);
+    // ---- Animal behaviour: idle / graze, wander to nearby spots, shy pigs step away from you ----
+    const ANIMAL_KINDS = {
+      pig: { walkSpeed: 36, idle: [1200, 3800], radius: 3.5, skittish: true },
+      cow: { walkSpeed: 24, idle: [2200, 6000], radius: 3, skittish: false },
+    };
+    const randBetween = (min, max) => min + Math.random() * (max - min);
+
+    /** Animals collide with walls, tree trunks, buildings and stay out of rooms/zones. */
+    const isAnimalBlocked = (x, y, size) => {
+      const box = { x: x + size * 0.18, y: y + size * 0.55, w: size * 0.64, h: size * 0.4 };
+      if (box.x < 0 || box.y < 0 || box.x + box.w > mapWidth || box.y + box.h > mapHeight) return true;
+      const left = Math.floor(box.x / tileSize);
+      const right = Math.floor((box.x + box.w - 1) / tileSize);
+      const top = Math.floor(box.y / tileSize);
+      const bottom = Math.floor((box.y + box.h - 1) / tileSize);
+      for (let ty = top; ty <= bottom; ty++) {
+        for (let tx = left; tx <= right; tx++) {
+          if (currentMap.tiles[ty]?.[tx] !== 0) return true;
+          if (isZoneTile(currentMapName, tx, ty) || isReservedTile(currentMapName, tx, ty)) return true;
+          if (currentMapName === "villageMap" && tx >= 3 && tx <= 5 && ty >= 1 && ty <= 3) return true; // bulletin board
         }
-        const d = dirs[pig.dir];
-        const nextX = pig.x + d.dx * pig.speed * step;
-        const nextY = pig.y + d.dy * pig.speed * step;
-        const left = Math.floor(nextX / tileSize);
-        const right = Math.floor((nextX + pig.size - 1) / tileSize);
-        const top = Math.floor(nextY / tileSize);
-        const bottom = Math.floor((nextY + pig.size - 1) / tileSize);
-        let canMove = true;
-        for (let ty = top; ty <= bottom; ty++) {
-          for (let tx = left; tx <= right; tx++) {
-            if (tx < 0 || tx >= mapCols || ty < 0 || ty >= mapRows) canMove = false;
-            else if (currentMap.tiles[ty][tx] === 1) canMove = false;
-            else if (currentMapName === "villageMap" && tx >= 3 && tx <= 5 && ty >= 1 && ty <= 3) canMove = false;
+      }
+      if (currentMap.crowd.some((m) => boxesOverlap(box, getTreeTrunkBox(m)))) return true;
+      const castleRect = getCastleRect();
+      if (castleRect && boxesOverlap(box, { x: castleRect.x, y: castleRect.y, w: castleRect.size, h: castleRect.size })) return true;
+      return false;
+    };
+
+    const isAnimalPathClear = (a, tx, ty) => {
+      for (let i = 1; i <= 6; i++) {
+        const t = i / 6;
+        if (isAnimalBlocked(a.x + (tx - a.x) * t, a.y + (ty - a.y) * t, a.size)) return false;
+      }
+      return true;
+    };
+
+    const pickWanderTarget = (a, kind) => {
+      for (let attempt = 0; attempt < 8; attempt++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = randBetween(0.8, kind.radius) * tileSize;
+        // Drift back toward "home" so herds stay roughly where they spawned
+        const tx = a.homeX + Math.cos(angle) * dist;
+        const ty = a.homeY + Math.sin(angle) * dist;
+        if (isAnimalPathClear(a, tx, ty)) return { x: tx, y: ty };
+      }
+      return null;
+    };
+
+    const faceToward = (a, vx, vy) => {
+      // 0 up, 1 down, 2 left, 3 right — matches the sprite lookup in render()
+      a.dir = Math.abs(vx) > Math.abs(vy) ? (vx < 0 ? 2 : 3) : (vy < 0 ? 0 : 1);
+    };
+
+    const updateAnimals = (list, deltaMs, kind) => {
+      if (!list || !list.length) return;
+      list.forEach((a) => {
+        if (a.state === undefined) {
+          a.homeX = a.x;
+          a.homeY = a.y;
+          a.state = "idle";
+          a.timer = randBetween(...kind.idle);
+          a.animMs = 0;
+          a.speedMul = randBetween(0.8, 1.2); // every animal walks at its own pace
+        }
+        // Shy animals shuffle away when you walk right up to them
+        if (kind.skittish && a.state !== "flee" && player.walking) {
+          const dx = a.x - player.x;
+          const dy = a.y - player.y;
+          const d = Math.hypot(dx, dy);
+          if (d < tileSize * 1.3 && d > 0.01) {
+            const tx = a.x + (dx / d) * tileSize * 1.6;
+            const ty = a.y + (dy / d) * tileSize * 1.6;
+            if (isAnimalPathClear(a, tx, ty)) {
+              a.state = "flee";
+              a.target = { x: tx, y: ty };
+            }
           }
         }
-        if (canMove) {
-          pig.x = clamp(nextX, 0, mapWidth - pig.size);
-          pig.y = clamp(nextY, 0, mapHeight - pig.size);
-        } else {
-          pig.dir = getRandomInt(0, 3);
-          pig.nextDirChange = getRandomInt(30, 60);
+        if (a.state === "idle") {
+          a.walking = false;
+          a.timer -= deltaMs;
+          // Look around now and then while standing
+          if (Math.random() < deltaMs / 2500) a.dir = Math.random() < 0.5 ? 2 : 3;
+          if (a.timer <= 0) {
+            const target = pickWanderTarget(a, kind);
+            if (target) {
+              a.state = "walk";
+              a.target = target;
+            } else {
+              a.timer = randBetween(...kind.idle);
+            }
+          }
+          return;
         }
+        // walk / flee toward target, easing out as we arrive
+        const dx = a.target.x - a.x;
+        const dy = a.target.y - a.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 1.5) {
+          a.state = "idle";
+          a.timer = randBetween(...kind.idle);
+          return;
+        }
+        const base = kind.walkSpeed * a.speedMul * (a.state === "flee" ? 2.4 : 1);
+        const step = Math.min(dist, (base * Math.min(1, 0.35 + dist / 30) * deltaMs) / 1000);
+        const nx = a.x + (dx / dist) * step;
+        const ny = a.y + (dy / dist) * step;
+        faceToward(a, dx, dy);
+        if (isAnimalBlocked(nx, ny, a.size)) {
+          a.state = "idle";
+          a.timer = randBetween(400, 1200);
+          return;
+        }
+        a.x = nx;
+        a.y = ny;
+        a.walking = true;
+        a.animMs += deltaMs;
       });
     };
+
+    const updatePigs = (deltaMs = 16.67) => updateAnimals(currentMap.pigs, deltaMs, ANIMAL_KINDS.pig);
 
     const generateCowsForMap = (mapName) => {
       const mapData = maps[mapName];
@@ -5504,40 +5722,7 @@ Friday: noborock Shibuya
       }
     };
 
-    const updateCows = (deltaMs = 16.67) => {
-      const step = deltaMs / 16.67; // speeds/timers were tuned per 60fps frame
-      if (!currentMap.cows || currentMap.cows.length === 0) return;
-      const dirs = [{ dx: 0, dy: -1 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }, { dx: 1, dy: 0 }];
-      currentMap.cows.forEach((cow) => {
-        cow.nextDirChange -= step;
-        if (cow.nextDirChange <= 0) {
-          cow.dir = getRandomInt(0, 3);
-          cow.nextDirChange = getRandomInt(60, 120);
-        }
-        const d = dirs[cow.dir];
-        const nextX = cow.x + d.dx * cow.speed * step;
-        const nextY = cow.y + d.dy * cow.speed * step;
-        const left = Math.floor(nextX / tileSize);
-        const right = Math.floor((nextX + cow.size - 1) / tileSize);
-        const top = Math.floor(nextY / tileSize);
-        const bottom = Math.floor((nextY + cow.size - 1) / tileSize);
-        let canMove = true;
-        for (let ty = top; ty <= bottom; ty++) {
-          for (let tx = left; tx <= right; tx++) {
-            if (tx < 0 || tx >= mapCols || ty < 0 || ty >= mapRows) canMove = false;
-            else if (currentMap.tiles[ty][tx] === 1) canMove = false;
-            else if (currentMapName === "villageMap" && tx >= 3 && tx <= 5 && ty >= 1 && ty <= 3) canMove = false;
-          }
-        }
-        if (canMove) {
-          cow.x = clamp(nextX, 0, mapWidth - cow.size);
-          cow.y = clamp(nextY, 0, mapHeight - cow.size);
-        } else {
-          cow.dir = getRandomInt(0, 3);
-          cow.nextDirChange = getRandomInt(30, 60);
-        }
-      });
-    };
+    const updateCows = (deltaMs = 16.67) => updateAnimals(currentMap.cows, deltaMs, ANIMAL_KINDS.cow);
 
     const minimapCache = new Map();
     const drawMinimap = () => {
@@ -6970,16 +7155,6 @@ Friday: noborock Shibuya
       a.y < b.y + b.size &&
       a.y + a.size > b.y;
 
-    const getCrowdRect = (member) => {
-      const sprite = getCrowdSpriteStyle(member.color);
-      const offset = Math.floor((tileSize - sprite.size) / 2);
-      return {
-        x: member.tileX * tileSize + offset,
-        y: member.tileY * tileSize + offset,
-        size: sprite.size,
-      };
-    };
-
     const getCastleDrawInfo = () => {
       if (currentMapName !== "worldMap" || !currentMap.entrance) {
         return null;
@@ -7067,77 +7242,88 @@ Friday: noborock Shibuya
     };
 
 
+    // Collision uses a small "feet" box at the bottom of the sprite (like most top-down RPGs):
+    // heads and bodies may overlap trees and walls visually, which also makes walking feel smoother.
+    const FEET = { offsetX: 9, offsetY: 25, w: 22, h: 13 };
+    const getFeetBox = (x, y) => ({ x: x + FEET.offsetX, y: y + FEET.offsetY, w: FEET.w, h: FEET.h });
+    const boxesOverlap = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+    /** Only the trunk of a tree blocks, not its whole canopy. */
+    const getTreeTrunkBox = (member) => ({
+      x: member.tileX * tileSize + 13,
+      y: member.tileY * tileSize + 24,
+      w: 14,
+      h: 12,
+    });
+
     const canMoveTo = (x, y) => {
-      const left = Math.floor(x / tileSize);
-      const right = Math.floor((x + player.size - 1) / tileSize);
-      const top = Math.floor(y / tileSize);
-      const bottom = Math.floor((y + player.size - 1) / tileSize);
-
-      const hitsWall =
-        isWall(left, top) ||
-        isWall(right, top) ||
-        isWall(left, bottom) ||
-        isWall(right, bottom);
-
-      if (hitsWall) {
-        return false;
+      const feet = getFeetBox(x, y);
+      const left = Math.floor(feet.x / tileSize);
+      const right = Math.floor((feet.x + feet.w - 1) / tileSize);
+      const top = Math.floor(feet.y / tileSize);
+      const bottom = Math.floor((feet.y + feet.h - 1) / tileSize);
+      for (let ty = top; ty <= bottom; ty++) {
+        for (let tx = left; tx <= right; tx++) {
+          if (isWall(tx, ty)) return false;
+        }
       }
-
-      const nextPlayerRect = {
-        x,
-        y,
-        size: player.size,
-      };
 
       const castleRect = getCastleRect();
-      if (castleRect && rectsOverlap(nextPlayerRect, castleRect)) {
+      if (castleRect && boxesOverlap(feet, { x: castleRect.x, y: castleRect.y, w: castleRect.size, h: castleRect.size - 6 })) {
         return false;
       }
 
-      if (currentMap.crowd.length) {
-        const blockedByCrowd = currentMap.crowd.some((member) =>
-          rectsOverlap(nextPlayerRect, getCrowdRect(member))
-        );
-        if (blockedByCrowd) {
-          return false;
-        }
+      if (currentMap.crowd.length && currentMap.crowd.some((member) => boxesOverlap(feet, getTreeTrunkBox(member)))) {
+        return false;
       }
 
-      if (npc.active) {
-        const npcRect = {
-          x: npcPixel.x,
-          y: npcPixel.y,
-          size: npc.size,
-        };
-        if (rectsOverlap(nextPlayerRect, npcRect)) {
-          return false;
-        }
+      if (npc.active && boxesOverlap(feet, { x: npcPixel.x + 8, y: npcPixel.y + 22, w: 24, h: 16 })) {
+        return false;
       }
 
       for (const table of getGameTables(currentMapName)) {
-        const tx = table.tileX * tileSize + 2;
-        const ty = table.tileY * tileSize + 4;
-        const ts = tileSize - 4;
-        if (x < tx + ts && x + player.size > tx && y < ty + ts - 6 && y + player.size > ty) {
+        if (boxesOverlap(feet, { x: table.tileX * tileSize + 2, y: table.tileY * tileSize + 6, w: tileSize - 4, h: tileSize - 10 })) {
           return false;
         }
       }
 
-      // Houses: block the upper two rows of their 3x3 footprint so players can stand in front of the door.
+      // Houses: block their footprint except the bottom strip, so players can stand at the door.
       if (currentMap.decorations) {
         for (const d of currentMap.decorations) {
           if (d.imgIndex !== HOUSE_01_INDEX && d.imgIndex !== HOUSE_02_INDEX) continue;
-          const hx = (d.tileX - 1) * tileSize + 6;
-          const hy = (d.tileY - 1) * tileSize;
-          const hw = tileSize * 3 - 12;
-          const hh = tileSize * 2;
-          if (x < hx + hw && x + player.size > hx && y < hy + hh && y + player.size > hy) {
-            return false;
-          }
+          const house = { x: (d.tileX - 1) * tileSize + 8, y: (d.tileY - 1) * tileSize + 10, w: tileSize * 3 - 16, h: tileSize * 2 + 14 };
+          if (boxesOverlap(feet, house)) return false;
         }
       }
 
       return true;
+    };
+
+    /**
+     * Corner assist: when walking straight into the edge of an obstacle, slide sideways a little
+     * so you round it instead of getting stuck. Returns true if it nudged the player.
+     */
+    const CORNER_ASSIST_PX = 14;
+    const tryCornerAssist = (dx, dy, speed) => {
+      if (dx !== 0 && dy === 0) {
+        for (let k = 2; k <= CORNER_ASSIST_PX; k += 2) {
+          for (const sign of [-1, 1]) {
+            if (canMoveTo(player.x + dx, player.y + sign * k) && canMoveTo(player.x, player.y + sign * Math.min(k, speed))) {
+              player.y += sign * Math.min(k, speed);
+              return true;
+            }
+          }
+        }
+      } else if (dy !== 0 && dx === 0) {
+        for (let k = 2; k <= CORNER_ASSIST_PX; k += 2) {
+          for (const sign of [-1, 1]) {
+            if (canMoveTo(player.x + sign * k, player.y + dy) && canMoveTo(player.x + sign * Math.min(k, speed), player.y)) {
+              player.x += sign * Math.min(k, speed);
+              return true;
+            }
+          }
+        }
+      }
+      return false;
     };
 
     const getPlayerTile = () => ({
@@ -7559,12 +7745,17 @@ Friday: noborock Shibuya
       const nextX = clamp(player.x + dx, 0, mapWidth - player.size);
       const nextY = clamp(player.y + dy, 0, mapHeight - player.size);
 
-      if (canMoveTo(nextX, player.y)) {
+      const blockedX = !canMoveTo(nextX, player.y);
+      if (!blockedX) {
         player.x = nextX;
       }
-
-      if (canMoveTo(player.x, nextY)) {
+      const blockedY = !canMoveTo(player.x, nextY);
+      if (!blockedY) {
         player.y = nextY;
+      }
+      // Keyboard only: path-following already walks around obstacles on the grid
+      if ((blockedX || blockedY) && !movePath.length) {
+        tryCornerAssist(blockedX ? dx : 0, blockedY ? dy : 0, speed);
       }
 
       const moved = Math.abs(player.x - prevX) + Math.abs(player.y - prevY) > 0.01;
@@ -7873,7 +8064,15 @@ Friday: noborock Shibuya
         (list || []).forEach((animal) => {
           const img = images[dirKeys[animal.dir]];
           if (!img || !img.complete || !inView(animal.x, animal.y, animal.size, animal.size)) return;
-          addDrawable(animal.y + animal.size, () => drawImageProportional(ctx, img, animal.x, animal.y, animal.size, animal.size));
+          addDrawable(animal.y + animal.size, () => {
+            // Soft shadow + a little hop while walking
+            const bob = animal.walking ? -Math.abs(Math.sin((animal.animMs || 0) / 110)) * 3 : 0;
+            ctx.fillStyle = "rgba(20, 30, 20, 0.22)";
+            ctx.beginPath();
+            ctx.ellipse(animal.x + animal.size / 2, animal.y + animal.size - 3, animal.size * 0.34, 4, 0, 0, Math.PI * 2);
+            ctx.fill();
+            drawImageProportional(ctx, img, animal.x, animal.y + bob, animal.size, animal.size);
+          });
         });
       };
       addAnimals(currentMap.pigs, pigImages);
@@ -8018,7 +8217,13 @@ Friday: noborock Shibuya
         ctx.font = "14px Arial, Helvetica, sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "bottom";
-        ctx.fillText("View Bulletin Board↲", whiteboardDraw.x + whiteboardDraw.size / 2, whiteboardDraw.y - 4);
+        ctx.font = "bold 12px \"Noto Sans TC\", Arial, sans-serif";
+        ctx.lineWidth = 4;
+        ctx.lineJoin = "round";
+        ctx.strokeStyle = "#2a1f1a";
+        ctx.fillStyle = "#f2c14e";
+        ctx.strokeText("Enter / X 看告示板", whiteboardDraw.x + whiteboardDraw.size / 2, whiteboardDraw.y - 4);
+        ctx.fillText("Enter / X 看告示板", whiteboardDraw.x + whiteboardDraw.size / 2, whiteboardDraw.y - 4);
         ctx.restore();
       }
 
