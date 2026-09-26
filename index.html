@@ -298,6 +298,10 @@
       border-color: var(--game-primary-hover);
     }
 
+    .chat-row .chat-avatar.is-pixel {
+      image-rendering: pixelated;
+      background: #55a07c;
+    }
     .chat-row .chat-avatar {
       width: 24px;
       height: 24px;
@@ -1974,6 +1978,148 @@
       color: var(--chrome-text);
     }
 
+    .profile-card {
+      position: fixed;
+      z-index: 57;
+      width: 280px;
+      max-width: calc(100vw - 24px);
+      box-sizing: border-box;
+      padding: 14px;
+      background: #fdf6e3;
+      border: 3px solid #2a1f1a;
+      border-radius: 12px;
+      box-shadow: 4px 4px 0 rgba(42, 31, 26, 0.3), 0 12px 24px rgba(0, 0, 0, 0.2);
+      color: var(--game-text);
+      text-align: left;
+    }
+    .profile-card-close {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      border: none;
+      background: transparent;
+      font-size: 14px;
+      cursor: pointer;
+      color: var(--game-text-muted);
+    }
+    .profile-card-top {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .profile-card-top canvas {
+      width: 64px;
+      height: 80px;
+      image-rendering: pixelated;
+      background: #55a07c;
+      border-radius: 10px;
+      flex-shrink: 0;
+    }
+    .profile-card-name {
+      font-size: 17px;
+      font-weight: 800;
+      word-break: break-word;
+    }
+    .profile-card-meta {
+      font-size: 12px;
+      color: var(--game-text-muted);
+      margin-top: 2px;
+      line-height: 1.5;
+    }
+    .profile-card-bio {
+      margin-top: 10px;
+      font-size: 13px;
+      line-height: 1.5;
+      background: #fff;
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .profile-card-bio:empty {
+      display: none;
+    }
+    .profile-card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 10px;
+    }
+    .profile-tag {
+      font-size: 12px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(61, 56, 41, 0.08);
+    }
+    .profile-tag.is-common {
+      background: #fff1b8;
+      box-shadow: inset 0 0 0 2px #f2c14e;
+      font-weight: 700;
+    }
+    .profile-card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 12px;
+    }
+    .profile-card-actions button {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 2px solid rgba(61, 56, 41, 0.2);
+      background: #fff;
+      color: var(--game-text);
+      cursor: pointer;
+    }
+    .profile-card-actions button.is-danger {
+      color: #b03a2e;
+      border-color: rgba(176, 58, 46, 0.35);
+    }
+    .report-overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 61;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    .report-overlay.visible {
+      display: flex;
+    }
+    .report-card {
+      width: min(380px, 100%);
+      background: #fff;
+      border-radius: 14px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-align: left;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
+    }
+    .report-title {
+      font-size: 17px;
+      font-weight: 800;
+    }
+    .report-desc {
+      margin: 0;
+      font-size: 12px;
+      color: var(--game-text-muted);
+    }
+    .report-card textarea {
+      font: inherit;
+      font-size: 14px;
+      padding: 8px 10px;
+      border: 2px solid rgba(61, 56, 41, 0.2);
+      border-radius: 10px;
+      resize: vertical;
+    }
+    .online-row.is-blocked {
+      opacity: 0.55;
+    }
+
     .knock-overlay {
       position: fixed;
       top: 64px;
@@ -2180,6 +2326,30 @@
       border: 2px solid rgba(61, 56, 41, 0.2);
       border-radius: 10px;
       color: var(--game-text);
+    }
+    .avatar-welcome {
+      font-size: 13px;
+      background: #fff1b8;
+      border: 2px solid #f2c14e;
+      border-radius: 10px;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    .avatar-field select {
+      font-size: 14px;
+      padding: 7px 10px;
+      border: 2px solid rgba(61, 56, 41, 0.2);
+      border-radius: 10px;
+      color: var(--game-text);
+      background: #fff;
+    }
+    .avatar-check {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      font-size: 12px;
+      color: var(--game-text-muted);
+      text-align: left;
     }
     .avatar-choices {
       display: flex;
@@ -2483,6 +2653,48 @@
       </div>
     </div>
   </div>
+  <div class="profile-card" id="profile-card" role="dialog" aria-labelledby="profile-card-name" hidden>
+    <button type="button" class="profile-card-close" id="profile-card-close" aria-label="關閉">✕</button>
+    <div class="profile-card-top">
+      <canvas id="profile-card-avatar" width="64" height="80" aria-hidden="true"></canvas>
+      <div class="profile-card-id">
+        <div class="profile-card-name" id="profile-card-name"></div>
+        <div class="profile-card-meta" id="profile-card-meta"></div>
+      </div>
+    </div>
+    <div class="profile-card-bio" id="profile-card-bio"></div>
+    <div class="profile-card-tags" id="profile-card-tags"></div>
+    <div class="profile-card-actions" id="profile-card-actions"></div>
+  </div>
+  <div class="report-overlay" id="report-overlay" role="dialog" aria-modal="true" aria-labelledby="report-title">
+    <div class="report-card">
+      <div class="report-title" id="report-title">⚠️ 檢舉</div>
+      <p class="report-desc">檢舉內容只有管理員看得到，對方不會知道是誰檢舉的。</p>
+      <label class="avatar-field">
+        <span>原因</span>
+        <select id="report-reason">
+          <option value="harassment">騷擾或霸凌</option>
+          <option value="hate">仇恨言論或歧視</option>
+          <option value="sexual">不當的性內容</option>
+          <option value="impersonation">冒充他人</option>
+          <option value="spam">洗版或廣告</option>
+          <option value="other">其他</option>
+        </select>
+      </label>
+      <label class="avatar-field">
+        <span>補充說明（選填）</span>
+        <textarea id="report-detail" maxlength="500" rows="3" placeholder="發生了什麼事？"></textarea>
+      </label>
+      <label class="avatar-check">
+        <input id="report-also-block" type="checkbox" checked />
+        <span>同時封鎖這個人</span>
+      </label>
+      <div class="avatar-actions">
+        <button type="button" id="report-cancel">取消</button>
+        <button type="button" id="report-submit" class="is-primary">送出檢舉</button>
+      </div>
+    </div>
+  </div>
   <div class="knock-overlay" id="knock-overlay" role="alertdialog" aria-labelledby="knock-message">
     <div class="knock-card">
       <div class="knock-message" id="knock-message">🔔 有人在敲門</div>
@@ -2507,13 +2719,32 @@
   </div>
   <div class="avatar-overlay" id="avatar-overlay" role="dialog" aria-modal="true" aria-labelledby="avatar-title">
     <div class="avatar-card">
-      <div class="avatar-title" id="avatar-title">角色外觀</div>
+      <div class="avatar-title" id="avatar-title">我的角色與名片</div>
+      <div class="avatar-welcome" id="avatar-welcome" hidden>
+        👋 歡迎！先幫自己取個暱稱吧。這裡不會顯示你的 Google 真實姓名和大頭照。
+      </div>
       <div class="avatar-body">
         <canvas class="avatar-preview" id="avatar-preview" width="96" height="120" aria-label="Character preview"></canvas>
         <div class="avatar-options" id="avatar-options">
           <label class="avatar-field">
-            <span>名稱</span>
-            <input id="avatar-nickname" type="text" maxlength="16" placeholder="預設使用 Google 名稱" />
+            <span>暱稱</span>
+            <input id="avatar-nickname" type="text" maxlength="16" placeholder="大家在遊戲裡看到的名字" />
+          </label>
+          <label class="avatar-field">
+            <span>代名詞</span>
+            <select id="profile-pronouns"></select>
+          </label>
+          <div class="avatar-field">
+            <span>興趣（最多 6 個，會顯示在名片和家門口）</span>
+            <div class="avatar-choices" id="profile-interests"></div>
+          </div>
+          <label class="avatar-field">
+            <span>一句話自我介紹</span>
+            <input id="profile-bio" type="text" maxlength="60" placeholder="例如：週三晚上常在新宿爬 V3～" />
+          </label>
+          <label class="avatar-check">
+            <input id="profile-show-photo" type="checkbox" />
+            <span>在聊天室顯示我的 Google 大頭照（預設不顯示，改用像素頭像）</span>
           </label>
         </div>
       </div>
@@ -2589,6 +2820,16 @@
       WALL_COLORS,
     } from "./js/home.js";
     import { FURNITURE_CATALOG, FURNITURE_TYPES, drawFurnitureItem } from "./js/furniture.js";
+    import {
+      INTERESTS,
+      MAX_BIO,
+      MAX_INTERESTS,
+      PRONOUNS,
+      commonInterests,
+      getInterest,
+      interestEmojis,
+      normalizeProfile,
+    } from "./js/profile.js";
     import {
       buildResidentialLayer,
       buildResidentialTiles,
@@ -2736,6 +2977,7 @@
     let isNoticeOpen = false;
     let unsubscribeUsers = null;
     const onlineUsers = new Map();
+    let myBlocked = new Set(); // uids I blocked (saved on users/{me}.blockedUids)
     let onlineRefreshTimer = null;
     let activeChatTab = "map";
     let userSelectedTab = false;
@@ -2852,6 +3094,7 @@
         startTableListeners();
         startKnockListener();
         startInboxListener();
+        loadMyProfile(user);
         lastUserPresenceWrite = 0;
         updateUserPresence();
         forcePositionSync = true;
@@ -2897,13 +3140,23 @@
       row.className = "chat-row";
       if (isSelf) row.classList.add("is-self");
 
-      const avatar = document.createElement("img");
-      avatar.className = "chat-avatar";
-      avatar.alt = "";
-      avatar.loading = "lazy";
-      avatar.decoding = "async";
+      let avatar;
       if (message[photoKey]) {
+        avatar = document.createElement("img");
+        avatar.className = "chat-avatar";
+        avatar.alt = "";
+        avatar.loading = "lazy";
+        avatar.decoding = "async";
         avatar.src = message[photoKey];
+      } else {
+        // No public photo: show the sender's pixel character instead
+        avatar = document.createElement("canvas");
+        avatar.className = "chat-avatar is-pixel";
+        avatar.width = 24;
+        avatar.height = 24;
+        const senderUid = message.uid || message.fromUid || message[nameKey] || "guest";
+        const look = normalizeAvatar(message.avatar || message.fromAvatar, senderUid);
+        drawCharacter(avatar.getContext("2d"), look, "down", 0, -8, -1, 40, 2);
       }
 
       const bubble = document.createElement("div");
@@ -2925,7 +3178,7 @@
     const SPEECH_BUBBLE_MS = 6000;
     const speechBubbles = new Map();
     const showSpeechBubble = (uid, text) => {
-      if (!uid || !text) return;
+      if (!uid || !text || isBlockedWith(uid)) return;
       speechBubbles.set(uid, { text: String(text).slice(0, 60), until: performance.now() + SPEECH_BUBBLE_MS });
     };
 
@@ -2996,7 +3249,7 @@
           rows.sort((a, b) => getMessageMillis(a) - getMessageMillis(b));
           const myUid = auth.currentUser?.uid;
           const fragment = document.createDocumentFragment();
-          rows.slice(-CHAT_MAX_RENDERED).forEach((row) => {
+          rows.filter((row) => !isBlockedWith(row.uid)).slice(-CHAT_MAX_RENDERED).forEach((row) => {
             fragment.appendChild(buildChatRow(row, Boolean(row.uid && row.uid === myUid), "userName", "photoURL"));
           });
           chatMessages.appendChild(fragment);
@@ -3082,7 +3335,7 @@
       privateMessagesEl.innerHTML = "";
       const myUid = auth.currentUser?.uid;
       const fragment = document.createDocumentFragment();
-      privateMessages.slice(-CHAT_MAX_RENDERED).forEach((message) => {
+      privateMessages.filter((m) => !isBlockedWith(m.fromUid)).slice(-CHAT_MAX_RENDERED).forEach((message) => {
         const isSelf = Boolean(message.fromUid && message.fromUid === myUid);
         fragment.appendChild(buildChatRow(message, isSelf, "fromName", "fromPhotoURL"));
       });
@@ -3286,7 +3539,8 @@
         if (
           !isPlayerOnlineOnMap(playerData) ||
           typeof playerData.x !== "number" ||
-          typeof playerData.y !== "number"
+          typeof playerData.y !== "number" ||
+          isBlockedWith(playerId)
         ) return;
         const dx = playerData.x - player.x;
         const dy = playerData.y - player.y;
@@ -3586,6 +3840,7 @@
             // Ignore stale invites left over from earlier sessions
             const createdMs = d.createdAt?.toMillis ? d.createdAt.toMillis() : Date.now();
             if (Date.now() - createdMs > INVITE_MAX_AGE_MS) return;
+            if (isBlockedWith(d.fromUid)) return;
             const fromName = otherPlayers.get(d.fromUid)?.userName || otherPlayers.get(d.fromUid)?.displayName || "對方";
             showInviteDialog(change.doc.id, d.fromUid, fromName);
           });
@@ -3883,6 +4138,13 @@
             status: myStatus,
             mapName: currentMapName,
             areaName: currentAreaName || getMapLabel(currentMapName),
+            nicknameChosen: Boolean(playerNickname),
+            blockedUids: [...myBlocked],
+            pronouns: myProfile.pronouns,
+            interests: myProfile.interests,
+            bio: myProfile.bio,
+            avatar: myAvatar,
+            photoURL: getPublicPhotoURL(),
             villageId: "lgbtq",
             lastActiveAt: serverTimestamp(),
           },
@@ -3960,6 +4222,10 @@
         showIcebreakerToast("登入後才能私訊");
         return;
       }
+      if (isBlockedWith(uid)) {
+        showIcebreakerToast("你們之間有封鎖，無法私訊");
+        return;
+      }
       dmTarget = { uid, name: name || "Player" };
       clearUnread(uid);
       renderOnlineUsers();
@@ -4000,7 +4266,7 @@
           snapshot.docChanges().forEach((change) => {
             if (change.type !== "added") return;
             const d = change.doc.data();
-            if (!d.fromUid || d.fromUid === user.uid) return;
+            if (!d.fromUid || d.fromUid === user.uid || isBlockedWith(d.fromUid)) return;
             if (isViewingConversation(d.conversationId)) return;
             unreadFrom.set(d.fromUid, (unreadFrom.get(d.fromUid) || 0) + 1);
             showIcebreakerToast(`💬 ${d.fromName || "有人"} 傳了私訊給你`, 3500);
@@ -4012,6 +4278,207 @@
         (err) => console.error("Inbox listener error", err)
       );
     };
+
+    // ================= Blocking, reporting & name cards =================
+    /** True if I blocked them, or they blocked me — either way we don't interact. */
+    const isBlockedWith = (uid) => {
+      if (!uid) return false;
+      const me = auth.currentUser?.uid;
+      const theirs = onlineUsers.get(uid)?.blockedUids;
+      return myBlocked.has(uid) || Boolean(me && Array.isArray(theirs) && theirs.includes(me));
+    };
+    const saveBlocks = () => {
+      const user = auth.currentUser;
+      if (!user) return;
+      setDoc(doc(db, "users", user.uid), { blockedUids: [...myBlocked] }, { merge: true }).catch((err) =>
+        console.error("Save block list failed", err)
+      );
+    };
+    const blockUser = (uid, name) => {
+      if (!uid || uid === auth.currentUser?.uid) return;
+      myBlocked.add(uid);
+      saveBlocks();
+      if (dmTarget?.uid === uid) closeDirectMessage();
+      if (followTargetId === uid) stopFollowing();
+      unreadFrom.delete(uid);
+      updateUnreadBadge();
+      speechBubbles.delete(uid);
+      activeEmotes.delete(uid);
+      startChatListener(); // re-render chat without their messages
+      renderOnlineUsers();
+      showIcebreakerToast(`🚫 已封鎖 ${name || "對方"}：你們不會再看到彼此的訊息`, 3500);
+    };
+    const unblockUser = (uid, name) => {
+      myBlocked.delete(uid);
+      saveBlocks();
+      startChatListener();
+      renderOnlineUsers();
+      showIcebreakerToast(`已解除封鎖 ${name || "對方"}`);
+    };
+
+    // ---- Report ----
+    const reportOverlay = document.querySelector("#report-overlay");
+    const reportReason = document.querySelector("#report-reason");
+    const reportDetail = document.querySelector("#report-detail");
+    const reportAlsoBlock = document.querySelector("#report-also-block");
+    let reportTarget = null;
+    const openReport = (uid, name) => {
+      if (!auth.currentUser) {
+        showIcebreakerToast("登入後才能檢舉");
+        return;
+      }
+      reportTarget = { uid, name };
+      document.querySelector("#report-title").textContent = `⚠️ 檢舉 ${name || "這位玩家"}`;
+      if (reportDetail) reportDetail.value = "";
+      if (reportAlsoBlock) reportAlsoBlock.checked = true;
+      reportOverlay?.classList.add("visible");
+    };
+    const closeReport = () => {
+      reportOverlay?.classList.remove("visible");
+      reportTarget = null;
+    };
+    document.querySelector("#report-cancel")?.addEventListener("click", closeReport);
+    document.querySelector("#report-submit")?.addEventListener("click", async () => {
+      const user = auth.currentUser;
+      const target = reportTarget;
+      if (!user || !target) return;
+      try {
+        await addDoc(collection(db, "reports"), {
+          reporterUid: user.uid,
+          reporterName: playerNickname || user.displayName || "Player",
+          targetUid: target.uid,
+          targetName: target.name || "",
+          reason: reportReason?.value || "other",
+          detail: (reportDetail?.value || "").trim().slice(0, 500),
+          mapName: currentMapName,
+          createdAt: serverTimestamp(),
+        });
+        if (reportAlsoBlock?.checked) blockUser(target.uid, target.name);
+        closeReport();
+        showIcebreakerToast("已送出檢舉，謝謝你讓社群更安全 🌈", 3500);
+      } catch (err) {
+        console.error("Report failed", err);
+        showIcebreakerToast("檢舉送出失敗，請再試一次");
+      }
+    });
+    reportOverlay?.addEventListener("click", (event) => {
+      if (event.target === reportOverlay) closeReport();
+    });
+
+    // ---- Name card ----
+    const profileCard = document.querySelector("#profile-card");
+    const profileCardAvatar = document.querySelector("#profile-card-avatar");
+    let profileCardUid = null;
+    const closeProfileCard = () => {
+      if (profileCard) profileCard.hidden = true;
+      profileCardUid = null;
+    };
+    const addCardButton = (container, label, onClick, danger = false) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = label;
+      if (danger) btn.classList.add("is-danger");
+      btn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        onClick();
+      });
+      container.appendChild(btn);
+    };
+    /** Show someone's card near a screen point. */
+    const openProfileCard = (uid, anchor) => {
+      if (!profileCard) return;
+      const me = auth.currentUser?.uid;
+      const isMe = uid === me || uid === "me";
+      const data = isMe ? {} : onlineUsers.get(uid) || {};
+      const playerData = isMe ? null : otherPlayers.get(uid);
+      const name = isMe
+        ? playerNickname || auth.currentUser?.displayName || "Player"
+        : data.displayName || playerData?.userName || "Player";
+      const profile = isMe ? myProfile : normalizeProfile(data);
+      const status = isMe ? myStatus : getPlayerStatus(uid, playerData);
+      const statusText = STATUS_LABELS[status] || "離線";
+      const where = isMe ? getMapLabel(currentMapName) : data.areaName || getMapLabel(data.mapName) || "";
+      const look = isMe
+        ? myAvatar
+        : otherPlayerRender.get(uid)?.avatar || normalizeAvatar(data.avatar || playerData?.avatar, uid);
+      profileCardUid = uid;
+
+      const g = profileCardAvatar.getContext("2d");
+      g.clearRect(0, 0, profileCardAvatar.width, profileCardAvatar.height);
+      drawCharacter(g, look, "down", 0, 0, 16, 64, 4);
+      document.querySelector("#profile-card-name").textContent = isMe ? `${name}（你）` : name;
+      document.querySelector("#profile-card-meta").textContent = [profile.pronouns, statusText, where].filter(Boolean).join(" · ");
+      document.querySelector("#profile-card-bio").textContent = profile.bio || "";
+
+      const tags = document.querySelector("#profile-card-tags");
+      tags.innerHTML = "";
+      const common = isMe ? [] : commonInterests(myProfile.interests, profile.interests);
+      profile.interests.forEach((id) => {
+        const it = getInterest(id);
+        if (!it) return;
+        const tag = document.createElement("span");
+        tag.className = "profile-tag" + (common.includes(id) ? " is-common" : "");
+        tag.textContent = `${it.emoji} ${it.label}`;
+        if (common.includes(id)) tag.title = "你們的共同興趣";
+        tags.appendChild(tag);
+      });
+      if (!profile.interests.length) {
+        const tag = document.createElement("span");
+        tag.className = "profile-tag";
+        tag.textContent = isMe ? "還沒選興趣，按「編輯名片」加上吧" : "還沒填興趣";
+        tags.appendChild(tag);
+      }
+
+      const actions = document.querySelector("#profile-card-actions");
+      actions.innerHTML = "";
+      if (isMe) {
+        addCardButton(actions, "✏️ 編輯名片", () => {
+          closeProfileCard();
+          openAvatarEditor();
+        });
+      } else if (myBlocked.has(uid)) {
+        addCardButton(actions, "解除封鎖", () => {
+          unblockUser(uid, name);
+          openProfileCard(uid, anchor);
+        });
+        addCardButton(actions, "⚠️ 檢舉", () => openReport(uid, name), true);
+      } else {
+        if (!isBlockedWith(uid)) {
+          addCardButton(actions, "💬 私訊", () => {
+            closeProfileCard();
+            openDirectMessage(uid, name);
+          });
+          addCardButton(actions, "🏠 拜訪", () => {
+            closeProfileCard();
+            visitHome(uid);
+          });
+          addCardButton(actions, "👣 跟隨", () => {
+            closeProfileCard();
+            locatePlayer(uid, { follow: true });
+          });
+        }
+        addCardButton(actions, "🚫 封鎖", () => {
+          closeProfileCard();
+          blockUser(uid, name);
+        }, true);
+        addCardButton(actions, "⚠️ 檢舉", () => {
+          closeProfileCard();
+          openReport(uid, name);
+        }, true);
+      }
+
+      profileCard.hidden = false;
+      const w = profileCard.offsetWidth;
+      const h = profileCard.offsetHeight;
+      const left = Math.min(Math.max(12, anchor.x + 12), window.innerWidth - w - 12);
+      const top = Math.min(Math.max(12, anchor.y - h / 2), window.innerHeight - h - 12);
+      profileCard.style.left = `${left}px`;
+      profileCard.style.top = `${top}px`;
+    };
+    document.querySelector("#profile-card-close")?.addEventListener("click", closeProfileCard);
+    document.addEventListener("pointerdown", (event) => {
+      if (profileCard && !profileCard.hidden && !profileCard.contains(event.target)) closeProfileCard();
+    }, true);
 
     const renderOnlineUsers = () => {
       if (!onlineList) {
@@ -4052,7 +4519,9 @@
       const buildRow = ({ uid, userData, isOnline }) => {
         const status = isOnline ? (STATUS_LABELS[userData.status] ? userData.status : "online") : "offline";
         const row = document.createElement("div");
-        row.className = "online-row" + (isOnline ? " is-online" : "");
+        const blocked = isBlockedWith(uid);
+        row.className = "online-row" + (isOnline ? " is-online" : "") + (blocked ? " is-blocked" : "");
+        row.title = blocked ? "已封鎖" : "查看名片";
         if (userData.photoURL) {
           const avatar = document.createElement("img");
           avatar.className = "online-avatar";
@@ -4091,7 +4560,7 @@
           event.stopPropagation();
           openDirectMessage(uid, userData.displayName || userData.userName);
         });
-        row.appendChild(chatBtn);
+        if (!blocked) row.appendChild(chatBtn);
 
         const locateBtn = document.createElement("button");
         locateBtn.type = "button";
@@ -4137,17 +4606,11 @@
           });
           row.appendChild(kickBtn);
         }
-        // Clicking the row walks to them (original behavior)
-        row.addEventListener("click", () => locatePlayer(uid).then(() => {
-          const data = otherPlayers.get(uid);
-          if (data && typeof data.x === "number") {
-            pathToTile({ x: Math.floor(data.x / tileSize), y: Math.floor(data.y / tileSize) });
-          }
-          if (activeChatTab !== "private") {
-            activeChatTab = "map";
-            updateChatTabs();
-          }
-        }));
+        // Clicking the row opens their name card (the buttons still act directly)
+        row.addEventListener("click", () => {
+          const rect = row.getBoundingClientRect();
+          openProfileCard(uid, { x: rect.left - 300, y: rect.top + rect.height / 2 });
+        });
         return row;
       };
       groups.forEach((list, area) => {
@@ -4243,7 +4706,7 @@
               // A new emoteId means the player just triggered an emote
               if (data.emoteId && data.emoteId !== renderState.emoteId) {
                 renderState.emoteId = data.emoteId;
-                if (data.emote) showEmote(docSnap.id, data.emote);
+                if (data.emote && !isBlockedWith(docSnap.id)) showEmote(docSnap.id, data.emote);
               }
             }
           });
@@ -4285,7 +4748,7 @@
         playerNickname ||
         user.displayName ||
         (user.isAnonymous ? "Anonymous" : "Player");
-      const photoURL = user.photoURL || "";
+      const photoURL = getPublicPhotoURL();
 
       // No optimistic append: Firestore's latency compensation fires the listener immediately.
       try {
@@ -4295,6 +4758,7 @@
           uid: user.uid,
           userName,
           photoURL,
+          avatar: myAvatar,
           text,
           createdAt: serverTimestamp(),
         });
@@ -4332,7 +4796,7 @@
         playerNickname ||
         user.displayName ||
         (user.isAnonymous ? "Anonymous" : "Player");
-      const photoURL = user.photoURL || "";
+      const photoURL = getPublicPhotoURL();
       try {
         await addDoc(collection(db, "privateMessages"), {
           conversationId: activePrivateChatId,
@@ -4340,6 +4804,7 @@
           toUid: activePrivatePartner?.uid || "",
           fromName: userName,
           fromPhotoURL: photoURL,
+          fromAvatar: myAvatar,
           text,
           createdAt: serverTimestamp(),
         });
@@ -4931,9 +5396,97 @@
       drawCharacter(pctx, draftAvatar, facing, getWalkFrame(true, tick), -2, 10, 100, 5);
     };
 
-    const openAvatarEditor = () => {
+    // --- Profile (個人名片): pronouns, interests, bio; photo privacy ---
+    const profileStorageKey = "playerProfile";
+    const loadLocalProfile = () => {
+      try {
+        return normalizeProfile(JSON.parse(localStorage.getItem(profileStorageKey) || "null"));
+      } catch (e) {
+        return normalizeProfile(null);
+      }
+    };
+    let myProfile = loadLocalProfile();
+    let showGooglePhoto = readSetting("showPhoto", "off") === "on";
+    /** Google photo only if the player opted in; otherwise chat shows their pixel avatar. */
+    const getPublicPhotoURL = () => (showGooglePhoto ? auth.currentUser?.photoURL || "" : "");
+    const pronounsSelect = document.querySelector("#profile-pronouns");
+    const interestsEl = document.querySelector("#profile-interests");
+    const bioInput = document.querySelector("#profile-bio");
+    const showPhotoInput = document.querySelector("#profile-show-photo");
+    const avatarWelcome = document.querySelector("#avatar-welcome");
+    let draftInterests = [];
+    PRONOUNS.forEach((p) => {
+      const opt = document.createElement("option");
+      opt.value = p;
+      opt.textContent = p || "不顯示";
+      pronounsSelect?.appendChild(opt);
+    });
+    const syncInterestChips = () => {
+      interestsEl?.querySelectorAll("button").forEach((btn) => {
+        const on = draftInterests.includes(btn.dataset.id);
+        btn.classList.toggle("is-selected", on);
+        btn.setAttribute("aria-pressed", String(on));
+      });
+    };
+    INTERESTS.forEach((it) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "avatar-chip";
+      btn.dataset.id = it.id;
+      btn.textContent = `${it.emoji} ${it.label}`;
+      btn.addEventListener("click", () => {
+        if (draftInterests.includes(it.id)) {
+          draftInterests = draftInterests.filter((id) => id !== it.id);
+        } else if (draftInterests.length < MAX_INTERESTS) {
+          draftInterests = [...draftInterests, it.id];
+        } else {
+          showIcebreakerToast(`最多選 ${MAX_INTERESTS} 個興趣`);
+        }
+        syncInterestChips();
+      });
+      interestsEl?.appendChild(btn);
+    });
+
+    /** Pull my saved profile / nickname / block list from Firestore (so it follows me across devices). */
+    const loadMyProfile = async (user) => {
+      try {
+        const snap = await getDoc(doc(db, "users", user.uid));
+        const data = snap.exists() ? snap.data() : null;
+        if (data) {
+          if (data.interests || data.bio || data.pronouns) {
+            myProfile = normalizeProfile(data);
+            try {
+              localStorage.setItem(profileStorageKey, JSON.stringify(myProfile));
+            } catch (e) {
+              /* ignore */
+            }
+          }
+          if (!playerNickname && data.nicknameChosen && data.displayName) {
+            playerNickname = String(data.displayName).slice(0, 16);
+            writeSetting(nicknameStorageKey, playerNickname);
+          }
+          if (Array.isArray(data.blockedUids)) myBlocked = new Set(data.blockedUids);
+        }
+      } catch (err) {
+        console.error("Load profile failed", err);
+      }
+      // First visit on this account: invite them to pick a nickname instead of their real name
+      if (!playerNickname && readSetting("profileWelcomeShown", "") !== user.uid) {
+        writeSetting("profileWelcomeShown", user.uid);
+        openAvatarEditor({ welcome: true });
+      }
+      renderOnlineUsers();
+    };
+
+    const openAvatarEditor = ({ welcome = false } = {}) => {
       draftAvatar = { ...myAvatar };
       if (avatarNicknameInput) avatarNicknameInput.value = playerNickname;
+      if (pronounsSelect) pronounsSelect.value = myProfile.pronouns;
+      if (bioInput) bioInput.value = myProfile.bio;
+      if (showPhotoInput) showPhotoInput.checked = showGooglePhoto;
+      if (avatarWelcome) avatarWelcome.hidden = !welcome;
+      draftInterests = [...myProfile.interests];
+      syncInterestChips();
       syncAvatarForm();
       avatarOverlay?.classList.add("visible");
       const start = performance.now();
@@ -4955,6 +5508,18 @@
       }
       const nickname = (avatarNicknameInput?.value || "").trim().slice(0, 16);
       playerNickname = nickname;
+      myProfile = normalizeProfile({
+        pronouns: pronounsSelect?.value || "",
+        interests: draftInterests,
+        bio: (bioInput?.value || "").trim().slice(0, MAX_BIO),
+      });
+      try {
+        localStorage.setItem(profileStorageKey, JSON.stringify(myProfile));
+      } catch (e) {
+        /* ignore */
+      }
+      showGooglePhoto = Boolean(showPhotoInput?.checked);
+      writeSetting("showPhoto", showGooglePhoto ? "on" : "off");
       try {
         if (nickname) localStorage.setItem(nicknameStorageKey, nickname);
         else localStorage.removeItem(nicknameStorageKey);
@@ -4966,7 +5531,7 @@
       forcePositionSync = true;
       closeAvatarEditor();
     };
-    document.querySelector("#avatar-btn")?.addEventListener("click", openAvatarEditor);
+    document.querySelector("#avatar-btn")?.addEventListener("click", () => openAvatarEditor());
     document.querySelector("#avatar-cancel")?.addEventListener("click", closeAvatarEditor);
     document.querySelector("#avatar-save")?.addEventListener("click", saveAvatar);
     document.querySelector("#avatar-random")?.addEventListener("click", () => {
@@ -6328,6 +6893,20 @@
         handleBuildPointer(eventToWorld(event));
         return;
       }
+      // Clicking a character opens their name card instead of walking there
+      const w = eventToWorld(event);
+      const hitBox = (x, y) => w.x >= x + 4 && w.x <= x + player.size - 4 && w.y >= y - 4 && w.y <= y + player.size;
+      if (hitBox(player.x, player.y)) {
+        openProfileCard(auth.currentUser?.uid || "me", { x: event.clientX, y: event.clientY });
+        return;
+      }
+      for (const [uid, state] of otherPlayerRender) {
+        const data = otherPlayers.get(uid);
+        if (data && isPlayerOnlineOnMap(data) && hitBox(state.x, state.y)) {
+          openProfileCard(uid, { x: event.clientX, y: event.clientY });
+          return;
+        }
+      }
       lastPathGoalKey = "";
       setMoveTargetFromEvent(event);
     });
@@ -6764,6 +7343,10 @@
         showIcebreakerToast("你已經在這個家裡了");
         return;
       }
+      if (isBlockedWith(ownerUid)) {
+        showIcebreakerToast("你們之間有封鎖，無法拜訪");
+        return;
+      }
       let data;
       try {
         const snap = await getDoc(doc(db, "homes", ownerUid));
@@ -6847,6 +7430,10 @@
               return;
             }
             if (Date.now() - createdMs > KNOCK_TIMEOUT_MS) return; // stale knock
+            if (isBlockedWith(change.doc.id)) {
+              updateDoc(change.doc.ref, { status: "declined" }).catch(() => {});
+              return;
+            }
             if (currentKnock?.visitorUid === change.doc.id || knockQueue.some((k) => k.visitorUid === change.doc.id)) return;
             knockQueue.push({ visitorUid: change.doc.id, visitorName: d.visitorName });
             if (!currentKnock) showNextKnock();
@@ -6867,7 +7454,7 @@
       const uid = auth.currentUser?.uid;
       if (!uid || ownerUid === uid || currentMapName !== homeMapName(ownerUid)) return;
       const kickedAt = Number(data?.kicked?.[uid]) || 0;
-      if (Date.now() - kickedAt < KICK_COOLDOWN_MS) {
+      if (Date.now() - kickedAt < KICK_COOLDOWN_MS || isBlockedWith(ownerUid)) {
         leaveHome();
         showIcebreakerToast("主人請你先離開了，下次再來玩吧 👋", 4000);
       }
@@ -7459,7 +8046,7 @@
             playerNickname ||
             user.displayName ||
             (user.isAnonymous ? "Anonymous" : "Player"),
-          photoURL: user.photoURL || "",
+          photoURL: getPublicPhotoURL(),
           mapName: currentMapName,
           x: player.x,
           y: player.y,
@@ -7502,7 +8089,7 @@
       if (!user) return null;
       const center = getPlayerCenter();
       const myZone = zoneAt(currentMapName, center.x, center.y, tileSize);
-      const others = getOnlinePlayersOnMap();
+      const others = getOnlinePlayersOnMap().filter(({ id }) => !isBlockedWith(id));
       if (myZone && myZone.private) {
         const members = others.filter(({ data }) => {
           const z = zoneAt(currentMapName, data.x + tileSize / 2, data.y + tileSize / 2, tileSize);
@@ -7905,13 +8492,34 @@
     };
 
     /** Name tag, then speech bubble / emote stacked above a character. */
-    const drawCharacterOverlays = (uid, x, y, label, status, now, handRaised = false) => {
+    const drawAffinityTag = (centerX, bottomY, text) => {
+      ctx.save();
+      ctx.font = "bold 11px \"Noto Sans TC\", \"PingFang TC\", Arial, sans-serif";
+      const w = ctx.measureText(text).width + 12;
+      const x = Math.round(centerX - w / 2);
+      const y = Math.round(bottomY - 18);
+      ctx.fillStyle = "#2a1f1a";
+      drawRoundedRect(ctx, x - 1, y - 1, w + 2, 18, 9);
+      ctx.fill();
+      ctx.fillStyle = "#f2c14e";
+      drawRoundedRect(ctx, x, y, w, 16, 8);
+      ctx.fill();
+      ctx.fillStyle = "#2a1f1a";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, centerX, y + 8.5);
+      ctx.restore();
+      return y - 4;
+    };
+
+    const drawCharacterOverlays = (uid, x, y, label, status, now, handRaised = false, affinity = "") => {
       const centerX = x + player.size / 2;
       let top = y - 6;
       if (label) {
         drawNameBubble(ctx, centerX, top, label, status);
         top -= 34;
       }
+      if (affinity) top = drawAffinityTag(centerX, top + 4, affinity);
       if (handRaised) {
         ctx.save();
         ctx.font = "20px \"Apple Color Emoji\", \"Segoe UI Emoji\", sans-serif";
@@ -7984,6 +8592,7 @@
 
       // Depth-sorted drawables: anything with a lower "foot" y is drawn first.
       const drawables = [];
+      const overlays = []; // drawn after all sprites (names, bubbles, prompts)
       const addDrawable = (footY, draw) => drawables.push({ footY, draw });
 
       const whiteboardDraw = getWhiteboardDrawInfo();
@@ -8044,9 +8653,22 @@
           const uid = plot.home.ownerUid;
           const online = uid === myUid || isUserOnline(uid);
           const atHome = uid === myUid ? false : online && onlineUsers.get(uid)?.mapName === homeMapName(uid);
+          const ownerProfile = uid === myUid ? myProfile : normalizeProfile(onlineUsers.get(uid));
           addDrawable((plot.y + 2) * tileSize, () =>
-            drawHouseFront(ctx, plot, tileSize, { online, atHome, isMine: uid === myUid })
+            drawHouseFront(ctx, plot, tileSize, {
+              online,
+              atHome,
+              isMine: uid === myUid,
+              interests: interestEmojis(ownerProfile.interests, 4),
+            })
           );
+          // Standing at the door: show the owner's one-line intro like a note on the door
+          const doorCx = plot.doorX * tileSize + tileSize / 2;
+          const doorCy = plot.doorY * tileSize + tileSize / 2;
+          const c = getPlayerCenter();
+          if (ownerProfile.bio && Math.hypot(c.x - doorCx, c.y - doorCy) < tileSize * 1.8) {
+            overlays.push(() => drawSpeechBubble(doorCx, plot.y * tileSize - 26, `「${ownerProfile.bio}」`));
+          }
         });
       }
 
@@ -8078,7 +8700,6 @@
       addAnimals(currentMap.pigs, pigImages);
       addAnimals(currentMap.cows, cowImages);
 
-      const overlays = [];
       otherPlayers.forEach((playerData, playerId) => {
         if (
           !isPlayerOnlineOnMap(playerData) ||
@@ -8089,9 +8710,25 @@
         }
         const state = otherPlayerRender.get(playerId);
         if (!state || !inView(state.x, state.y - 60, player.size, player.size + 60)) return;
+        if (isBlockedWith(playerId)) {
+          // Blocked: just a faint figure, no name / bubbles / emotes
+          addDrawable(state.y + player.size, () => {
+            ctx.save();
+            ctx.globalAlpha = 0.3;
+            drawPixelCharacter(state.avatar, state.facing, state.walking, state.animMs, state.x, state.y);
+            ctx.restore();
+          });
+          return;
+        }
         addDrawable(state.y + player.size, () =>
           drawPixelCharacter(state.avatar, state.facing, state.walking, state.animMs, state.x, state.y)
         );
+        // 同好: shared interests with someone nearby
+        let affinity = "";
+        if (Math.hypot(state.x - player.x, state.y - player.y) < tileSize * 4) {
+          const shared = commonInterests(myProfile.interests, onlineUsers.get(playerId)?.interests);
+          if (shared.length) affinity = `${getInterest(shared[0])?.emoji || "✨"} 同好${shared.length > 1 ? ` ×${shared.length}` : ""}`;
+        }
         overlays.push(() =>
           drawCharacterOverlays(
             playerId,
@@ -8100,7 +8737,8 @@
             playerData.userName || playerData.displayName,
             getPlayerStatus(playerId, playerData),
             now,
-            Boolean(playerData.handRaised)
+            Boolean(playerData.handRaised),
+            affinity
           )
         );
       });

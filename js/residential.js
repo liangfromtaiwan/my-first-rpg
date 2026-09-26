@@ -199,7 +199,7 @@ const DOOR_ICONS = { open: "🚪", knock: "🔔", locked: "🔒" };
  * Per-frame overlay for one house: door (colored by door mode) and nameplate with presence.
  * presence: { online: boolean, atHome: boolean }
  */
-export const drawHouseFront = (ctx, plot, t, { online, atHome, isMine }) => {
+export const drawHouseFront = (ctx, plot, t, { online, atHome, isMine, interests = "" }) => {
   const home = plot.home;
   const X = plot.x * t;
   const Y = plot.y * t;
@@ -233,6 +233,19 @@ export const drawHouseFront = (ctx, plot, t, { online, atHome, isMine }) => {
   ctx.textBaseline = "middle";
   ctx.textAlign = "left";
   ctx.fillText(label, plateX + 18, plateY + 11, tw);
+  // Interest wall: the owner's interests as a row of emoji on a little board by the door
+  if (interests) {
+    ctx.font = "13px \"Apple Color Emoji\", \"Segoe UI Emoji\", sans-serif";
+    const iw = ctx.measureText(interests).width + 10;
+    const ix = Math.round(X + W - iw + 6);
+    const iy = Y + 2 * t - 20;
+    px(ctx, OUT, ix - 1, iy - 1, iw + 2, 20);
+    px(ctx, "#fdf6e3", ix, iy, iw, 18);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = OUT;
+    ctx.fillText(interests, ix + 5, iy + 10);
+  }
   if (atHome) {
     ctx.font = "bold 10px \"Noto Sans TC\", Arial, sans-serif";
     const tag = "🏠 在家";
