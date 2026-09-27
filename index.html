@@ -1820,13 +1820,73 @@
     .chat-mobile-btn {
       display: none !important;
     }
+    /* 👆 context button: appears when something nearby can be used (tables, NPC, boards) */
+    .interact-btn {
+      position: absolute;
+      left: 50%;
+      bottom: 14px;
+      transform: translateX(-50%);
+      align-items: center;
+      gap: 6px;
+      padding: 10px 18px;
+      border: 3px solid #2a1f1a;
+      border-radius: 999px;
+      background: #f2c14e;
+      color: #2a1f1a;
+      font-size: 15px;
+      font-weight: 800;
+      box-shadow: 0 3px 0 #2a1f1a, 0 8px 16px rgba(0, 0, 0, 0.25);
+      cursor: pointer;
+      z-index: 5;
+      animation: interact-bounce 1.2s ease-in-out infinite;
+    }
+    .interact-btn:active {
+      transform: translateX(-50%) translateY(2px);
+      box-shadow: 0 1px 0 #2a1f1a;
+    }
+    @keyframes interact-bounce {
+      0%, 100% { margin-bottom: 0; }
+      50% { margin-bottom: 4px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .interact-btn {
+        animation: none;
+      }
+    }
+    .mobile-only {
+      display: none !important;
+    }
     @media (max-width: 719px) {
       .tool-label {
         display: none;
       }
-      .toolbar .emote-bar button:nth-child(n + 3),
       .toolbar-sep {
         display: none;
+      }
+      .mobile-only {
+        display: inline-flex !important;
+      }
+      /* On phones the emotes live in a popover opened by 😊 */
+      .toolbar .emote-bar {
+        display: none;
+      }
+      .toolbar .emote-bar.is-open {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+        position: fixed;
+        left: 8px;
+        right: 8px;
+        bottom: 68px;
+        padding: 8px;
+        background: var(--chrome-bg);
+        border-radius: 14px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        z-index: 31;
+      }
+      .toolbar .emote-bar.is-open button {
+        font-size: 24px;
+        padding: 10px 0;
       }
       .toolbar {
         gap: 6px;
@@ -2463,6 +2523,7 @@
         <div class="game-canvas-wrap">
           <div class="canvas-frame">
             <canvas id="game" width="720" height="560" aria-label="Game canvas"></canvas>
+            <button type="button" class="interact-btn" id="interact-btn" style="display:none"></button>
             <div class="zoom-controls" aria-label="縮放">
               <button type="button" id="zoom-in" title="放大">＋</button>
               <button type="button" id="zoom-out" title="縮小">－</button>
@@ -2561,6 +2622,7 @@
       <span class="toolbar-sep"></span>
       <button id="auto-video-btn" class="tool-btn" type="button" aria-pressed="true" title="靠近自動視訊">📹<span class="tool-label">自動視訊：開</span></button>
       <span class="toolbar-sep"></span>
+      <button id="emote-more-btn" class="tool-btn mobile-only" type="button" title="表情" aria-expanded="false">😊</button>
       <div class="emote-bar" id="emote-bar" aria-label="表情"></div>
       <button id="raise-hand-btn" class="tool-btn" type="button" aria-pressed="false" title="舉手 (H)">✋</button>
       <span class="toolbar-spacer"></span>
@@ -5325,10 +5387,40 @@
         const key = document.createElement("kbd");
         key.textContent = String(i + 1);
         btn.appendChild(key);
-        btn.addEventListener("click", () => triggerEmote(emoji));
+        btn.addEventListener("click", () => {
+          triggerEmote(emoji);
+          closeEmotePopover();
+        });
         emoteBar.appendChild(btn);
       });
+      // Phones: raise hand lives inside the emote popover too
+      const handBtn = document.createElement("button");
+      handBtn.type = "button";
+      handBtn.className = "mobile-only";
+      handBtn.title = "舉手";
+      handBtn.textContent = "✋";
+      handBtn.addEventListener("click", () => {
+        toggleRaiseHand();
+        closeEmotePopover();
+      });
+      emoteBar.appendChild(handBtn);
     }
+    const emoteMoreBtn = document.querySelector("#emote-more-btn");
+    const closeEmotePopover = () => {
+      emoteBar?.classList.remove("is-open");
+      emoteMoreBtn?.setAttribute("aria-expanded", "false");
+    };
+    emoteMoreBtn?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const open = !emoteBar?.classList.contains("is-open");
+      emoteBar?.classList.toggle("is-open", open);
+      emoteMoreBtn.setAttribute("aria-expanded", String(open));
+    });
+    document.addEventListener("pointerdown", (event) => {
+      if (emoteBar?.classList.contains("is-open") && !emoteBar.contains(event.target) && event.target !== emoteMoreBtn) {
+        closeEmotePopover();
+      }
+    });
 
     // --- Avatar customizer ---
     const avatarOverlay = document.querySelector("#avatar-overlay");
@@ -5615,6 +5707,11 @@
 
     // --- Location label (top bar) & area for the participant list ---
     const locationLabel = document.querySelector("#location-label");
+    const interactBtn = document.querySelector("#interact-btn");
+    interactBtn?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      getInteraction()?.run();
+    });
     let currentAreaName = "";
     let lastLocationText = "";
     const updateLocation = () => {
@@ -5630,6 +5727,12 @@
         if (locationLabel) locationLabel.textContent = text;
       }
       setDomVisible(buildBtn, isInOwnHome(), "inline-flex");
+      const interaction = getInteraction();
+      setDomVisible(interactBtn, Boolean(interaction), "inline-flex");
+      if (interaction && interactBtn && interactBtn.dataset.label !== interaction.label) {
+        interactBtn.dataset.label = interaction.label;
+        interactBtn.textContent = `👆 ${interaction.label}`;
+      }
       if (area !== currentAreaName) {
         currentAreaName = area;
         lastUserPresenceWrite = 0; // let others see which room we're in right away
@@ -6468,37 +6571,15 @@
           return;
         }
 
-        const centerForBoard = getPlayerCenter();
-        if (isHomeMap(currentMapName) && isNearGuestbook(centerForBoard.x, centerForBoard.y, tileSize)) {
-          openGuestbook(homeOwnerOfCurrentMap());
-          event.preventDefault();
-          return;
-        }
-
-        const nearTable = getNearestTable();
-        if (nearTable && !isTableOpen() && !isAvatarEditorOpen()) {
-          openTable(nearTable.id);
-          event.preventDefault();
-          return;
-        }
-
-        if (npc.active && isPlayerNearNpc() && !isAvatarEditorOpen()) {
-          isDialogueOpen = true;
-          dialogueStage = "question";
-          selectedOption = 0;
-          resultMessage = "";
-          event.preventDefault();
-          return;
-        }
-
         if (villageWelcomeOverlay?.classList.contains("visible")) {
           closeVillageWelcome();
           event.preventDefault();
           return;
         }
 
-        if (isPlayerNearWhiteboard()) {
-          openNotice();
+        const interaction = getInteraction();
+        if (interaction) {
+          interaction.run();
           event.preventDefault();
           return;
         }
@@ -6511,6 +6592,50 @@
       }
     });
 
+
+    /** What the player can interact with right here (shared by Enter/X and the 👆 button). */
+    const getInteraction = () => {
+      if (isAvatarEditorOpen() || isTableOpen() || isGuestbookOpen() || isNoticeOpen || isDialogueOpen || buildMode) return null;
+      const c = getPlayerCenter();
+      if (isHomeMap(currentMapName) && isNearGuestbook(c.x, c.y, tileSize)) {
+        return { label: "📌 看留言板", run: () => openGuestbook(homeOwnerOfCurrentMap()) };
+      }
+      const table = getNearestTable();
+      if (table) return { label: "♟️ 下棋", run: () => openTable(table.id) };
+      if (npc.active && isPlayerNearNpc()) {
+        return {
+          label: "💬 對話",
+          run: () => {
+            isDialogueOpen = true;
+            dialogueStage = "question";
+            selectedOption = 0;
+            resultMessage = "";
+          },
+        };
+      }
+      if (isPlayerNearWhiteboard()) return { label: "📌 看告示板", run: openNotice };
+      return null;
+    };
+
+    // Tap-friendly NPC dialogue: tap an option to choose it, tap anywhere to close the answer
+    let dialogueHitAreas = []; // canvas-space rects of the options, filled in by render()
+    const handleDialogueTap = (event) => {
+      const rect = canvas.getBoundingClientRect();
+      const cx = (event.clientX - rect.left) * (viewportWidth / rect.width);
+      const cy = (event.clientY - rect.top) * (viewportHeight / rect.height);
+      if (dialogueStage === "question") {
+        const hit = dialogueHitAreas.find((a) => cx >= a.x && cx <= a.x + a.w && cy >= a.y && cy <= a.y + a.h);
+        if (!hit) return;
+        selectedOption = hit.index;
+        resultMessage = selectedOption === npcQuiz.correctIndex ? npcQuiz.correctMessage : npcQuiz.wrongMessage;
+        dialogueStage = "result";
+      } else {
+        isDialogueOpen = false;
+        dialogueStage = "question";
+        selectedOption = 0;
+        resultMessage = "";
+      }
+    };
 
     // Blocked-tile grid for pathfinding; rebuilt on map change.
     let blockedGrid = new Uint8Array(0);
@@ -6889,6 +7014,10 @@
 
     canvas.addEventListener("pointerdown", (event) => {
       event.preventDefault();
+      if (isDialogueOpen) {
+        handleDialogueTap(event);
+        return;
+      }
       if (buildMode) {
         handleBuildPointer(eventToWorld(event));
         return;
@@ -9014,8 +9143,10 @@
 
         if (dialogueStage === "question") {
           textY += 8;
+          dialogueHitAreas = [];
           npcQuiz.options.forEach((option, index) => {
             const selected = index === selectedOption;
+            dialogueHitAreas.push({ index, x: boxX + pad - 6, y: textY - 3, w: maxTextWidth + 12, h: lineHeight - 2 });
             if (selected) {
               ctx.fillStyle = "rgba(200, 90, 84, 0.12)";
               ctx.fillRect(boxX + pad - 6, textY - 3, maxTextWidth + 12, lineHeight - 2);
@@ -9032,7 +9163,7 @@
         ctx.textBaseline = "bottom";
         const blink = Math.floor(now / 500) % 2 === 0 ? " ▼" : "  ";
         ctx.fillText(
-          (dialogueStage === "question" ? "↑↓ 選擇 · Enter 確認" : "Enter 關閉") + blink,
+          (dialogueStage === "question" ? "↑↓ 選擇 · Enter 確認 · 或直接點選項" : "Enter 或點一下關閉") + blink,
           boxX + boxWidth - pad,
           boxY + boxHeight - 10
         );
