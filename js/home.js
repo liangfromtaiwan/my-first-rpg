@@ -98,6 +98,13 @@ export const normalizeHome = (raw, ownerUid, ownerName) => {
     wallColor: isHex(raw.wallColor) ? raw.wallColor : base.wallColor,
     door: ["open", "knock", "locked"].includes(raw.door) ? raw.door : base.door,
     kicked: raw.kicked && typeof raw.kicked === "object" ? raw.kicked : {},
+    // Invited guests: uid -> pass expiry (ms). They can come in whatever the door mode.
+    guests: raw.guests && typeof raw.guests === "object" ? raw.guests : {},
+    // House party: { title, endsAt } while it's on
+    party:
+      raw.party && typeof raw.party === "object" && Number(raw.party.endsAt) > 0
+        ? { title: String(raw.party.title || "來我家玩！").slice(0, 30), endsAt: Number(raw.party.endsAt) }
+        : null,
     furniture,
   };
 };
@@ -235,5 +242,7 @@ export const buildHomeLayer = (home, t) => {
   items.forEach((f) => drawFurnitureItem(g, f, t));
   return layer;
 };
+
+export const isPartyActive = (home, now = Date.now()) => Boolean(home?.party && home.party.endsAt > now);
 
 export const homeMinimapColor = (home) => (x, y) => (isHomeWallTile(x, y) ? "#2e2a45" : home.floorColor);

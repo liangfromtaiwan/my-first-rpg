@@ -2180,6 +2180,57 @@
       opacity: 0.55;
     }
 
+    .invite-overlay {
+      top: 118px;
+    }
+    .party-overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 60;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    .party-overlay.visible {
+      display: flex;
+    }
+    .party-card {
+      width: min(380px, 100%);
+      padding: 18px;
+      background: #fff;
+      border-radius: 14px;
+      border: 3px solid #2a1f1a;
+      box-shadow: 4px 4px 0 rgba(42, 31, 26, 0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-align: left;
+      background-image: linear-gradient(90deg, #e40303 0 16.6%, #ff8c00 0 33.3%, #ffed00 0 50%, #008026 0 66.6%, #004dff 0 83.3%, #750787 0);
+      background-size: 100% 6px;
+      background-repeat: no-repeat;
+    }
+    .party-title {
+      font-size: 18px;
+      font-weight: 800;
+      margin-top: 4px;
+    }
+    .party-desc {
+      margin: 0;
+      font-size: 13px;
+      color: var(--game-text-muted);
+      line-height: 1.5;
+    }
+    #party-setup {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    #party-btn.is-live {
+      background: #e46f86;
+    }
     .knock-overlay {
       position: fixed;
       top: 64px;
@@ -2627,6 +2678,7 @@
       <button id="raise-hand-btn" class="tool-btn" type="button" aria-pressed="false" title="舉手 (H)">✋</button>
       <span class="toolbar-spacer"></span>
       <button id="build-btn" class="tool-btn" type="button" title="佈置我的家" aria-pressed="false" style="display:none">🔨<span class="tool-label">佈置</span></button>
+      <button id="party-btn" class="tool-btn" type="button" title="家庭派對" style="display:none">🎉<span class="tool-label">派對</span></button>
       <button id="home-btn" class="tool-btn" type="button" title="回家">🏠<span class="tool-label">回家</span></button>
       <button id="chat-toggle-btn" class="tool-btn" type="button" title="聊天">💬<span class="tool-badge" id="chat-badge" hidden></span></button>
       <button id="people-btn" class="tool-btn" type="button" title="參與者">👥<span class="tool-count" id="people-count">1</span></button>
@@ -2757,6 +2809,43 @@
       </div>
     </div>
   </div>
+  <div class="knock-overlay invite-overlay" id="invite-overlay" role="alertdialog" aria-labelledby="invite-message">
+    <div class="knock-card">
+      <div class="knock-message" id="invite-message">🏠 有人邀請你去他家玩</div>
+      <div class="knock-btns">
+        <button type="button" id="invite-accept" class="is-primary">前往</button>
+        <button type="button" id="invite-decline">婉拒</button>
+      </div>
+    </div>
+  </div>
+  <div class="party-overlay" id="party-overlay" role="dialog" aria-modal="true" aria-labelledby="party-title">
+    <div class="party-card">
+      <div class="party-title" id="party-title">🎉 家庭派對</div>
+      <div id="party-setup">
+        <p class="party-desc">開派對時，大家都能直接進你家（不用敲門），聊天室也會幫你公告。被你封鎖或請離開的人還是進不來。</p>
+        <label class="avatar-field">
+          <span>派對名稱</span>
+          <input id="party-name" type="text" maxlength="30" placeholder="例如：週五桌遊夜、攀岩後聚餐" />
+        </label>
+        <label class="avatar-field">
+          <span>持續時間</span>
+          <select id="party-hours">
+            <option value="1">1 小時</option>
+            <option value="2" selected>2 小時</option>
+            <option value="3">3 小時</option>
+          </select>
+        </label>
+      </div>
+      <div id="party-running" hidden>
+        <p class="party-desc" id="party-running-text"></p>
+      </div>
+      <div class="avatar-actions">
+        <button type="button" id="party-cancel">取消</button>
+        <button type="button" id="party-end" hidden>結束派對</button>
+        <button type="button" id="party-start" class="is-primary">開始派對 🎉</button>
+      </div>
+    </div>
+  </div>
   <div class="knock-overlay" id="knock-overlay" role="alertdialog" aria-labelledby="knock-message">
     <div class="knock-card">
       <div class="knock-message" id="knock-message">🔔 有人在敲門</div>
@@ -2874,6 +2963,7 @@
       homeMapName,
       homeMinimapColor,
       isHomeMap,
+      isPartyActive,
       isHomeWallTile,
       isNearGuestbook,
       normalizeHome,
@@ -3156,6 +3246,7 @@
         startTableListeners();
         startKnockListener();
         startInboxListener();
+        startHomeInviteListeners();
         loadMyProfile(user);
         lastUserPresenceWrite = 0;
         updateUserPresence();
@@ -3167,6 +3258,8 @@
         cancelKnock();
         dmTarget = null;
         startInboxListener(); // clears unread state
+        startHomeInviteListeners();
+        myParty = null;
         if (unsubscribeUsers) {
           unsubscribeUsers();
           unsubscribeUsers = null;
@@ -4201,6 +4294,8 @@
             mapName: currentMapName,
             areaName: currentAreaName || getMapLabel(currentMapName),
             nicknameChosen: Boolean(playerNickname),
+            partyTitle: myParty && myParty.endsAt > Date.now() ? myParty.title : "",
+            partyUntil: myParty && myParty.endsAt > Date.now() ? myParty.endsAt : 0,
             blockedUids: [...myBlocked],
             pronouns: myProfile.pronouns,
             interests: myProfile.interests,
@@ -4469,7 +4564,13 @@
       g.clearRect(0, 0, profileCardAvatar.width, profileCardAvatar.height);
       drawCharacter(g, look, "down", 0, 0, 16, 64, 4);
       document.querySelector("#profile-card-name").textContent = isMe ? `${name}（你）` : name;
-      document.querySelector("#profile-card-meta").textContent = [profile.pronouns, statusText, where].filter(Boolean).join(" · ");
+      const partyOn = !isMe && Number(data.partyUntil) > Date.now();
+      document.querySelector("#profile-card-meta").textContent = [
+        profile.pronouns,
+        statusText,
+        where,
+        partyOn ? `🎉 派對中「${data.partyTitle || ""}」` : "",
+      ].filter(Boolean).join(" · ");
       document.querySelector("#profile-card-bio").textContent = profile.bio || "";
 
       const tags = document.querySelector("#profile-card-tags");
@@ -4510,9 +4611,13 @@
             closeProfileCard();
             openDirectMessage(uid, name);
           });
-          addCardButton(actions, "🏠 拜訪", () => {
+          addCardButton(actions, partyOn ? "🎉 參加派對" : "🏠 拜訪", () => {
             closeProfileCard();
             visitHome(uid);
+          });
+          addCardButton(actions, "💌 邀請來我家", () => {
+            closeProfileCard();
+            inviteToMyHome(uid, name);
           });
           addCardButton(actions, "👣 跟隨", () => {
             closeProfileCard();
@@ -4602,7 +4707,8 @@
         if (isOnline && userData.mapName) {
           const where = document.createElement("div");
           where.className = "online-map";
-          where.textContent = `${userData.areaName || getMapLabel(userData.mapName)} · ${STATUS_LABELS[status]}`;
+          const partyLive = Number(userData.partyUntil) > Date.now();
+          where.textContent = `${partyLive ? `🎉 派對「${userData.partyTitle || ""}」 · ` : ""}${userData.areaName || getMapLabel(userData.mapName)} · ${STATUS_LABELS[status]}`;
           name.appendChild(where);
         }
         row.appendChild(name);
@@ -4994,9 +5100,11 @@
 
     // --- Homes: each player's home is its own map, created on demand ---
     let homeReturn = null; // { mapName, spawn } — where the EXIT mat leads back to
+    let myParty = null; // { title, endsAt } while my own house party is on
     const registerHomeMap = (ownerUid, rawHome) => {
       const name = homeMapName(ownerUid);
       const home = normalizeHome(rawHome, ownerUid, rawHome?.ownerName);
+      if (ownerUid === auth.currentUser?.uid) myParty = home.party;
       maps[name] = {
         tiles: buildHomeTiles(home),
         indoor: true,
@@ -5084,6 +5192,7 @@
               ownerName: home.ownerName,
               wallColor: home.wallColor,
               door: home.door,
+              party: isPartyActive(home) ? home.party : null,
               createdMs: data.createdAt?.toMillis ? data.createdAt.toMillis() : Number.MAX_SAFE_INTEGER,
             };
           });
@@ -5146,31 +5255,38 @@
       }
       if (goingHome) return;
       goingHome = true;
+      try {
+        const homeData = await ensureMyHome();
+        enterHome(user.uid, homeData);
+      } finally {
+        goingHome = false;
+      }
+    };
+
+    /** Load my home document, creating it (with a toast) the first time. */
+    const ensureMyHome = async () => {
+      const user = auth.currentUser;
       const ownerName = playerNickname || user.displayName || "Player";
       const ref = doc(db, "homes", user.uid);
-      let homeData = null;
       try {
         const snap = await getDoc(ref);
         if (snap.exists()) {
-          homeData = snap.data();
+          let homeData = snap.data();
           if (homeData.ownerName !== ownerName) {
             updateDoc(ref, { ownerName, updatedAt: serverTimestamp() }).catch(() => {});
             homeData = { ...homeData, ownerName };
           }
-        } else {
-          homeData = createDefaultHome(user.uid, ownerName);
-          await setDoc(ref, { ...homeData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-          showIcebreakerToast("🎉 你的家蓋好了！");
+          return homeData;
         }
+        const homeData = createDefaultHome(user.uid, ownerName);
+        await setDoc(ref, { ...homeData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+        showIcebreakerToast("🎉 你的家蓋好了！");
+        return homeData;
       } catch (err) {
-        // Most likely the new Firestore rules haven't been deployed yet
         console.error("Load / create home failed", err);
-        homeData = createDefaultHome(user.uid, ownerName);
-        showIcebreakerToast("家暫時無法存檔（Firebase 規則尚未部署）", 4000);
-      } finally {
-        goingHome = false;
+        showIcebreakerToast("家暫時無法存檔，請稍後再試", 4000);
+        return createDefaultHome(user.uid, ownerName);
       }
-      enterHome(user.uid, homeData);
     };
     document.querySelector("#home-btn")?.addEventListener("click", goHome);
 
@@ -5559,6 +5675,8 @@
           }
           if (Array.isArray(data.blockedUids)) myBlocked = new Set(data.blockedUids);
         }
+        const homeSnap = await getDoc(doc(db, "homes", user.uid));
+        if (homeSnap.exists()) myParty = normalizeHome(homeSnap.data(), user.uid).party;
       } catch (err) {
         console.error("Load profile failed", err);
       }
@@ -5727,6 +5845,8 @@
         if (locationLabel) locationLabel.textContent = text;
       }
       setDomVisible(buildBtn, isInOwnHome(), "inline-flex");
+      setDomVisible(partyBtn, isInOwnHome(), "inline-flex");
+      partyBtn?.classList.toggle("is-live", isInOwnHome() && isPartyActive(getMyHome()));
       const interaction = getInteraction();
       setDomVisible(interactBtn, Boolean(interaction), "inline-flex");
       if (interaction && interactBtn && interactBtn.dataset.label !== interaction.label) {
@@ -6595,7 +6715,7 @@
 
     /** What the player can interact with right here (shared by Enter/X and the 👆 button). */
     const getInteraction = () => {
-      if (isAvatarEditorOpen() || isTableOpen() || isGuestbookOpen() || isNoticeOpen || isDialogueOpen || buildMode) return null;
+      if (isAvatarEditorOpen() || isTableOpen() || isGuestbookOpen() || isNoticeOpen || isDialogueOpen || buildMode || isPartyDialogOpen()) return null;
       const c = getPlayerCenter();
       if (isHomeMap(currentMapName) && isNearGuestbook(c.x, c.y, tileSize)) {
         return { label: "📌 看留言板", run: () => openGuestbook(homeOwnerOfCurrentMap()) };
@@ -7495,6 +7615,16 @@
         showIcebreakerToast("主人剛請你離開，晚點再來拜訪吧");
         return;
       }
+      // Invited guests and party-goers walk straight in, whatever the door mode
+      const pass = Number(home.guests?.[user.uid]) || 0;
+      if (pass > Date.now() || isPartyActive(home)) {
+        enterHome(ownerUid, data);
+        showIcebreakerToast(
+          isPartyActive(home) ? `🎉 歡迎來到 ${home.ownerName} 的派對「${home.party.title}」` : `${home.ownerName} 邀請你來玩，歡迎！`,
+          3500
+        );
+        return;
+      }
       if (home.door === "locked") {
         showIcebreakerToast(`🔒 ${home.ownerName} 的家目前上鎖`);
         return;
@@ -7703,6 +7833,235 @@
     guestbookOverlay?.addEventListener("click", (event) => {
       if (event.target === guestbookOverlay) closeGuestbook();
     });
+
+    // ================= Home invites & house parties =================
+    const INVITE_PASS_MS = 2 * 60 * 60 * 1000; // an invite lets them in for 2 hours
+    const HOME_INVITE_MAX_AGE_MS = 10 * 60 * 1000;
+
+    /** 🏠 Invite someone over: gives them a pass (skips knock / lock) and pings them. */
+    const inviteToMyHome = async (uid, name) => {
+      const user = auth.currentUser;
+      if (!user) {
+        showIcebreakerToast("登入後才能邀請朋友");
+        return;
+      }
+      if (isBlockedWith(uid)) {
+        showIcebreakerToast("你們之間有封鎖，無法邀請");
+        return;
+      }
+      await ensureMyHome();
+      try {
+        await updateDoc(doc(db, "homes", user.uid), {
+          [`guests.${uid}`]: Date.now() + INVITE_PASS_MS,
+          updatedAt: serverTimestamp(),
+        });
+        await setDoc(doc(db, "homeInvites", `${user.uid}_${uid}`), {
+          fromUid: user.uid,
+          fromName: myDisplayName(),
+          toUid: uid,
+          toName: name || "",
+          status: "pending",
+          createdAt: serverTimestamp(),
+        });
+        showIcebreakerToast(`🏠 已邀請 ${name || "對方"} 來你家（2 小時內可以直接進門）`, 3500);
+      } catch (err) {
+        console.error("Invite failed", err);
+        showIcebreakerToast("邀請失敗，請再試一次");
+      }
+    };
+
+    // ---- Receiving invites ----
+    const inviteOverlay = document.querySelector("#invite-overlay");
+    const inviteMessage = document.querySelector("#invite-message");
+    const inviteQueue = [];
+    let currentInvite = null;
+    let unsubscribeHomeInvites = null;
+    let unsubscribeSentInvites = null;
+    const showNextInvite = () => {
+      currentInvite = inviteQueue.shift() || null;
+      if (!currentInvite) {
+        inviteOverlay?.classList.remove("visible");
+        return;
+      }
+      if (inviteMessage) inviteMessage.textContent = `🏠 ${currentInvite.fromName || "有人"} 邀請你去他家玩`;
+      inviteOverlay?.classList.add("visible");
+      messageReceiveAudio?.play().catch(() => {});
+    };
+    const answerInvite = (status) => {
+      const invite = currentInvite;
+      if (!invite) return;
+      updateDoc(doc(db, "homeInvites", invite.id), { status, answeredAt: serverTimestamp() }).catch((err) =>
+        console.error("Answer invite failed", err)
+      );
+      showNextInvite();
+      if (status === "accepted") visitHome(invite.fromUid);
+    };
+    document.querySelector("#invite-accept")?.addEventListener("click", () => answerInvite("accepted"));
+    document.querySelector("#invite-decline")?.addEventListener("click", () => answerInvite("declined"));
+
+    const startHomeInviteListeners = () => {
+      unsubscribeHomeInvites?.();
+      unsubscribeSentInvites?.();
+      unsubscribeHomeInvites = null;
+      unsubscribeSentInvites = null;
+      inviteQueue.length = 0;
+      currentInvite = null;
+      inviteOverlay?.classList.remove("visible");
+      const user = auth.currentUser;
+      if (!user) return;
+      unsubscribeHomeInvites = onSnapshot(
+        query(collection(db, "homeInvites"), where("toUid", "==", user.uid)),
+        (snapshot) => {
+          snapshot.docChanges().forEach((change) => {
+            if (change.type === "removed") return;
+            const d = change.doc.data();
+            if (d.status !== "pending" || isBlockedWith(d.fromUid)) return;
+            const createdMs = d.createdAt?.toMillis ? d.createdAt.toMillis() : Date.now();
+            if (Date.now() - createdMs > HOME_INVITE_MAX_AGE_MS) return;
+            if (currentInvite?.id === change.doc.id || inviteQueue.some((i) => i.id === change.doc.id)) return;
+            inviteQueue.push({ id: change.doc.id, fromUid: d.fromUid, fromName: d.fromName });
+            if (!currentInvite) showNextInvite();
+          });
+        },
+        (err) => console.error("Home invite listener error", err)
+      );
+      // Tell the host how their invites went
+      unsubscribeSentInvites = onSnapshot(
+        query(collection(db, "homeInvites"), where("fromUid", "==", user.uid)),
+        (snapshot) => {
+          snapshot.docChanges().forEach((change) => {
+            if (change.type !== "modified") return;
+            const d = change.doc.data();
+            if (d.status === "accepted") showIcebreakerToast(`🎉 ${d.toName || "對方"} 接受了邀請，正在過去你家`, 3500);
+            if (d.status === "declined") showIcebreakerToast(`${d.toName || "對方"} 這次不方便過去`);
+          });
+        },
+        (err) => console.error("Sent invite listener error", err)
+      );
+    };
+
+    // ---- House parties ----
+    const partyBtn = document.querySelector("#party-btn");
+    const partyOverlay = document.querySelector("#party-overlay");
+    const partyName = document.querySelector("#party-name");
+    const partyHours = document.querySelector("#party-hours");
+    const openPartyDialog = () => {
+      if (!isInOwnHome()) return;
+      const home = getMyHome();
+      const live = isPartyActive(home);
+      document.querySelector("#party-setup").hidden = live;
+      document.querySelector("#party-running").hidden = !live;
+      document.querySelector("#party-start").hidden = live;
+      document.querySelector("#party-end").hidden = !live;
+      if (live) {
+        const mins = Math.max(1, Math.round((home.party.endsAt - Date.now()) / 60000));
+        document.querySelector("#party-running-text").textContent =
+          `「${home.party.title}」進行中，還有約 ${mins} 分鐘。大家都能直接進你家。`;
+      } else if (partyName) {
+        partyName.value = "";
+      }
+      partyOverlay?.classList.add("visible");
+    };
+    const closePartyDialog = () => partyOverlay?.classList.remove("visible");
+    const startParty = () => {
+      const user = auth.currentUser;
+      if (!user || !isInOwnHome()) return;
+      const title = (partyName?.value || "").trim().slice(0, 30) || "來我家玩！";
+      const hours = Math.min(3, Math.max(1, Number(partyHours?.value) || 2));
+      const party = { title, endsAt: Date.now() + hours * 60 * 60 * 1000 };
+      updateMyHome({ party });
+      myParty = party;
+      lastUserPresenceWrite = 0;
+      updateUserPresence();
+      // Announce it in the map chat so everyone online hears about it
+      addDoc(collection(db, "messages"), {
+        villageId,
+        uid: user.uid,
+        userName: myDisplayName(),
+        photoURL: getPublicPhotoURL(),
+        avatar: myAvatar,
+        text: `🎉 我在家開派對「${title}」！到 🏘️ 住宅區找我家，或點我的名片按「參加派對」`,
+        createdAt: serverTimestamp(),
+      }).catch((err) => console.error("Party announcement failed", err));
+      closePartyDialog();
+      showIcebreakerToast(`🎉 派對開始了！「${title}」`, 3500);
+    };
+    const endParty = () => {
+      if (!isInOwnHome()) return;
+      updateMyHome({ party: null });
+      myParty = null;
+      lastUserPresenceWrite = 0;
+      updateUserPresence();
+      closePartyDialog();
+      showIcebreakerToast("派對結束了，謝謝大家來玩 👋");
+    };
+    partyBtn?.addEventListener("click", openPartyDialog);
+    document.querySelector("#party-cancel")?.addEventListener("click", closePartyDialog);
+    document.querySelector("#party-start")?.addEventListener("click", startParty);
+    document.querySelector("#party-end")?.addEventListener("click", endParty);
+    partyOverlay?.addEventListener("click", (event) => {
+      if (event.target === partyOverlay) closePartyDialog();
+    });
+    const isPartyDialogOpen = () => Boolean(partyOverlay?.classList.contains("visible"));
+
+    // Confetti + string lights inside a home while its party is on
+    const confetti = Array.from({ length: 46 }, (_, i) => ({
+      x: Math.random(),
+      y: Math.random(),
+      speed: 18 + Math.random() * 28,
+      sway: Math.random() * Math.PI * 2,
+      color: ["#e40303", "#ff8c00", "#ffed00", "#008026", "#004dff", "#750787", "#f29fb0"][i % 7],
+    }));
+    const drawPartyDecor = (now, home) => {
+      const roomW = (HOME_COLS - 2) * tileSize;
+      const roomH = (HOME_ROWS - 3) * tileSize;
+      // String lights along the back wall
+      ctx.save();
+      ctx.strokeStyle = "#2a1f1a";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let x = tileSize; x <= (HOME_COLS - 1) * tileSize; x += 8) {
+        const y = 12 + Math.sin(x / 40) * 6;
+        if (x === tileSize) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      const bulbColors = ["#e40303", "#ff8c00", "#ffed00", "#008026", "#004dff", "#750787"];
+      for (let i = 0, x = tileSize + 12; x < (HOME_COLS - 1) * tileSize; x += 34, i++) {
+        const on = Math.floor(now / 400 + i) % 3 !== 0;
+        ctx.globalAlpha = on ? 1 : 0.35;
+        ctx.fillStyle = bulbColors[i % bulbColors.length];
+        ctx.beginPath();
+        ctx.arc(x, 16 + Math.sin(x / 40) * 6, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      // Banner
+      ctx.font = "bold 14px \"Noto Sans TC\", \"PingFang TC\", Arial, sans-serif";
+      const text = `🎉 ${home.party.title}`;
+      const w = ctx.measureText(text).width + 24;
+      const bx = Math.round((HOME_COLS * tileSize - w) / 2);
+      ctx.fillStyle = "#2a1f1a";
+      ctx.fillRect(bx - 2, 28, w + 4, 26);
+      ctx.fillStyle = "#e46f86";
+      ctx.fillRect(bx, 30, w, 22);
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, bx + w / 2, 41);
+      // Confetti
+      confetti.forEach((c, i) => {
+        const y = ((c.y * roomH + (now / 1000) * c.speed) % roomH) + tileSize * 2;
+        const x = tileSize + ((c.x * roomW + Math.sin(now / 700 + c.sway) * 12) % roomW);
+        ctx.fillStyle = c.color;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(now / 300 + i);
+        ctx.fillRect(-3, -1.5, 6, 3);
+        ctx.restore();
+      });
+      ctx.restore();
+    };
 
     const setMap = (mapName, spawn) => {
       exitBuildMode();
@@ -8787,6 +9146,7 @@
             drawHouseFront(ctx, plot, tileSize, {
               online,
               atHome,
+              party: plot.home.party && plot.home.party.endsAt > Date.now() ? plot.home.party : null,
               isMine: uid === myUid,
               interests: interestEmojis(ownerProfile.interests, 4),
             })
@@ -8913,6 +9273,7 @@
       drawables.sort((a, b) => a.footY - b.footY);
       drawables.forEach((d) => d.draw());
       drawBuildOverlay(now);
+      if (isHomeMap(currentMapName) && isPartyActive(currentMap.home)) drawPartyDecor(now, currentMap.home);
 
       getGameTables(currentMapName).forEach((table) => {
         const state = tableStates.get(table.id);

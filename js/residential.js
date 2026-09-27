@@ -199,7 +199,7 @@ const DOOR_ICONS = { open: "🚪", knock: "🔔", locked: "🔒" };
  * Per-frame overlay for one house: door (colored by door mode) and nameplate with presence.
  * presence: { online: boolean, atHome: boolean }
  */
-export const drawHouseFront = (ctx, plot, t, { online, atHome, isMine, interests = "" }) => {
+export const drawHouseFront = (ctx, plot, t, { online, atHome, isMine, interests = "", party = null }) => {
   const home = plot.home;
   const X = plot.x * t;
   const Y = plot.y * t;
@@ -245,6 +245,21 @@ export const drawHouseFront = (ctx, plot, t, { online, atHome, isMine, interests
     ctx.textBaseline = "middle";
     ctx.fillStyle = OUT;
     ctx.fillText(interests, ix + 5, iy + 10);
+  }
+  if (party) {
+    // House party: a bright banner that pulses so it's easy to spot from the street
+    ctx.font = "bold 11px \"Noto Sans TC\", Arial, sans-serif";
+    const tag = `🎉 派對中「${party.title}」`;
+    const tagW = Math.min(ctx.measureText(tag).width + 12, W + 60);
+    const pulse = 0.75 + 0.25 * Math.sin(performance.now() / 250);
+    ctx.globalAlpha = pulse;
+    px(ctx, OUT, Math.round(X + W / 2 - tagW / 2) - 1, plateY - 19, tagW + 2, 18);
+    px(ctx, "#e46f86", Math.round(X + W / 2 - tagW / 2), plateY - 18, tagW, 16);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(tag, X + W / 2, plateY - 10, tagW - 8);
   }
   if (atHome) {
     ctx.font = "bold 10px \"Noto Sans TC\", Arial, sans-serif";

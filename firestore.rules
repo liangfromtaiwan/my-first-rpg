@@ -81,6 +81,27 @@ service cloud.firestore {
       allow read, update, delete: if false;
     }
 
+    // ---- Home invites: "<hostUid>_<guestUid>". Only host and guest can see it;
+    // the host (re)sends it, the guest can only answer accepted / declined.
+    match /homeInvites/{inviteId} {
+      allow read: if signedIn()
+        && (request.auth.uid == resource.data.fromUid || request.auth.uid == resource.data.toUid);
+      allow create: if signedIn()
+        && request.resource.data.fromUid == request.auth.uid
+        && inviteId == request.auth.uid + "_" + request.resource.data.toUid
+        && request.resource.data.status == "pending";
+      allow update: if signedIn() && (
+        (request.auth.uid == resource.data.fromUid
+          && request.resource.data.fromUid == request.auth.uid
+          && request.resource.data.toUid == resource.data.toUid)
+        || (request.auth.uid == resource.data.toUid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "answeredAt"])
+          && request.resource.data.status in ["accepted", "declined"])
+      );
+      allow delete: if signedIn()
+        && (request.auth.uid == resource.data.fromUid || request.auth.uid == resource.data.toUid);
+    }
+
     // ---- Homes ("自己的家") ----
     // homes/{uid}: layout, colors and door mode. Everyone can look, only the owner can change it.
     match /homes/{ownerId} {
