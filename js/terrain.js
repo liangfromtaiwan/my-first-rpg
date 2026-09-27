@@ -33,7 +33,50 @@ const THEMES = {
 
 const PX = 4; // terrain "pixel" size in world px
 
-export const buildFloorLayer = (mapName, tiles, tileSize) => {
+const PATH_THEMES = {
+  worldMap: { stone: ["#cfc6b8", "#c7bdae"], line: "#b3a894", curb: "#8f8573", moss: "#9fb58f" },
+  villageMap: { stone: ["#ddd0ad", "#d5c7a2"], line: "#bfae84", curb: "#9c8a5c", moss: "#b7ae7e" },
+};
+
+/** Paths: array of tile rects {x, y, w, h}. Returns a Set of "x,y" keys. */
+export const pathTileSet = (paths) => {
+  const set = new Set();
+  (paths || []).forEach((r) => {
+    for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) set.add(`${x},${y}`);
+  });
+  return set;
+};
+
+const drawPaths = (g, mapName, tiles, tileSize, paths, rand) => {
+  const theme = PATH_THEMES[mapName] || PATH_THEMES.worldMap;
+  const set = pathTileSet(paths);
+  const half = tileSize / 2;
+  set.forEach((key) => {
+    const [x, y] = key.split(",").map(Number);
+    if (tiles[y]?.[x] === undefined) return;
+    const X = x * tileSize;
+    const Y = y * tileSize;
+    // Paving stones: 2x2 slabs per tile, offset every other row like a real sidewalk
+    g.fillStyle = theme.stone[(x + y) % 2];
+    g.fillRect(X, Y, tileSize, tileSize);
+    g.fillStyle = theme.line;
+    g.fillRect(X, Y + half - 1, tileSize, 2);
+    g.fillRect(X + (y % 2 ? half : 0) - 1, Y, 2, half);
+    g.fillRect(X + (y % 2 ? 0 : half) - 1, Y + half, 2, half);
+    if (rand() < 0.25) {
+      g.fillStyle = theme.moss;
+      g.fillRect(X + Math.floor(rand() * 8) * 4 + 2, Y + Math.floor(rand() * 8) * 4 + 2, 4, 4);
+    }
+    // Curbs where the path meets grass
+    g.fillStyle = theme.curb;
+    if (!set.has(`${x},${y - 1}`)) g.fillRect(X, Y, tileSize, 3);
+    if (!set.has(`${x},${y + 1}`)) g.fillRect(X, Y + tileSize - 3, tileSize, 3);
+    if (!set.has(`${x - 1},${y}`)) g.fillRect(X, Y, 3, tileSize);
+    if (!set.has(`${x + 1},${y}`)) g.fillRect(X + tileSize - 3, Y, 3, tileSize);
+  });
+};
+
+export const buildFloorLayer = (mapName, tiles, tileSize, paths = []) => {
   const theme = THEMES[mapName] || THEMES.worldMap;
   const rows = tiles.length;
   const cols = tiles[0].length;
@@ -92,5 +135,6 @@ export const buildFloorLayer = (mapName, tiles, tileSize) => {
       }
     }
   }
+  if (paths.length) drawPaths(g, mapName, tiles, tileSize, paths, rand);
   return layer;
 };
