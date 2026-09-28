@@ -1872,45 +1872,48 @@
     .travel-where {
       display: none;
     }
-    .dpad {
+    .joystick {
       display: none;
     }
     @media (max-width: 899px) {
-      /* On-screen D-pad, bottom-right */
-      .dpad {
+      /* Virtual joystick, bottom-right: press and slide your thumb any direction */
+      .joystick {
         position: absolute;
-        right: 12px;
-        bottom: 14px;
-        display: grid;
-        grid-template-columns: repeat(3, 46px);
-        grid-template-rows: repeat(3, 46px);
-        gap: 2px;
+        right: 16px;
+        bottom: 18px;
+        width: 128px;
+        height: 128px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(32, 37, 64, 0.35) 0 55%, rgba(32, 37, 64, 0.55) 56% 100%);
+        box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.35);
+        display: block;
         z-index: 6;
         touch-action: none;
         user-select: none;
         -webkit-user-select: none;
-      }
-      .dpad button {
-        border: none;
-        border-radius: 12px;
-        background: rgba(32, 37, 64, 0.72);
-        color: #fff;
-        font-size: 16px;
-        touch-action: none;
         -webkit-tap-highlight-color: transparent;
       }
-      .dpad button.is-pressed {
-        background: rgba(242, 193, 78, 0.95);
-        color: #2a1f1a;
+      .joystick-knob {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 56px;
+        height: 56px;
+        margin: -28px 0 0 -28px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.85);
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3), inset 0 -4px 0 rgba(0, 0, 0, 0.08);
+        pointer-events: none;
+        transition: transform 0.12s ease-out;
       }
-      .dpad-up { grid-column: 2; grid-row: 1; }
-      .dpad-left { grid-column: 1; grid-row: 2; }
-      .dpad-right { grid-column: 3; grid-row: 2; }
-      .dpad-down { grid-column: 2; grid-row: 3; }
+      .joystick.is-active .joystick-knob {
+        transition: none;
+        background: #f2c14e;
+      }
       /* The 👆 button sits to the left of the D-pad */
       .interact-btn {
         left: auto;
-        right: 164px;
+        right: 160px;
         transform: none;
       }
       .interact-btn:active {
@@ -2849,11 +2852,8 @@
             <canvas id="game" width="720" height="560" aria-label="Game canvas"></canvas>
             <button type="button" class="interact-btn" id="interact-btn" style="display:none"></button>
             <button type="button" class="zone-call-btn" id="zone-call-btn" style="display:none"></button>
-            <div class="dpad" id="dpad" aria-label="方向鍵">
-              <button type="button" class="dpad-up" data-key="ArrowUp" aria-label="上">▲</button>
-              <button type="button" class="dpad-left" data-key="ArrowLeft" aria-label="左">◀</button>
-              <button type="button" class="dpad-right" data-key="ArrowRight" aria-label="右">▶</button>
-              <button type="button" class="dpad-down" data-key="ArrowDown" aria-label="下">▼</button>
+            <div class="joystick" id="joystick" aria-label="移動搖桿：按住往想去的方向滑">
+              <div class="joystick-knob" id="joystick-knob"></div>
             </div>
             <div class="zoom-controls" aria-label="縮放">
               <button type="button" id="zoom-in" title="放大">＋</button>
@@ -6426,29 +6426,56 @@
         stopFollowing();
       }
     };
-    // On-screen D-pad (phones): hold to walk, release to stop
-    document.querySelectorAll("#dpad button").forEach((btn) => {
-      const key = btn.dataset.key;
-      const release = () => {
-        keys[key] = false;
-        btn.classList.remove("is-pressed");
-      };
-      btn.addEventListener("pointerdown", (event) => {
-        event.preventDefault();
-        btn.setPointerCapture?.(event.pointerId);
-        keys[key] = true;
-        btn.classList.add("is-pressed");
-        clearMovePath();
-        stopFollowing();
-      });
-      btn.addEventListener("pointerup", release);
-      btn.addEventListener("pointercancel", release);
-      btn.addEventListener("lostpointercapture", release);
-      btn.addEventListener("contextmenu", (event) => event.preventDefault());
+    // Virtual joystick (phones): slide your thumb from the centre; direction = where you slide,
+    // speed grows with how far you slide. Release to stop.
+    const joystick = { active: false, x: 0, y: 0 }; // x/y in -1..1
+    const joystickEl = document.querySelector("#joystick");
+    const joystickKnob = document.querySelector("#joystick-knob");
+    const JOYSTICK_RADIUS = 40; // px the knob can travel
+    const updateJoystick = (event) => {
+      const r = joystickEl.getBoundingClientRect();
+      let dx = event.clientX - (r.left + r.width / 2);
+      let dy = event.clientY - (r.top + r.height / 2);
+      const len = Math.hypot(dx, dy);
+      if (len > JOYSTICK_RADIUS) {
+        dx = (dx / len) * JOYSTICK_RADIUS;
+        dy = (dy / len) * JOYSTICK_RADIUS;
+      }
+      joystick.x = dx / JOYSTICK_RADIUS;
+      joystick.y = dy / JOYSTICK_RADIUS;
+      if (joystickKnob) joystickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+    };
+    const releaseJoystick = () => {
+      joystick.active = false;
+      joystick.x = 0;
+      joystick.y = 0;
+      joystickEl?.classList.remove("is-active");
+      if (joystickKnob) joystickKnob.style.transform = "";
+    };
+    joystickEl?.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      try {
+        joystickEl.setPointerCapture(event.pointerId); // keep tracking the thumb even outside the circle
+      } catch (e) {
+        /* synthetic / already-released pointer: tracking still works inside the circle */
+      }
+      joystick.active = true;
+      joystickEl.classList.add("is-active");
+      clearMovePath();
+      stopFollowing();
+      updateJoystick(event);
     });
+    joystickEl?.addEventListener("pointermove", (event) => {
+      if (joystick.active) updateJoystick(event);
+    });
+    joystickEl?.addEventListener("pointerup", releaseJoystick);
+    joystickEl?.addEventListener("pointercancel", releaseJoystick);
+    joystickEl?.addEventListener("lostpointercapture", releaseJoystick);
+    joystickEl?.addEventListener("contextmenu", (event) => event.preventDefault());
 
     // Releasing keys while the window is unfocused would otherwise leave the player walking
     window.addEventListener("blur", () => {
+      releaseJoystick();
       Object.keys(keys).forEach((k) => {
         keys[k] = false;
       });
@@ -9421,11 +9448,17 @@
       if (keys.ArrowDown) dy += 1;
       if (keys.ArrowLeft) dx -= 1;
       if (keys.ArrowRight) dx += 1;
+      const stick = Math.hypot(joystick.x, joystick.y);
       if (dx !== 0 || dy !== 0) {
         // Normalize so diagonal movement isn't ~41% faster
         const len = Math.hypot(dx, dy);
         dx = (dx / len) * speed;
         dy = (dy / len) * speed;
+      } else if (joystick.active && stick > 0.2) {
+        // Any direction, including diagonals; a gentle push walks slowly, a full push walks at full speed
+        const pace = Math.min(1, 0.35 + stick * 0.75);
+        dx = (joystick.x / stick) * speed * pace;
+        dy = (joystick.y / stick) * speed * pace;
       } else if (movePath.length) {
         const waypoint = movePath[0];
         const diffX = waypoint.x - player.x;
