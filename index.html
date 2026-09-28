@@ -1087,74 +1087,85 @@
       to { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
 
+    /* Welcome toast: a small banner at the top that never blocks the map; fades out on its own */
     .village-welcome-overlay {
       position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0, 0, 0, 0.18);
+      top: calc(var(--topbar-h, 52px) + 12px);
+      left: 12px;
+      right: 12px;
       z-index: 35;
-      /* Clicks pass through to the map; any click outside the card closes it */
-      pointer-events: none;
-    }
-
-    .village-welcome-overlay.visible {
       display: flex;
+      justify-content: center;
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-12px);
+      transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s linear 0.25s;
     }
-
-    .village-welcome-backdrop {
-      position: absolute;
-      inset: 0;
+    .village-welcome-overlay.visible {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+      transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s;
     }
-
+    .village-welcome-backdrop,
+    .village-welcome-close {
+      display: none;
+    }
     .village-welcome-card {
-      pointer-events: auto;
-    }
-
-    .village-welcome-card {
-      position: relative;
-      z-index: 1;
-      width: min(360px, 90vw);
-      background: rgba(255, 255, 255, 0.98);
-      border: 2px solid rgba(61, 56, 41, 0.2);
-      border-radius: 16px;
-      padding: 24px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 20px;
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+      gap: 2px;
+      max-width: min(420px, 90vw);
+      padding: 10px 18px;
+      border-radius: 14px;
+      background: rgba(27, 26, 46, 0.9);
+      color: #fff;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      pointer-events: none;
     }
-
+    .village-welcome-text {
+      font-size: 15px;
+      font-weight: 700;
+      text-align: center;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
     .village-welcome-sub {
-      font-size: 13px;
-      color: var(--game-text-muted);
-      margin-top: -6px;
+      font-size: 12px;
+      color: #c9ccef;
+      text-align: center;
     }
     .village-welcome-sub:empty {
       display: none;
     }
-    .village-welcome-text {
-      font-size: 20px;
-      font-weight: 600;
-      text-align: center;
-      color: var(--game-text);
-    }
-
-    .village-welcome-close {
-      font-size: 16px;
-      font-weight: 600;
-      padding: 10px 32px;
-      border: none;
-      background: var(--game-primary);
-      color: #fff;
-      border-radius: 10px;
-      cursor: pointer;
-    }
-
-    .village-welcome-close:hover {
-      background: var(--game-primary-hover);
+    /* Phones: no top bar, and the minimap sits in the top-left, so the toast goes to its right */
+    @media (max-width: 956px) {
+      .village-welcome-overlay {
+        top: calc(env(safe-area-inset-top, 0px) + 12px);
+        left: 164px;
+        right: 12px;
+        justify-content: flex-start;
+      }
+      .village-welcome-card {
+        max-width: 100%;
+        padding: 8px 12px;
+        align-items: flex-start;
+      }
+      .village-welcome-text {
+        font-size: 14px;
+        text-align: left;
+      }
+      .village-welcome-sub {
+        text-align: left;
+        font-size: 11px;
+      }
     }
 
     .notice-overlay {
@@ -4628,7 +4639,7 @@
 
     // The welcome card never blocks for long: it closes after a few seconds, when you start walking,
     // or when you click anywhere outside it.
-    const WELCOME_AUTO_CLOSE_MS = 2000;
+    const WELCOME_AUTO_CLOSE_MS = 2500;
     // What the welcome card says for each place (homes are handled by name)
     const MAP_WELCOME = {
       worldMap: ["🌳 歡迎來到主世界", "Main World · 抱石館、辦公室和住宅區都在這裡"],
