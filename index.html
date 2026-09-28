@@ -4346,11 +4346,14 @@
       privateMessages = [];
       const ref = collection(db, "privateMessages");
       const privateQuery = query(ref, where("conversationId", "==", conversationId));
+      let historyLoaded = false; // the first snapshot is the chat history: no "ding" for old messages
       unsubscribePrivate = onSnapshot(
         privateQuery,
         (snapshot) => {
+          const isHistory = !historyLoaded;
+          historyLoaded = true;
           snapshot.docChanges().forEach((change) => {
-            if (change.type === "added") {
+            if (change.type === "added" && !isHistory) {
               const data = change.doc.data();
               if (data?.fromUid && data.fromUid !== auth.currentUser?.uid && messageReceiveAudio) {
                 messageReceiveAudio.currentTime = 0;
