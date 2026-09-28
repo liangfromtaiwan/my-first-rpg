@@ -8,7 +8,7 @@ export const ZONES = {
     { id: "arcade", name: "遊戲區", x: 24, y: 4, w: 12, h: 7, private: false, color: "#e8773b", indoor: true },
   ],
   villageMap: [
-    { id: "lounge", name: "攀岩休息室", x: 10, y: 18, w: 8, h: 6, private: true, color: "#2f8c9a" },
+    { id: "lounge", name: "攀岩休息室", x: 10, y: 18, w: 8, h: 6, private: true, color: "#2f8c9a", indoor: true },
   ],
   // Indoor zones follow the office rooms; their floors are already drawn, so only tags are shown.
   officeMap: [
@@ -154,6 +154,8 @@ export const drawGameTable = (ctx, table, tileSize, board) => {
 // Walls and furniture block walking; chairs / stools are walkable.
 export const MEETING_ROOM = { x: 24, y: 20, w: 8, h: 7, doorRows: [23, 24] };
 export const ARCADE_ROOM = { x: 24, y: 4, w: 12, h: 7, doorRows: [7, 8] };
+// Village lounge: the path comes down from the main street, so its door is in the back wall
+export const LOUNGE_ROOM = { x: 10, y: 18, w: 8, h: 6, doorRows: [], doorCols: [13, 14] };
 
 const OUT = "#2a1f1a";
 const rpx = (g, color, x, y, w, h) => {
@@ -164,7 +166,7 @@ const rpx = (g, color, x, y, w, h) => {
 const roomWallTiles = (room) => {
   const out = [];
   for (let x = room.x; x < room.x + room.w; x++) {
-    out.push([x, room.y]); // back wall
+    if (!room.doorCols?.includes(x)) out.push([x, room.y]); // back wall (door gap)
     out.push([x, room.y + room.h - 1]); // front wall
   }
   for (let y = room.y + 1; y < room.y + room.h - 1; y++) {
@@ -189,9 +191,19 @@ const drawRoomShell = (g, t, room, { floor, floorLine, wall, wallTrim, top }) =>
       rpx(g, floorLine, x + ((ty * 17) % t), y, 2, t / 2);
     }
   }
-  rpx(g, top, X, Y, W, 10);
-  rpx(g, wall, X, Y + 10, W, t - 16);
-  rpx(g, wallTrim, X, Y + t - 6, W, 6);
+  for (let tx = room.x; tx < room.x + room.w; tx++) {
+    if (room.doorCols?.includes(tx)) continue;
+    rpx(g, top, tx * t, Y, t, 10);
+    rpx(g, wall, tx * t, Y + 10, t, t - 16);
+    rpx(g, wallTrim, tx * t, Y + t - 6, t, 6);
+  }
+  if (room.doorCols?.length) {
+    const dx = room.doorCols[0] * t;
+    const dw = room.doorCols.length * t;
+    rpx(g, OUT, dx - 2, Y, 4, t);
+    rpx(g, OUT, dx + dw - 2, Y, 4, t);
+    rpx(g, "#8a6a4a", dx + 6, Y + 4, dw - 12, 20);
+  }
   const rail = (x, y, w, h) => {
     rpx(g, OUT, x, y, w, h);
     rpx(g, "#8b5e3c", x + 2, y + 2, w - 4, h - 4);
@@ -202,7 +214,7 @@ const drawRoomShell = (g, t, room, { floor, floorLine, wall, wallTrim, top }) =>
     if (!room.doorRows.includes(ty)) rail(X, ty * t, 16, t);
     rail(X + W - 16, ty * t, 16, t);
   }
-  rpx(g, "#8a6a4a", X + 2, room.doorRows[0] * t + 6, 20, room.doorRows.length * t - 12);
+  if (room.doorRows.length) rpx(g, "#8a6a4a", X + 2, room.doorRows[0] * t + 6, 20, room.doorRows.length * t - 12);
 };
 
 const drawPlant = (g, t, px, py) => {
@@ -363,4 +375,69 @@ export const drawArcadeRoom = (g, t, room = ARCADE_ROOM, tables = GAME_TABLES.wo
   rpx(g, "#bfe8f5", vx + 9, vy + 6, t - 24, 24);
   for (let i = 0; i < 3; i++) rpx(g, ["#e04a3a", "#f2c14e", "#43a266"][i], vx + 11, vy + 9 + i * 7, t - 28, 4);
   rpx(g, "#f4f1ea", vx + t - 14, vy + 8, 4, 8);
+};
+
+// ---- 攀岩休息室 (village): a small bouldering wall with crash pads, sofa corner, chalk & water ----
+export const loungeRoomBlockedTiles = (room = LOUNGE_ROOM) => {
+  const out = roomWallTiles(room);
+  out.push([room.x + 3, room.y + 3], [room.x + 4, room.y + 3]); // coffee table
+  out.push([room.x + 1, room.y + 1]); // water cooler
+  out.push([room.x + 1, room.y + room.h - 2], [room.x + room.w - 2, room.y + room.h - 2]); // plants
+  return out;
+};
+
+export const drawLoungeRoom = (g, t, room = LOUNGE_ROOM) => {
+  const X = room.x * t;
+  const Y = room.y * t;
+  drawRoomShell(g, t, room, { floor: ["#b28457", "#b98a5e"], floorLine: "#a47650", wall: "#dfe9ea", wallTrim: "#2f8c9a", top: "#1f4a52" });
+  // Bouldering wall on the back wall (right of the door) with colourful holds, crash pad below
+  const bx = (room.x + 5) * t;
+  const bw = 3 * t - 4;
+  rpx(g, OUT, bx + 2, Y + 2, bw, t - 4);
+  rpx(g, "#8fa3a8", bx + 4, Y + 4, bw - 4, t - 8);
+  const holds = ["#e04a3a", "#f2c14e", "#43a266", "#3f7ad9", "#c85ad9", "#ff8a3d"];
+  for (let i = 0; i < 18; i++) {
+    const hx = bx + 8 + ((i * 53 + (i % 3) * 17) % (bw - 18));
+    const hy = Y + 6 + ((i * 7 + (i % 4) * 5) % (t - 16));
+    rpx(g, holds[(i * 5) % holds.length], hx, hy, 6 + (i % 2) * 2, 5);
+  }
+  rpx(g, OUT, bx, Y + t, 2 * t, t - 6);
+  rpx(g, "#2f8c9a", bx + 2, Y + t + 2, 2 * t - 4, t - 10);
+  rpx(g, "#3fa9b8", bx + 2, Y + t + 2, 2 * t - 4, 5);
+  // Water cooler (front-left of the back wall, under the name tag)
+  const wx = (room.x + 1) * t;
+  const wy = (room.y + 1) * t - 10;
+  rpx(g, OUT, wx + 10, wy, t - 20, t + 6);
+  rpx(g, "#f4f1ea", wx + 12, wy + 16, t - 24, t - 12);
+  rpx(g, "#7fd0f0", wx + 13, wy + 2, t - 26, 16);
+  rpx(g, "#3f7ad9", wx + t / 2 - 2, wy + 22, 4, 4);
+  // Chalk bucket next to the door
+  rpx(g, OUT, (room.x + 2) * t + 8, Y + t + 8, 24, 22);
+  rpx(g, "#f4f1ea", (room.x + 2) * t + 10, Y + t + 10, 20, 18);
+  rpx(g, "#d8d2c6", (room.x + 2) * t + 10, Y + t + 10, 20, 4);
+  // Rug + coffee table + sofa + two armchairs
+  rpx(g, "#2f8c9a", X + 1.5 * t, Y + 2.6 * t, 5 * t, 2.2 * t);
+  rpx(g, "#3fa9b8", X + 1.7 * t, Y + 2.8 * t, 4.6 * t, 4);
+  const tx = (room.x + 3) * t;
+  const ty = (room.y + 3) * t;
+  rpx(g, OUT, tx + 2, ty + 6, 2 * t - 4, t - 12);
+  rpx(g, "#8b5e3c", tx + 4, ty + 8, 2 * t - 8, t - 16);
+  rpx(g, "#a2714a", tx + 4, ty + 8, 2 * t - 8, 4);
+  rpx(g, "#f4f1ea", tx + 14, ty + 14, 10, 8); // mugs
+  rpx(g, "#e04a3a", tx + t + 18, ty + 14, 12, 8); // climbing shoes
+  const sx = (room.x + 2) * t;
+  const sy = (room.y + 4) * t;
+  rpx(g, OUT, sx + 4, sy + 4, 4 * t - 8, t - 6);
+  rpx(g, "#c85a54", sx + 6, sy + 6, 4 * t - 12, t - 10);
+  rpx(g, "#a8453f", sx + 6, sy + t - 14, 4 * t - 12, 8);
+  rpx(g, "#dd7a73", sx + 10, sy + 8, 4 * t - 20, 5);
+  const arm = (ax, ay) => {
+    rpx(g, OUT, ax + 6, ay + 6, t - 12, t - 12);
+    rpx(g, "#f2c14e", ax + 8, ay + 8, t - 16, t - 16);
+    rpx(g, "#f8d87a", ax + 8, ay + 8, t - 16, 5);
+  };
+  arm((room.x + 1) * t, (room.y + 3) * t);
+  arm((room.x + room.w - 2) * t, (room.y + 3) * t);
+  drawPlant(g, t, (room.x + 1) * t, (room.y + room.h - 2) * t);
+  drawPlant(g, t, (room.x + room.w - 2) * t, (room.y + room.h - 2) * t);
 };
