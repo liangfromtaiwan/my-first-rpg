@@ -4675,11 +4675,7 @@
     if (villageWelcomeClose) {
       villageWelcomeClose.addEventListener("click", closeVillageWelcome);
     }
-    document.addEventListener("pointerdown", (event) => {
-      if (villageWelcomeOverlay?.classList.contains("visible") && !event.target.closest?.(".village-welcome-card")) {
-        closeVillageWelcome();
-      }
-    }, true);
+    // The welcome toast doesn't block anything, so taps, keys and walking leave it alone: it just times out
     const villageWelcomeBackdrop = document.querySelector(".village-welcome-backdrop");
     if (villageWelcomeBackdrop) {
       villageWelcomeBackdrop.addEventListener("click", closeVillageWelcome);
@@ -8247,11 +8243,6 @@
           return;
         }
 
-        if (villageWelcomeOverlay?.classList.contains("visible")) {
-          closeVillageWelcome();
-          event.preventDefault();
-          return;
-        }
 
         const interaction = getInteraction();
         if (interaction) {
@@ -10571,7 +10562,6 @@
 
       const moved = Math.abs(player.x - prevX) + Math.abs(player.y - prevY) > 0.01;
       player.walking = moved;
-      if (moved && villageWelcomeOverlay?.classList.contains("visible")) closeVillageWelcome();
       player.animMs = moved ? player.animMs + deltaMs * (running ? 1.5 : 1) : 0;
       if (movePath.length && (dx !== 0 || dy !== 0) && !moved) {
         pathStuckMs += deltaMs;
