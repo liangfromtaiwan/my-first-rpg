@@ -496,12 +496,21 @@
       /* Desktop: chat floats over the map (the map never resizes when it opens/closes) */
       .chat-overlay-mobile {
         position: fixed !important;
-        top: 60px;
-        right: 16px;
+        top: var(--topbar-h, 52px);
+        bottom: var(--toolbar-h, 56px);
+        right: 0;
         z-index: 25;
         width: auto !important;
         min-height: 0 !important;
         background: transparent !important;
+        display: flex !important;
+        align-items: stretch !important;
+      }
+      .chat-overlay-mobile .chat-overlay-content {
+        display: flex;
+        height: 100%;
+        padding: 0 !important;
+        margin: 0 !important;
       }
       .main-layout.chat-hidden .chat-overlay-mobile {
         display: none !important;
@@ -1895,6 +1904,9 @@
         flex: 1 1 0;
         min-width: 0;
       }
+      .game-wrap {
+        gap: 0 !important; /* page fits the window exactly: no scrollbar */
+      }
       .game-canvas-wrap {
         padding: 0;
       }
@@ -1908,10 +1920,13 @@
       .game-content .hint {
         display: none;
       }
+      /* Full height between the top bar and the toolbar, flush with the right edge */
       .chat-panel.gc {
-        height: calc(100vh - 52px - 92px);
+        height: 100% !important;
         max-height: none;
-        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+        margin: 0 !important;
+        border-radius: 0;
+        box-shadow: -8px 0 24px rgba(0, 0, 0, 0.3);
       }
     }
     .joystick {
@@ -6922,6 +6937,15 @@
     };
 
     const mainLayout = document.querySelector(".main-layout");
+    // Expose the real top bar / toolbar heights to CSS (the desktop chat panel spans the gap between them)
+    const syncBarHeights = () => {
+      const top = document.querySelector(".game-content .auth-bar");
+      const bottom = document.querySelector(".toolbar");
+      if (top?.offsetHeight) document.documentElement.style.setProperty("--topbar-h", `${top.offsetHeight}px`);
+      if (bottom?.offsetHeight) document.documentElement.style.setProperty("--toolbar-h", `${bottom.offsetHeight}px`);
+    };
+    window.addEventListener("resize", syncBarHeights);
+    setInterval(syncBarHeights, 2000); // cheap; also catches the moment the game becomes visible
     const isMobileLayout = () => window.matchMedia("(max-width: 956px)").matches;
     const showChatPanel = (tab) => {
       if (tab) {
