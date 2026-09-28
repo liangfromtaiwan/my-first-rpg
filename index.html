@@ -1145,25 +1145,26 @@
     .village-welcome-sub:empty {
       display: none;
     }
-    /* Phones: no top bar, and the minimap sits in the top-left, so the toast goes to its right */
+    /* Phones: no top bar, and the minimap sits in the top-left, so the toast is centred in the
+       space to its right (text centred too) */
     @media (max-width: 956px) {
       .village-welcome-overlay {
         top: calc(env(safe-area-inset-top, 0px) + 12px);
         left: 164px;
         right: 12px;
-        justify-content: flex-start;
+        justify-content: center;
       }
       .village-welcome-card {
         max-width: 100%;
-        padding: 8px 12px;
-        align-items: flex-start;
+        padding: 8px 14px;
+        align-items: center;
       }
       .village-welcome-text {
         font-size: 16px;
-        text-align: left;
+        text-align: center;
       }
       .village-welcome-sub {
-        text-align: left;
+        text-align: center;
         font-size: 14px;
       }
     }
