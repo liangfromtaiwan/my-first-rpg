@@ -3759,7 +3759,7 @@
     } from "./js/pixel-avatar.js";
     import { buildFloorLayer, pathTileSet } from "./js/terrain.js";
     import { findPath, nearestOpenTile } from "./js/pathfind.js";
-    import { drawGameTable, drawMeetingRoom, drawZones, getGameTables, getZones, isZoneTile, meetingRoomBlockedTiles, registerZones, zoneAt } from "./js/spaces.js?v=20260928";
+    import { arcadeRoomBlockedTiles, drawArcadeRoom, drawGameTable, drawMeetingRoom, drawZones, getGameTables, getZones, isZoneTile, meetingRoomBlockedTiles, registerZones, zoneAt } from "./js/spaces.js?v=20260928b";
     import {
       HOME_COLS,
       HOME_EXIT_TILES,
@@ -6115,8 +6115,8 @@
       }
     }
 
-    // 會議室: walls, table and plants of the furnished meeting room block walking
-    meetingRoomBlockedTiles().forEach(([x, y]) => {
+    // 會議室 / 遊戲區: walls and furniture of the furnished rooms block walking
+    [...meetingRoomBlockedTiles(), ...arcadeRoomBlockedTiles()].forEach(([x, y]) => {
       worldMap[y][x] = 1;
     });
 
@@ -9413,7 +9413,10 @@
           : mapName === "officeMap"
             ? buildOfficeLayer(mapData.tiles, tileSize)
             : buildFloorLayer(mapName, mapData.tiles, tileSize, mapData.paths || []);
-        if (mapName === "worldMap") drawMeetingRoom(layer.getContext("2d"), tileSize);
+        if (mapName === "worldMap") {
+          drawMeetingRoom(layer.getContext("2d"), tileSize);
+          drawArcadeRoom(layer.getContext("2d"), tileSize);
+        }
         floorLayers.set(mapName, layer);
       }
       return layer;
