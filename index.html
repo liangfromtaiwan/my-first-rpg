@@ -61,7 +61,7 @@
       justify-content: center;
       min-height: 0;
       padding: 0 24px 12px 24px;
-      max-width: 1400px;
+      max-width: 1680px;
       margin: 0 auto;
       box-sizing: border-box;
     }
@@ -1666,7 +1666,7 @@
     .canvas-frame {
       position: relative;
       width: 100%;
-      max-width: 820px;
+      max-width: none;
       min-width: 0; /* let the flex item shrink below the canvas's intrinsic width */
     }
     .canvas-frame #game {
@@ -1871,6 +1871,38 @@
     }
     .travel-where {
       display: none;
+    }
+    @media (min-width: 957px) {
+      /* Desktop: the map fills everything between the top bar and the toolbar */
+      .main-layout {
+        max-width: none !important;
+        width: 100%;
+        margin: 0 !important;
+        padding: 8px 8px 68px !important;
+        gap: 8px !important;
+      }
+      .map-column {
+        gap: 0;
+        flex: 1 1 0;
+        min-width: 0;
+      }
+      .game-canvas-wrap {
+        padding: 0;
+      }
+      .canvas-frame #game {
+        width: 100%;
+        height: calc(100vh - 52px - 76px);
+        max-height: none;
+        aspect-ratio: auto;
+        border-radius: 12px;
+      }
+      .game-content .hint {
+        display: none;
+      }
+      .chat-panel.gc {
+        height: calc(100vh - 52px - 76px);
+        max-height: none;
+      }
     }
     .joystick {
       display: none;
@@ -6428,17 +6460,23 @@
       canvas.height = viewportHeight * dpr;
     };
     /** On phones the canvas fills the screen, so the world view follows its aspect ratio. */
+    /**
+     * The canvas fills the space it's given; the visible world follows its shape.
+     * Phones see ~420–720 world px across; desktops show the world slightly magnified (×1.15).
+     */
+    const computeViewSize = (r) => {
+      const mobile = window.matchMedia("(max-width: 956px)").matches;
+      const w = mobile
+        ? Math.min(720, Math.max(MOBILE_VIEW_WIDTH, Math.round(r.width / 0.9)))
+        : Math.min(1800, Math.max(640, Math.round(r.width / 1.15)));
+      return { w, h: Math.round((w * r.height) / r.width) };
+    };
     const updateViewportSize = () => {
-      if (window.matchMedia("(max-width: 956px)").matches) {
-        const r = canvas.getBoundingClientRect();
-        if (r.width > 0 && r.height > 0) {
-          // Phones see ~420 world px across; wider tablets see more (never more than desktop's 720)
-          viewportWidth = Math.min(720, Math.max(MOBILE_VIEW_WIDTH, Math.round(r.width / 0.9)));
-          viewportHeight = Math.round((viewportWidth * r.height) / r.width);
-        }
-      } else {
-        viewportWidth = 720;
-        viewportHeight = 560;
+      const r = canvas.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) {
+        const v = computeViewSize(r);
+        viewportWidth = v.w;
+        viewportHeight = v.h;
       }
       resizeCanvasBacking();
     };
@@ -7025,6 +7063,14 @@
     };
 
     const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+    /** Follow the player; maps smaller than the view are centred instead of stuck to the top-left. */
+    const followAxis = (center, mapSize, viewSize) =>
+      mapSize <= viewSize ? (mapSize - viewSize) / 2 : clamp(center - viewSize / 2, 0, mapSize - viewSize);
+    const updateCamera = () => {
+      const view = getViewSize();
+      camera.x = followAxis(player.x + player.size / 2, mapWidth, view.w);
+      camera.y = followAxis(player.y + player.size / 2, mapHeight, view.h);
+    };
 
     const prepareTreeSprite = () => {
       if (!treeImage.complete) {
@@ -9280,16 +9326,7 @@
       if (spawn) {
         player.x = spawn.x * tileSize;
         player.y = spawn.y * tileSize;
-        camera.x = clamp(
-          player.x + player.size / 2 - getViewSize().w / 2,
-          0,
-          Math.max(0, mapWidth - getViewSize().w)
-        );
-        camera.y = clamp(
-          player.y + player.size / 2 - getViewSize().h / 2,
-          0,
-          Math.max(0, mapHeight - getViewSize().h)
-        );
+        updateCamera();
       }
       generateCrowdForMap(mapName);
       generateDecorationsForMap(mapName);
@@ -10209,16 +10246,7 @@
         pathStuckMs = 0;
       }
 
-      camera.x = clamp(
-        player.x + player.size / 2 - getViewSize().w / 2,
-        0,
-        Math.max(0, mapWidth - getViewSize().w)
-      );
-      camera.y = clamp(
-        player.y + player.size / 2 - getViewSize().h / 2,
-        0,
-        Math.max(0, mapHeight - getViewSize().h)
-      );
+      updateCamera();
 
       checkMapTransition();
       updateLocation();
@@ -10428,12 +10456,9 @@
     const render = () => {
       const now = performance.now();
       canvasRect = canvas.getBoundingClientRect();
-      if (canvasRect.width > 0) {
-        const wantMobile = window.matchMedia("(max-width: 956px)").matches;
-        const wantW = Math.min(720, Math.max(MOBILE_VIEW_WIDTH, Math.round(canvasRect.width / 0.9)));
-        const aspectOff =
-          Math.abs(canvasRect.height / canvasRect.width - viewportHeight / viewportWidth) > 0.01 || wantW !== viewportWidth;
-        if ((wantMobile && aspectOff) || (!wantMobile && viewportWidth !== 720)) updateViewportSize();
+      if (canvasRect.width > 0 && canvasRect.height > 0) {
+        const v = computeViewSize(canvasRect);
+        if (v.w !== viewportWidth || Math.abs(v.h - viewportHeight) > 1) updateViewportSize();
       }
       ctx.setTransform(renderScale, 0, 0, renderScale, 0, 0);
       ctx.imageSmoothingEnabled = true;
@@ -10452,7 +10477,12 @@
       const viewW = Math.min(view.w, mapWidth);
       const viewH = Math.min(view.h, mapHeight);
       ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(getFloorLayer(currentMapName), camX, camY, viewW, viewH, camX, camY, viewW, viewH);
+      // Only blit the part of the floor that exists (the camera can be negative on small maps)
+      const sx = Math.max(0, camX);
+      const sy = Math.max(0, camY);
+      const sw = Math.min(view.w - (sx - camX), mapWidth - sx);
+      const sh = Math.min(view.h - (sy - camY), mapHeight - sy);
+      if (sw > 0 && sh > 0) ctx.drawImage(getFloorLayer(currentMapName), sx, sy, sw, sh, sx, sy, sw, sh);
       ctx.imageSmoothingEnabled = true;
 
       const inView = (x, y, w, h) =>
