@@ -2101,6 +2101,409 @@
       }
     }
 
+    /* ================= Gather-style chat panel ================= */
+    .chat-panel.gc {
+      width: 320px;
+      height: calc(100vh - 150px);
+      max-height: 760px;
+      padding: 0;
+      gap: 0;
+      background: #202540;
+      color: #eef0ff;
+      border: none;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+      flex-direction: column;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+    .gc .chat-tabs {
+      display: none !important;
+    }
+    .gc-view {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
+    .gc-view.is-active {
+      display: flex;
+    }
+    .gc .private-chat {
+      display: flex !important;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      gap: 0;
+      padding: 0;
+      background: transparent;
+      border: none;
+    }
+    .gc-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 12px 10px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      flex-shrink: 0;
+    }
+    .gc-title {
+      flex: 1;
+      min-width: 0;
+      font-size: 17px;
+      font-weight: 800;
+      text-align: left;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .gc-icon {
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: #eef0ff;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .gc-icon:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .gc-back {
+      font-size: 24px;
+      line-height: 1;
+      background: #3a4175;
+    }
+    .gc-count {
+      font-size: 13px;
+      font-weight: 700;
+      color: #c9ccef;
+      white-space: nowrap;
+    }
+    .gc-scroll {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 8px;
+    }
+    .gc-section {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: #a8acd0;
+      text-align: left;
+      padding: 14px 8px 6px;
+    }
+    .gc-item {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      border: none;
+      border-radius: 10px;
+      background: transparent;
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+    .gc-item:hover,
+    .gc-item.is-current {
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .gc-item-icon {
+      width: 44px;
+      height: 44px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      position: relative;
+    }
+    .gc-channel-icon {
+      background: #4c6fff;
+    }
+    .gc-channel-icon.gc-small {
+      width: 32px;
+      height: 32px;
+      font-size: 16px;
+    }
+    .gc-item-icon canvas {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #55a07c;
+      image-rendering: pixelated;
+    }
+    .gc-item-icon img {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .gc-status {
+      position: absolute;
+      right: -1px;
+      bottom: -1px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid #202540;
+      background: #6b6f8e;
+    }
+    .gc-status.is-online { background: #3ecf8e; }
+    .gc-status.is-busy { background: #e5484d; }
+    .gc-status.is-away { background: #e0a82e; }
+    .gc-item-main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .gc-item-name {
+      font-size: 15px;
+      font-weight: 800;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .gc-item-preview {
+      font-size: 13px;
+      color: #a8acd0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .gc-item.has-unread .gc-item-preview {
+      color: #eef0ff;
+      font-weight: 700;
+    }
+    .gc-item-time {
+      font-size: 12px;
+      color: #a8acd0;
+      flex-shrink: 0;
+      align-self: flex-start;
+      margin-top: 4px;
+    }
+    .gc-badge {
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 9px;
+      background: #e5484d;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 18px;
+      text-align: center;
+      box-sizing: border-box;
+      flex-shrink: 0;
+    }
+    .gc-empty-list {
+      font-size: 13px;
+      color: #a8acd0;
+      padding: 8px;
+      text-align: left;
+    }
+    .gc-head-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #55a07c;
+      image-rendering: pixelated;
+      flex-shrink: 0;
+    }
+    .gc-messages-wrap {
+      flex: 1;
+      min-height: 0;
+      display: flex !important;
+      flex-direction: column;
+      background: transparent !important;
+      border: none !important;
+      padding: 0 !important;
+    }
+    .gc-messages {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      background: transparent !important;
+      border: none !important;
+    }
+    .gc-date {
+      align-self: center;
+      margin: 14px 0 8px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #c9ccef;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .gc-msg {
+      display: flex;
+      gap: 10px;
+      text-align: left;
+      padding: 2px 0;
+    }
+    .gc-msg.is-first {
+      margin-top: 10px;
+    }
+    .gc-msg-avatar {
+      width: 32px;
+      flex-shrink: 0;
+    }
+    .gc-msg-avatar canvas,
+    .gc-msg-avatar img {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #55a07c;
+      image-rendering: pixelated;
+      object-fit: cover;
+    }
+    .gc-msg-body {
+      flex: 1;
+      min-width: 0;
+    }
+    .gc-msg-meta {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+    .gc-msg-name {
+      font-size: 14px;
+      font-weight: 800;
+      color: #eef0ff;
+    }
+    .gc-msg.is-self .gc-msg-name {
+      color: #f2c14e;
+    }
+    .gc-msg-time {
+      font-size: 11px;
+      color: #8f93b8;
+    }
+    .gc-msg-text {
+      font-size: 14px;
+      line-height: 1.45;
+      color: #e3e5fa;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+    .gc-msg-text a {
+      color: #9fb0ff;
+    }
+    .gc .chat-status,
+    .gc-empty {
+      color: #a8acd0 !important;
+      font-size: 13px;
+      text-align: center;
+      padding: 16px;
+    }
+    .gc-offline-note {
+      margin: 0 12px 6px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      color: #c9ccef;
+      font-size: 12px;
+      text-align: left;
+    }
+    .gc-composer {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 8px 12px 12px;
+      padding: 6px 6px 6px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 12px;
+      background: #1a1e36;
+      flex-shrink: 0;
+    }
+    .gc-composer input {
+      flex: 1;
+      min-width: 0;
+      border: none !important;
+      background: transparent !important;
+      color: #eef0ff !important;
+      font-size: 14px;
+      padding: 8px 0 !important;
+      outline: none;
+    }
+    .gc-composer input::placeholder {
+      color: #8f93b8;
+    }
+    .gc-send {
+      width: 36px;
+      height: 36px;
+      border: none !important;
+      border-radius: 8px !important;
+      background: transparent !important;
+      color: #a8acd0 !important;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 0 !important;
+    }
+    .gc-send:hover {
+      color: #fff !important;
+      background: rgba(255, 255, 255, 0.1) !important;
+    }
+    /* People view in the dark theme */
+    .gc .online-panel {
+      background: transparent;
+      border: none;
+      padding: 0;
+      max-height: none;
+    }
+    .gc .online-list {
+      max-height: none;
+      overflow: visible;
+    }
+    .gc .online-row {
+      background: transparent;
+      border: none;
+      color: #eef0ff;
+    }
+    .gc .online-row:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: none;
+    }
+    .gc .online-row .online-map,
+    .gc .online-group,
+    .gc .online-offline summary {
+      color: #a8acd0;
+    }
+    .gc .online-list > div:not(.online-row):not(.online-group) {
+      color: #a8acd0;
+    }
+    .chat-overlay-close {
+      display: none !important;
+    }
+    @media (max-width: 956px) {
+      .chat-overlay-content {
+        background: #202540 !important;
+        padding-top: env(safe-area-inset-top) !important;
+      }
+      .chat-overlay-content .chat-panel.gc {
+        width: 100% !important;
+        height: 100% !important;
+        max-height: none;
+        border-radius: 0 !important;
+        padding: 0 !important;
+        background: #202540 !important;
+      }
+    }
+
     .build-panel {
       position: fixed;
       left: 0;
@@ -2872,46 +3275,85 @@
         <div class="chat-overlay-backdrop" id="chat-overlay-backdrop"></div>
         <div class="chat-overlay-content">
           <button class="chat-overlay-close" id="chat-overlay-close" type="button" aria-label="Close">✕</button>
-          <div class="chat-panel" id="chat-panel" aria-live="polite">
-        <div class="chat-tabs">
-          <button class="chat-tab is-active" id="tab-map" type="button">
-            Map
-          </button>
-          <button class="chat-tab" id="tab-private" type="button">
-            Private Chat
-          </button>
+          <div class="chat-panel gc" id="chat-panel" aria-live="polite">
+        <!-- legacy tab buttons (kept for older code paths; hidden) -->
+        <div class="chat-tabs" hidden>
+          <button class="chat-tab" id="tab-map" type="button">Map</button>
+          <button class="chat-tab" id="tab-private" type="button">Private Chat</button>
         </div>
-        <div class="chat-view is-active" id="chat-view-map">
-          <div class="online-panel" id="online-panel">
-            <div class="online-title">Online Players</div>
-            <div class="online-list" id="online-list"></div>
+
+        <!-- 1) Conversation list -->
+        <section class="gc-view is-active" id="gc-list" aria-label="聊天列表">
+          <header class="gc-header">
+            <span class="gc-title">聊天</span>
+            <button type="button" class="gc-icon gc-close" title="關閉">✕</button>
+          </header>
+          <div class="gc-scroll">
+            <button type="button" class="gc-item" id="gc-channel-item">
+              <span class="gc-item-icon gc-channel-icon">🌈</span>
+              <span class="gc-item-main">
+                <span class="gc-item-name" id="gc-channel-name">公共頻道</span>
+                <span class="gc-item-preview" id="gc-channel-preview">還沒有訊息</span>
+              </span>
+              <span class="gc-item-time" id="gc-channel-time"></span>
+            </button>
+            <div id="gc-nearby-slot"></div>
+            <div class="gc-section">私訊 DIRECT MESSAGES</div>
+            <div id="gc-dm-list"></div>
           </div>
-          <div class="chat-box">
-            <div class="chat-messages" id="chat-messages"></div>
+        </section>
+
+        <!-- 2) Channel (map chat) -->
+        <section class="gc-view" id="chat-view-map" aria-label="頻道">
+          <header class="gc-header">
+            <button type="button" class="gc-icon gc-back" title="返回">‹</button>
+            <span class="gc-item-icon gc-channel-icon gc-small">🌈</span>
+            <span class="gc-title" id="gc-channel-title">公共頻道</span>
+            <span class="gc-count" id="gc-channel-count" title="在線人數">👤 1</span>
+            <button type="button" class="gc-icon gc-close" title="關閉">✕</button>
+          </header>
+          <div class="gc-messages" id="chat-messages"></div>
+          <div class="gc-composer">
+            <input id="chat-input" type="text" maxlength="120" placeholder="傳訊息到 公共頻道（所有人都看得到）" />
+            <button id="chat-send" type="button" class="gc-send" title="送出">➤</button>
           </div>
-          <div class="chat-input-row">
-            <input id="chat-input" type="text" maxlength="120" placeholder="Type a message..." />
-            <button id="chat-send" type="button">Send</button>
-          </div>
-        </div>
-        <div class="chat-view" id="chat-view-private">
+        </section>
+
+        <!-- 3) Direct message / nearby / room chat -->
+        <section class="gc-view" id="chat-view-private" aria-label="私訊">
           <div class="private-chat" id="private-chat">
-            <div class="private-header" id="private-header" style="display:none">
-              <span class="private-title" id="private-title"></span>
-              <button type="button" id="private-close" title="結束私訊">✕ 結束私訊</button>
+            <header class="gc-header" id="private-header">
+              <button type="button" class="gc-icon gc-back" id="private-close" title="返回">‹</button>
+              <canvas class="gc-head-avatar" id="gc-dm-avatar" width="32" height="32" aria-hidden="true"></canvas>
+              <span class="gc-title" id="private-title">私訊</span>
+              <button type="button" class="gc-icon gc-close" title="關閉">✕</button>
+            </header>
+            <div class="private-box gc-messages-wrap">
+              <div class="gc-messages" id="private-messages"></div>
             </div>
-            <div class="private-box">
-              <div class="private-messages" id="private-messages"></div>
+            <div class="private-empty gc-empty" id="private-empty">
+              從列表選一個人私訊，或走近其他玩家、走進 🔒 會議室就能聊天
             </div>
-            <div class="private-empty" id="private-empty">
-              走近其他玩家，或走進 🔒 會議室，就能私聊與自動視訊
-            </div>
-            <div class="private-input-row">
-              <input id="private-input" type="text" maxlength="60" placeholder="Private message..." />
-              <button id="private-send" type="button">Send</button>
+            <div class="gc-offline-note" id="gc-offline-note" hidden>🌙 對方上線後就會看到你的訊息</div>
+            <div class="gc-composer private-input-row">
+              <input id="private-input" type="text" maxlength="200" placeholder="傳訊息…" />
+              <button id="private-send" type="button" class="gc-send" title="送出">➤</button>
             </div>
           </div>
-        </div>
+        </section>
+
+        <!-- 4) People -->
+        <section class="gc-view" id="gc-people" aria-label="參與者">
+          <header class="gc-header">
+            <span class="gc-title">參與者</span>
+            <button type="button" class="gc-icon gc-close" title="關閉">✕</button>
+          </header>
+          <div class="gc-scroll">
+            <div class="online-panel" id="online-panel">
+              <div class="online-list" id="online-list"></div>
+            </div>
+          </div>
+        </section>
         </div>
       </div>
       </div>
@@ -3436,8 +3878,8 @@
     const onlineUsers = new Map();
     let myBlocked = new Set(); // uids I blocked (saved on users/{me}.blockedUids)
     let onlineRefreshTimer = null;
-    let activeChatTab = "map";
-    let userSelectedTab = false;
+    let activeChatTab = "list"; // "list" | "map" (channel) | "private" | "people"
+    let userSelectedTab = true; // the chat panel never switches views by itself
     const jitsiRoomBaseUrl = "https://meet.jit.si";
     let lastPresenceUpdate = 0;
     const presenceIntervalMs = 2500;
@@ -3596,44 +4038,87 @@
       return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
     };
 
-    const buildChatRow = (message, isSelf, nameKey, photoKey) => {
-      const row = document.createElement("div");
-      row.className = "chat-row";
-      if (isSelf) row.classList.add("is-self");
-
-      let avatar;
-      if (message[photoKey]) {
-        avatar = document.createElement("img");
-        avatar.className = "chat-avatar";
-        avatar.alt = "";
-        avatar.loading = "lazy";
-        avatar.decoding = "async";
-        avatar.src = message[photoKey];
-      } else {
-        // No public photo: show the sender's pixel character instead
-        avatar = document.createElement("canvas");
-        avatar.className = "chat-avatar is-pixel";
-        avatar.width = 24;
-        avatar.height = 24;
-        const senderUid = message.uid || message.fromUid || message[nameKey] || "guest";
-        const look = normalizeAvatar(message.avatar || message.fromAvatar, senderUid);
-        drawCharacter(avatar.getContext("2d"), look, "down", 0, -8, -1, 40, 2);
-      }
-
-      const bubble = document.createElement("div");
-      bubble.className = "chat-bubble";
-      bubble.textContent = `${message[nameKey] || "Player"}: ${message.text || ""}`;
-      const time = document.createElement("span");
-      time.className = "chat-time";
-      time.textContent = formatChatTime(getMessageMillis(message));
-      bubble.appendChild(time);
-
-      row.appendChild(avatar);
-      row.appendChild(bubble);
-      return row;
-    };
-
     const isScrolledToBottom = (el) => el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+
+    // ---- Gather-style message list: avatar + name + time on the first message of a run ----
+    const CHAT_GROUP_GAP_MS = 5 * 60 * 1000;
+    const formatChatDate = (ms) => {
+      const d = new Date(ms);
+      const today = new Date();
+      const yesterday = new Date(Date.now() - 86400000);
+      const same = (a, b) => a.toDateString() === b.toDateString();
+      if (same(d, today)) return "今天";
+      if (same(d, yesterday)) return "昨天";
+      return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+    };
+    const makeChatAvatar = (message, uidKey, photoKey, avatarKey, nameKey) => {
+      const photo = message[photoKey];
+      if (photo) {
+        const img = document.createElement("img");
+        img.alt = "";
+        img.loading = "lazy";
+        img.src = photo;
+        return img;
+      }
+      const c = document.createElement("canvas");
+      c.width = 32;
+      c.height = 32;
+      const look = normalizeAvatar(message[avatarKey], message[uidKey] || message[nameKey] || "guest");
+      drawCharacter(c.getContext("2d"), look, "down", 0, -4, -2, 40, 2);
+      return c;
+    };
+    /** Renders messages into `container` grouped by sender, with date separators. */
+    const renderGcMessages = (container, rows, { uidKey, nameKey, photoKey, avatarKey }) => {
+      const myUid = auth.currentUser?.uid;
+      const fragment = document.createDocumentFragment();
+      let lastDay = "";
+      let lastUid = null;
+      let lastMs = 0;
+      rows.forEach((m) => {
+        const ms = getMessageMillis(m);
+        const day = new Date(ms).toDateString();
+        if (day !== lastDay) {
+          const sep = document.createElement("div");
+          sep.className = "gc-date";
+          sep.textContent = formatChatDate(ms);
+          fragment.appendChild(sep);
+          lastDay = day;
+          lastUid = null;
+        }
+        const uid = m[uidKey] || m[nameKey];
+        const first = uid !== lastUid || ms - lastMs > CHAT_GROUP_GAP_MS;
+        const row = document.createElement("div");
+        row.className = "gc-msg" + (first ? " is-first" : "") + (m[uidKey] && m[uidKey] === myUid ? " is-self" : "");
+        const av = document.createElement("div");
+        av.className = "gc-msg-avatar";
+        if (first) av.appendChild(makeChatAvatar(m, uidKey, photoKey, avatarKey, nameKey));
+        const body = document.createElement("div");
+        body.className = "gc-msg-body";
+        if (first) {
+          const meta = document.createElement("div");
+          meta.className = "gc-msg-meta";
+          const name = document.createElement("span");
+          name.className = "gc-msg-name";
+          name.textContent = m[nameKey] || "Player";
+          const time = document.createElement("span");
+          time.className = "gc-msg-time";
+          time.textContent = formatChatTime(ms);
+          meta.appendChild(name);
+          meta.appendChild(time);
+          body.appendChild(meta);
+        }
+        const text = document.createElement("div");
+        text.className = "gc-msg-text";
+        text.textContent = m.text || "";
+        body.appendChild(text);
+        row.appendChild(av);
+        row.appendChild(body);
+        fragment.appendChild(row);
+        lastUid = uid;
+        lastMs = ms;
+      });
+      container.appendChild(fragment);
+    };
 
     // Speech bubbles shown above characters on the map: uid -> { text, until }
     const SPEECH_BUBBLE_MS = 6000;
@@ -3708,12 +4193,9 @@
             rows.push(doc.data());
           });
           rows.sort((a, b) => getMessageMillis(a) - getMessageMillis(b));
-          const myUid = auth.currentUser?.uid;
-          const fragment = document.createDocumentFragment();
-          rows.filter((row) => !isBlockedWith(row.uid)).slice(-CHAT_MAX_RENDERED).forEach((row) => {
-            fragment.appendChild(buildChatRow(row, Boolean(row.uid && row.uid === myUid), "userName", "photoURL"));
-          });
-          chatMessages.appendChild(fragment);
+          const visible = rows.filter((row) => !isBlockedWith(row.uid)).slice(-CHAT_MAX_RENDERED);
+          renderGcMessages(chatMessages, visible, { uidKey: "uid", nameKey: "userName", photoKey: "photoURL", avatarKey: "avatar" });
+          updateChannelPreview(visible[visible.length - 1]);
           if (stickToBottom || !chatInitialized) {
             chatMessages.scrollTop = chatMessages.scrollHeight;
           }
@@ -3794,13 +4276,11 @@
         return;
       }
       privateMessagesEl.innerHTML = "";
-      const myUid = auth.currentUser?.uid;
-      const fragment = document.createDocumentFragment();
-      privateMessages.filter((m) => !isBlockedWith(m.fromUid)).slice(-CHAT_MAX_RENDERED).forEach((message) => {
-        const isSelf = Boolean(message.fromUid && message.fromUid === myUid);
-        fragment.appendChild(buildChatRow(message, isSelf, "fromName", "fromPhotoURL"));
-      });
-      privateMessagesEl.appendChild(fragment);
+      renderGcMessages(
+        privateMessagesEl,
+        privateMessages.filter((m) => !isBlockedWith(m.fromUid)).slice(-CHAT_MAX_RENDERED),
+        { uidKey: "fromUid", nameKey: "fromName", photoKey: "fromPhotoURL", avatarKey: "fromAvatar" }
+      );
       privateMessagesEl.scrollTop = privateMessagesEl.scrollHeight;
     };
 
@@ -4501,14 +4981,19 @@
       setPrivateAvailability(Boolean(activePrivateChatId));
     };
 
+    // The chat panel shows one view at a time: list / channel ("map") / private / people
+    const CHAT_VIEW_IDS = { list: "gc-list", map: "chat-view-map", private: "chat-view-private", people: "gc-people" };
     const updateChatTabs = () => {
-      if (!tabMap || !tabPrivate || !chatViewMap || !chatViewPrivate) {
-        return;
-      }
-      tabMap.classList.toggle("is-active", activeChatTab === "map");
-      tabPrivate.classList.toggle("is-active", activeChatTab === "private");
-      chatViewMap.classList.toggle("is-active", activeChatTab === "map");
-      chatViewPrivate.classList.toggle("is-active", activeChatTab === "private");
+      Object.entries(CHAT_VIEW_IDS).forEach(([name, id]) => {
+        document.getElementById(id)?.classList.toggle("is-active", name === activeChatTab);
+      });
+      if (activeChatTab === "list") renderDmList();
+      if (activeChatTab === "map") chatMessages.scrollTop = chatMessages.scrollHeight;
+      if (activeChatTab === "private" && privateMessagesEl) privateMessagesEl.scrollTop = privateMessagesEl.scrollHeight;
+    };
+    const setChatView = (name) => {
+      activeChatTab = name;
+      updateChatTabs();
     };
 
     const setVideoPlaceholder = (message) => {
@@ -4707,6 +5192,7 @@
         chatBadge.hidden = total === 0;
         chatBadge.textContent = total > 9 ? "9+" : String(total);
       }
+      scheduleDmList();
     };
     const clearUnread = (uid) => {
       if (!unreadFrom.has(uid)) return;
@@ -4715,10 +5201,25 @@
       renderOnlineUsers();
     };
     const updatePrivateHeader = () => {
-      if (!privateHeader) return;
-      const showDm = Boolean(dmTarget && privateContext?.partner?.uid === dmTarget.uid);
-      privateHeader.style.display = showDm ? "flex" : "none";
-      if (showDm && privateTitle) privateTitle.textContent = `💬 和 ${dmTarget.name} 私訊中`;
+      const ctx = privateContext;
+      const title = !ctx ? "私訊" : ctx.kind === "zone" ? `${ctx.title}（${ctx.memberIds.length + 1} 人）` : ctx.partner?.name || "Player";
+      if (privateTitle && privateTitle.textContent !== title) privateTitle.textContent = title;
+      if (privateInput) privateInput.placeholder = ctx ? `傳訊息給 ${ctx.kind === "zone" ? "房間裡的大家" : ctx.partner?.name || "對方"}` : "傳訊息…";
+      const avatarCanvas = document.querySelector("#gc-dm-avatar");
+      const key = ctx ? `${ctx.kind}:${ctx.partner?.uid || ctx.id}` : "";
+      if (avatarCanvas && avatarCanvas.dataset.key !== key) {
+        avatarCanvas.dataset.key = key;
+        const g = avatarCanvas.getContext("2d");
+        g.clearRect(0, 0, 32, 32);
+        avatarCanvas.style.visibility = ctx && ctx.kind !== "zone" ? "visible" : "hidden";
+        if (ctx?.partner) {
+          const look = otherPlayerRender.get(ctx.partner.uid)?.avatar || normalizeAvatar(onlineUsers.get(ctx.partner.uid)?.avatar, ctx.partner.uid);
+          drawCharacter(g, look, "down", 0, -4, -2, 40, 2);
+        }
+      }
+      const note = document.querySelector("#gc-offline-note");
+      if (note) note.hidden = !(ctx?.kind === "dm" && !isUserOnline(ctx.partner.uid));
+      renderNearbySlot();
     };
     const openDirectMessage = (uid, name) => {
       if (!auth.currentUser) {
@@ -4742,7 +5243,161 @@
       updatePrivateChatPartner();
       updatePrivateHeader();
     };
-    document.querySelector("#private-close")?.addEventListener("click", closeDirectMessage);
+    // Back from a conversation: end any chosen DM and return to the list
+    document.querySelector("#private-close")?.addEventListener("click", () => {
+      if (dmTarget) closeDirectMessage();
+      setChatView("list");
+    });
+
+    // ---- Chat list (Gather-style): channel preview, nearby / room chat, direct messages ----
+    const dmIndex = new Map(); // partnerUid -> { lastMs, lastText, fromMe, name, avatar }
+    const formatListTime = (ms) => {
+      if (!ms) return "";
+      const d = new Date(ms);
+      const now = new Date();
+      if (d.toDateString() === now.toDateString()) return formatChatTime(ms);
+      if (now - d < 6 * 86400000) return ["週日", "週一", "週二", "週三", "週四", "週五", "週六"][d.getDay()];
+      return d.getFullYear() === now.getFullYear() ? `${d.getMonth() + 1}/${d.getDate()}` : `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+    };
+    const updateChannelPreview = (last) => {
+      const preview = document.querySelector("#gc-channel-preview");
+      const time = document.querySelector("#gc-channel-time");
+      if (!preview || !time) return;
+      if (!last) {
+        preview.textContent = "還沒有訊息，打聲招呼吧！";
+        time.textContent = "";
+        return;
+      }
+      const me = auth.currentUser?.uid;
+      preview.textContent = `${last.uid === me ? "你" : last.userName || "Player"}：${last.text || ""}`;
+      time.textContent = formatListTime(getMessageMillis(last));
+    };
+    const recordDm = (d) => {
+      const me = auth.currentUser?.uid;
+      if (!me || !d.conversationId || String(d.conversationId).startsWith("zone_")) return;
+      const fromMe = d.fromUid === me;
+      const partner = fromMe ? d.toUid : d.fromUid;
+      if (!partner) return;
+      const ms = d.createdAt?.toMillis ? d.createdAt.toMillis() : Date.now();
+      const prev = dmIndex.get(partner);
+      if (prev && prev.lastMs > ms) {
+        if (!fromMe && !prev.name) prev.name = d.fromName;
+        return;
+      }
+      dmIndex.set(partner, {
+        lastMs: ms,
+        lastText: d.text || "",
+        fromMe,
+        name: fromMe ? prev?.name || "" : d.fromName || prev?.name || "",
+        avatar: fromMe ? prev?.avatar : d.fromAvatar || prev?.avatar,
+      });
+    };
+    let dmListQueued = false;
+    const scheduleDmList = () => {
+      if (dmListQueued) return;
+      dmListQueued = true;
+      requestAnimationFrame(() => {
+        dmListQueued = false;
+        renderDmList();
+      });
+    };
+    const makeListAvatar = (uid, avatarRaw, status) => {
+      const wrap = document.createElement("span");
+      wrap.className = "gc-item-icon";
+      const c = document.createElement("canvas");
+      c.width = 44;
+      c.height = 44;
+      const look = otherPlayerRender.get(uid)?.avatar || normalizeAvatar(onlineUsers.get(uid)?.avatar || avatarRaw, uid);
+      drawCharacter(c.getContext("2d"), look, "down", 0, 2, 1, 40, 2);
+      wrap.appendChild(c);
+      const dot = document.createElement("span");
+      dot.className = `gc-status is-${status}`;
+      wrap.appendChild(dot);
+      return wrap;
+    };
+    const renderDmList = () => {
+      const list = document.querySelector("#gc-dm-list");
+      if (!list) return;
+      list.innerHTML = "";
+      const entries = [...dmIndex.entries()].filter(([uid]) => !isBlockedWith(uid)).sort((a, b) => b[1].lastMs - a[1].lastMs);
+      if (!entries.length) {
+        const empty = document.createElement("div");
+        empty.className = "gc-empty-list";
+        empty.textContent = auth.currentUser ? "還沒有私訊。打開別人的名片或名單上的 💬 開始聊天吧！" : "登入後就能私訊";
+        list.appendChild(empty);
+        return;
+      }
+      const frag = document.createDocumentFragment();
+      entries.forEach(([uid, info]) => {
+        const user = onlineUsers.get(uid);
+        const name = user?.displayName || info.name || "Player";
+        const status = getPlayerStatus(uid, otherPlayers.get(uid));
+        const unread = unreadFrom.get(uid) || 0;
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "gc-item" + (unread ? " has-unread" : "") + (dmTarget?.uid === uid ? " is-current" : "");
+        item.appendChild(makeListAvatar(uid, info.avatar, status));
+        const main = document.createElement("span");
+        main.className = "gc-item-main";
+        const n = document.createElement("span");
+        n.className = "gc-item-name";
+        n.textContent = name;
+        const pv = document.createElement("span");
+        pv.className = "gc-item-preview";
+        pv.textContent = `${info.fromMe ? "你：" : ""}${info.lastText}`;
+        main.appendChild(n);
+        main.appendChild(pv);
+        item.appendChild(main);
+        const t = document.createElement("span");
+        t.className = "gc-item-time";
+        t.textContent = formatListTime(info.lastMs);
+        item.appendChild(t);
+        if (unread) {
+          const b = document.createElement("span");
+          b.className = "gc-badge";
+          b.textContent = unread > 9 ? "9+" : String(unread);
+          item.appendChild(b);
+        }
+        item.addEventListener("click", () => openDirectMessage(uid, name));
+        frag.appendChild(item);
+      });
+      list.appendChild(frag);
+    };
+    /** Top of the list: whoever you're standing next to, or the room you're in. */
+    const renderNearbySlot = () => {
+      const slot = document.querySelector("#gc-nearby-slot");
+      if (!slot) return;
+      const ctx = privateContext;
+      const key = ctx && ctx.kind !== "dm" ? `${ctx.kind}:${ctx.id}:${ctx.memberIds.length}` : "";
+      if (slot.dataset.key === key) return;
+      slot.dataset.key = key;
+      slot.innerHTML = "";
+      if (!key) return;
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "gc-item";
+      if (ctx.kind === "zone") {
+        const icon = document.createElement("span");
+        icon.className = "gc-item-icon gc-channel-icon";
+        icon.textContent = "🔒";
+        item.appendChild(icon);
+      } else {
+        item.appendChild(makeListAvatar(ctx.partner.uid, null, getPlayerStatus(ctx.partner.uid, otherPlayers.get(ctx.partner.uid))));
+      }
+      const main = document.createElement("span");
+      main.className = "gc-item-main";
+      const n = document.createElement("span");
+      n.className = "gc-item-name";
+      n.textContent = ctx.kind === "zone" ? ctx.title : `👋 ${ctx.partner.name}`;
+      const pv = document.createElement("span");
+      pv.className = "gc-item-preview";
+      pv.textContent = ctx.kind === "zone" ? `房間聊天 · ${ctx.memberIds.length + 1} 人在這裡` : "就在你旁邊 · 點這裡聊天";
+      main.appendChild(n);
+      main.appendChild(pv);
+      item.appendChild(main);
+      item.addEventListener("click", () => setChatView("private"));
+      slot.appendChild(item);
+    };
 
     // Inbox: any private message addressed to me, so I notice DMs sent from afar
     let unsubscribeInbox = null;
@@ -4751,19 +5406,38 @@
       activeChatTab === "private" &&
       !mainLayout?.classList.contains("chat-hidden") &&
       (!isMobileLayout() || chatOverlayMobile?.classList.contains("is-open"));
+    let unsubscribeSentDms = null;
     const startInboxListener = () => {
       unsubscribeInbox?.();
       unsubscribeInbox = null;
+      unsubscribeSentDms?.();
+      unsubscribeSentDms = null;
       unreadFrom.clear();
+      dmIndex.clear();
       updateUnreadBadge();
+      scheduleDmList();
       const user = auth.currentUser;
       if (!user) return;
+      unsubscribeSentDms = onSnapshot(
+        query(collection(db, "privateMessages"), where("fromUid", "==", user.uid)),
+        (snapshot) => {
+          snapshot.docChanges().forEach((change) => {
+            if (change.type !== "removed") recordDm(change.doc.data());
+          });
+          scheduleDmList();
+        },
+        (err) => console.error("Sent DM listener error", err)
+      );
       let initialized = false;
       unsubscribeInbox = onSnapshot(
         query(collection(db, "privateMessages"), where("toUid", "==", user.uid)),
         (snapshot) => {
+          snapshot.docChanges().forEach((change) => {
+            if (change.type !== "removed") recordDm(change.doc.data());
+          });
+          scheduleDmList();
           if (!initialized) {
-            initialized = true; // skip history on first load
+            initialized = true; // no notifications for history
             return;
           }
           snapshot.docChanges().forEach((change) => {
@@ -5017,6 +5691,9 @@
       rows.sort((a, b) => Number(b.isOnline) - Number(a.isOnline) || b.lastActiveMs - a.lastActiveMs);
       const onlineCount = rows.filter((r) => r.isOnline).length;
       if (peopleCount) peopleCount.textContent = String(onlineCount + (auth.currentUser ? 1 : 0));
+      const channelCount = document.querySelector("#gc-channel-count");
+      if (channelCount) channelCount.textContent = `👤 ${onlineCount + (auth.currentUser ? 1 : 0)}`;
+      scheduleDmList();
       const fragment = document.createDocumentFragment();
       // Gather-style grouping: one section per area, offline members collapsed at the bottom
       const groups = new Map();
@@ -6202,17 +6879,30 @@
       if (isMobileLayout()) openChatOverlay();
       else mainLayout?.classList.remove("chat-hidden");
     };
+    const closeChatPanel = () => {
+      if (isMobileLayout()) closeChatOverlay();
+      else mainLayout?.classList.add("chat-hidden");
+    };
     document.querySelector("#chat-toggle-btn")?.addEventListener("click", () => {
-      if (isMobileLayout()) {
-        openChatOverlay();
+      const hidden = isMobileLayout() ? !chatOverlayMobile?.classList.contains("is-open") : mainLayout?.classList.contains("chat-hidden");
+      if (!hidden && activeChatTab !== "people") {
+        closeChatPanel();
         return;
       }
-      mainLayout?.classList.toggle("chat-hidden");
+      if (activeChatTab === "people") activeChatTab = "list";
+      showChatPanel(activeChatTab);
     });
     document.querySelector("#people-btn")?.addEventListener("click", () => {
-      showChatPanel("map");
-      onlinePanel?.scrollIntoView({ block: "nearest" });
+      const hidden = isMobileLayout() ? !chatOverlayMobile?.classList.contains("is-open") : mainLayout?.classList.contains("chat-hidden");
+      if (!hidden && activeChatTab === "people") {
+        closeChatPanel();
+        return;
+      }
+      showChatPanel("people");
     });
+    document.querySelectorAll("#chat-panel .gc-close").forEach((b) => b.addEventListener("click", closeChatPanel));
+    document.querySelectorAll("#chat-view-map .gc-back").forEach((b) => b.addEventListener("click", () => setChatView("list")));
+    document.querySelector("#gc-channel-item")?.addEventListener("click", () => setChatView("map"));
 
     // --- Zoom (Gather-style +/-) ---
     const ZOOM_LEVELS = [0.75, 1, 1.25, 1.5];
@@ -9164,6 +9854,7 @@
       endCallByDistance();
       setPrivateAvailability(false);
       updatePrivateTabLabel();
+      updatePrivateHeader();
       if (!userSelectedTab && activeChatTab !== "map") {
         activeChatTab = "map";
         updateChatTabs();
