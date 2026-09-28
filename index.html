@@ -6038,13 +6038,15 @@
         list.forEach((r) => fragment.appendChild(buildRow(r)));
       });
       if (offlineRows.length) {
-        const details = document.createElement("details");
-        details.className = "online-offline";
-        const summary = document.createElement("summary");
-        summary.textContent = `離線成員（${offlineRows.length}）`;
-        details.appendChild(summary);
-        offlineRows.forEach((r) => details.appendChild(buildRow(r)));
-        fragment.appendChild(details);
+        // Plain section (always open): the panel has plenty of room, no need to collapse it
+        const header = document.createElement("div");
+        header.className = "online-group";
+        header.textContent = `🌙 離線成員（${offlineRows.length}）`;
+        fragment.appendChild(header);
+        const offline = document.createElement("div");
+        offline.className = "online-offline";
+        offlineRows.forEach((r) => offline.appendChild(buildRow(r)));
+        fragment.appendChild(offline);
       }
       onlineList.appendChild(fragment);
     };
