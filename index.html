@@ -4668,6 +4668,13 @@
       const subEl = document.querySelector("#village-welcome-sub");
       if (titleEl) titleEl.textContent = title;
       if (subEl) subEl.textContent = sub || "";
+      // Every arrival replays the slide-in, even if the previous toast is still showing
+      if (villageWelcomeOverlay) {
+        villageWelcomeOverlay.classList.remove("visible");
+        villageWelcomeOverlay.style.transition = "none";
+        void villageWelcomeOverlay.offsetWidth; // restart from the hidden state
+        villageWelcomeOverlay.style.transition = "";
+      }
       villageWelcomeOverlay?.classList.add("visible");
       clearTimeout(welcomeTimer);
       welcomeTimer = setTimeout(closeVillageWelcome, WELCOME_AUTO_CLOSE_MS);
@@ -9663,7 +9670,7 @@
       clearMovePath();
       closeTable();
       resetPrivateContext();
-      // Tell people where they just arrived (auto-closes after 2s, or when they walk / click)
+      // Tell people where they just arrived, on every entry and exit (auto-closes after 2.5s)
       if (!gameContent || gameContent.classList.contains("visible")) showVillageWelcome(mapName);
       isDialogueOpen = false;
       dialogueStage = "question";
