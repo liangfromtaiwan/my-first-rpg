@@ -3433,9 +3433,9 @@
           </header>
           <div class="gc-scroll">
             <button type="button" class="gc-item" id="gc-channel-item">
-              <span class="gc-item-icon gc-channel-icon">🌈</span>
+              <span class="gc-item-icon gc-channel-icon">🌳</span>
               <span class="gc-item-main">
-                <span class="gc-item-name" id="gc-channel-name">公共頻道</span>
+                <span class="gc-item-name" id="gc-channel-name">主世界頻道</span>
                 <span class="gc-item-preview" id="gc-channel-preview">還沒有訊息</span>
               </span>
               <span class="gc-item-time" id="gc-channel-time"></span>
@@ -3450,14 +3450,14 @@
         <section class="gc-view" id="chat-view-map" aria-label="頻道">
           <header class="gc-header">
             <button type="button" class="gc-icon gc-back" title="返回">‹</button>
-            <span class="gc-item-icon gc-channel-icon gc-small">🌈</span>
-            <span class="gc-title" id="gc-channel-title">公共頻道</span>
+            <span class="gc-item-icon gc-channel-icon gc-small">🌳</span>
+            <span class="gc-title" id="gc-channel-title">主世界頻道</span>
             <span class="gc-count" id="gc-channel-count" title="在線人數">👤 1</span>
             <button type="button" class="gc-icon gc-close" title="關閉">✕</button>
           </header>
           <div class="gc-messages" id="chat-messages"></div>
           <div class="gc-composer">
-            <input id="chat-input" type="text" maxlength="120" placeholder="傳訊息到公共頻道…" />
+            <input id="chat-input" type="text" maxlength="120" placeholder="傳訊息到主世界頻道…" />
             <button id="chat-send" type="button" class="gc-send" title="送出">➤</button>
           </div>
         </section>
@@ -3979,6 +3979,27 @@
     let playerNickname = localStorage.getItem(nicknameStorageKey) || "";
     // Main world chat (shared between main world and village)
     const villageId = "worldMap";
+    // Public chat is per place: each map has its own channel (homes share the residential one).
+    // Messages keep using the `villageId` field, so the old public chat simply becomes 主世界頻道.
+    const CHANNELS = {
+      worldMap: { name: "主世界頻道", icon: "🌳" },
+      villageMap: { name: "抱石村頻道", icon: "🧗" },
+      officeMap: { name: "辦公室頻道", icon: "🏢" },
+      residentialMap: { name: "住宅區頻道", icon: "🏘️" },
+    };
+    const channelIdForMap = (mapName) =>
+      CHANNELS[mapName] ? mapName : String(mapName || "").startsWith("home_") ? "residentialMap" : "worldMap";
+    let chatChannelId = "worldMap";
+    const updateChannelLabels = () => {
+      const ch = CHANNELS[chatChannelId];
+      const name = document.querySelector("#gc-channel-name");
+      const title = document.querySelector("#gc-channel-title");
+      if (name) name.textContent = ch.name;
+      if (title) title.textContent = ch.name;
+      document.querySelectorAll(".gc-channel-icon").forEach((el) => { el.textContent = ch.icon; });
+      const input = document.querySelector("#chat-input");
+      if (input) input.placeholder = `傳訊息到${ch.name}…`;
+    };
 
     // --- 破冰問答小遊戲常數（易於調整）---
     const ICEBREAKER_DISTANCE_THRESHOLD = 50; // 觸發 🎲 按鈕的玩家距離（px）
@@ -4299,7 +4320,7 @@
       // Listen to village messages, sorted by time
       const messagesRef = collection(db, "messages");
       // No orderBy to avoid needing an index
-      const messagesQuery = query(messagesRef, where("villageId", "==", villageId));
+      const messagesQuery = query(messagesRef, where("villageId", "==", chatChannelId));
 
       unsubscribeChat = onSnapshot(
         messagesQuery,
@@ -5892,7 +5913,9 @@
       const onlineCount = rows.filter((r) => r.isOnline).length;
       if (peopleCount) peopleCount.textContent = String(onlineCount + (auth.currentUser ? 1 : 0));
       const channelCount = document.querySelector("#gc-channel-count");
-      if (channelCount) channelCount.textContent = `👤 ${onlineCount + (auth.currentUser ? 1 : 0)}`;
+      // People in this place's channel (online, same map / channel as you)
+      const inChannel = rows.filter((r) => r.isOnline && channelIdForMap(r.userData.mapName) === chatChannelId).length;
+      if (channelCount) channelCount.textContent = `👤 ${inChannel + (auth.currentUser ? 1 : 0)}`;
       scheduleDmList();
       const fragment = document.createDocumentFragment();
       // Gather-style grouping: one section per area, offline members collapsed at the bottom
@@ -6143,9 +6166,9 @@
 
       // No optimistic append: Firestore's latency compensation fires the listener immediately.
       try {
-        // Write new message to Firestore
+        // Write new message to Firestore (to the channel of the place you're in)
         await addDoc(collection(db, "messages"), {
-          villageId,
+          villageId: chatChannelId,
           uid: user.uid,
           userName,
           photoURL,
@@ -9595,6 +9618,16 @@
       exitBuildMode();
       closeGuestbook();
       currentMapName = mapName;
+      // Switch the public chat to this place's channel
+      const channelId = channelIdForMap(mapName);
+      if (channelId !== chatChannelId) {
+        chatChannelId = channelId;
+        updateChannelLabels();
+        if (auth.currentUser) {
+          startChatListener();
+          renderOnlineUsers();
+        }
+      }
       currentMap = maps[mapName];
       mapCols = currentMap.tiles[0].length;
       mapRows = currentMap.tiles.length;
