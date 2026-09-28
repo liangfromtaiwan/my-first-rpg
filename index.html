@@ -1055,8 +1055,10 @@
       display: none;
       align-items: center;
       justify-content: center;
-      background: rgba(0, 0, 0, 0.4);
+      background: rgba(0, 0, 0, 0.18);
       z-index: 35;
+      /* Clicks pass through to the map; any click outside the card closes it */
+      pointer-events: none;
     }
 
     .village-welcome-overlay.visible {
@@ -1066,7 +1068,10 @@
     .village-welcome-backdrop {
       position: absolute;
       inset: 0;
-      cursor: pointer;
+    }
+
+    .village-welcome-card {
+      pointer-events: auto;
     }
 
     .village-welcome-card {
@@ -3824,10 +3829,28 @@
       });
     }
 
-    const closeVillageWelcome = () => villageWelcomeOverlay?.classList.remove("visible");
+    // The welcome card never blocks for long: it closes after a few seconds, when you start walking,
+    // or when you click anywhere outside it.
+    const WELCOME_AUTO_CLOSE_MS = 3000;
+    let welcomeTimer = null;
+    const closeVillageWelcome = () => {
+      clearTimeout(welcomeTimer);
+      welcomeTimer = null;
+      villageWelcomeOverlay?.classList.remove("visible");
+    };
+    const showVillageWelcome = () => {
+      villageWelcomeOverlay?.classList.add("visible");
+      clearTimeout(welcomeTimer);
+      welcomeTimer = setTimeout(closeVillageWelcome, WELCOME_AUTO_CLOSE_MS);
+    };
     if (villageWelcomeClose) {
       villageWelcomeClose.addEventListener("click", closeVillageWelcome);
     }
+    document.addEventListener("pointerdown", (event) => {
+      if (villageWelcomeOverlay?.classList.contains("visible") && !event.target.closest?.(".village-welcome-card")) {
+        closeVillageWelcome();
+      }
+    }, true);
     const villageWelcomeBackdrop = document.querySelector(".village-welcome-backdrop");
     if (villageWelcomeBackdrop) {
       villageWelcomeBackdrop.addEventListener("click", closeVillageWelcome);
@@ -6764,6 +6787,14 @@
             m.fillRect(col * tileSize * scale, row * tileSize * scale, tileSize * scale + 0.5, tileSize * scale + 0.5);
           }
         }
+        // Sidewalks, so the minimap shows where the paths lead
+        if (currentMap.paths?.length) {
+          m.fillStyle = currentMapName === "villageMap" ? "#e6dab8" : "#d8cfbf";
+          pathTileSet(currentMap.paths).forEach((key) => {
+            const [px, py] = key.split(",").map(Number);
+            m.fillRect(px * tileSize * scale, py * tileSize * scale, tileSize * scale + 0.5, tileSize * scale + 0.5);
+          });
+        }
         currentMap.crowd.forEach((member) => {
           m.fillStyle = "#1a4d0e";
           m.fillRect(member.tileX * tileSize * scale, member.tileY * tileSize * scale, Math.max(1.5, tileSize * scale * 0.5), Math.max(1.5, tileSize * scale * 0.5));
@@ -8317,7 +8348,7 @@
       closeTable();
       resetPrivateContext();
       if (mapName === "villageMap") {
-        villageWelcomeOverlay?.classList.add("visible");
+        showVillageWelcome();
       }
       isDialogueOpen = false;
       dialogueStage = "question";
@@ -9209,6 +9240,7 @@
 
       const moved = Math.abs(player.x - prevX) + Math.abs(player.y - prevY) > 0.01;
       player.walking = moved;
+      if (moved && villageWelcomeOverlay?.classList.contains("visible")) closeVillageWelcome();
       player.animMs = moved ? player.animMs + deltaMs * (running ? 1.5 : 1) : 0;
       if (movePath.length && (dx !== 0 || dy !== 0) && !moved) {
         pathStuckMs += deltaMs;
