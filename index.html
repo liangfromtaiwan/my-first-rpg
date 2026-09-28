@@ -7782,7 +7782,14 @@
       const contentH = mapHeight * scale;
       // Phones: top-left (the bottom-right corner holds the D-pad)
       const mobileMini = isMobileLayout();
-      const miniX = mobileMini ? pad : viewportWidth - contentW - pad - 4;
+      // Desktop: when the chat overlay is open, keep the minimap just left of it
+      let chatCover = 0;
+      if (!mobileMini && !mainLayout?.classList.contains("chat-hidden") && chatPanel?.offsetWidth) {
+        const canvasRect = canvas.getBoundingClientRect();
+        const panelLeft = chatPanel.getBoundingClientRect().left;
+        if (canvasRect.width) chatCover = Math.max(0, canvasRect.right - panelLeft) * (viewportWidth / canvasRect.width);
+      }
+      const miniX = mobileMini ? pad : viewportWidth - chatCover - contentW - pad - 4;
       const miniY = mobileMini ? pad : viewportHeight - contentH - pad - 4;
       minimapBottom = miniY + contentH + 4;
       const offX = miniX + 2;
