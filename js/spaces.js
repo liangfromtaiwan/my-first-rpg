@@ -155,7 +155,8 @@ export const drawGameTable = (ctx, table, tileSize, board) => {
 export const MEETING_ROOM = { x: 24, y: 20, w: 8, h: 7, doorRows: [23, 24] };
 export const ARCADE_ROOM = { x: 24, y: 4, w: 12, h: 7, doorRows: [7, 8] };
 // Village lounge: the path comes down from the main street, so its door is in the back wall
-export const LOUNGE_ROOM = { x: 10, y: 18, w: 8, h: 6, doorRows: [], doorCols: [13, 14] };
+// Village lounge: an open corner of the gym (no walls), you can walk in from every side
+export const LOUNGE_ROOM = { x: 10, y: 18, w: 8, h: 6 };
 
 const OUT = "#2a1f1a";
 const rpx = (g, color, x, y, w, h) => {
@@ -379,7 +380,7 @@ export const drawArcadeRoom = (g, t, room = ARCADE_ROOM, tables = GAME_TABLES.wo
 
 // ---- 攀岩休息室 (village): a small bouldering wall with crash pads, sofa corner, chalk & water ----
 export const loungeRoomBlockedTiles = (room = LOUNGE_ROOM) => {
-  const out = roomWallTiles(room);
+  const out = [];
   out.push([room.x + 3, room.y + 3], [room.x + 4, room.y + 3]); // coffee table
   out.push([room.x + 1, room.y + 1]); // water cooler
   out.push([room.x + 1, room.y + room.h - 2], [room.x + room.w - 2, room.y + room.h - 2]); // plants
@@ -389,29 +390,26 @@ export const loungeRoomBlockedTiles = (room = LOUNGE_ROOM) => {
 export const drawLoungeRoom = (g, t, room = LOUNGE_ROOM) => {
   const X = room.x * t;
   const Y = room.y * t;
-  drawRoomShell(g, t, room, { floor: ["#b28457", "#b98a5e"], floorLine: "#a47650", wall: "#dfe9ea", wallTrim: "#2f8c9a", top: "#1f4a52" });
-  // Bouldering wall on the back wall (right of the door) with colourful holds, crash pad below
-  const bx = (room.x + 5) * t;
-  const bw = 3 * t - 4;
-  rpx(g, OUT, bx + 2, Y + 2, bw, t - 4);
-  rpx(g, "#8fa3a8", bx + 4, Y + 4, bw - 4, t - 8);
-  const holds = ["#e04a3a", "#f2c14e", "#43a266", "#3f7ad9", "#c85ad9", "#ff8a3d"];
-  for (let i = 0; i < 18; i++) {
-    const hx = bx + 8 + ((i * 53 + (i % 3) * 17) % (bw - 18));
-    const hy = Y + 6 + ((i * 7 + (i % 4) * 5) % (t - 16));
-    rpx(g, holds[(i * 5) % holds.length], hx, hy, 6 + (i % 2) * 2, 5);
+  // Open wooden deck on the gym floor, with a teal trim instead of walls
+  const W = room.w * t;
+  const H = room.h * t;
+  rpx(g, "rgba(0,0,0,0.25)", X + 4, Y + 6, W, H);
+  rpx(g, "#2f8c9a", X - 3, Y - 3, W + 6, H + 6);
+  for (let ty = room.y; ty < room.y + room.h; ty++) {
+    for (let tx = room.x; tx < room.x + room.w; tx++) {
+      rpx(g, (tx + ty) % 2 ? "#b98a5e" : "#b28457", tx * t, ty * t, t, t);
+      rpx(g, "#a47650", tx * t, ty * t + t / 2 - 1, t, 2);
+      rpx(g, "#a47650", tx * t + ((ty * 17) % t), ty * t, 2, t / 2);
+    }
   }
-  rpx(g, OUT, bx, Y + t, 2 * t, t - 6);
-  rpx(g, "#2f8c9a", bx + 2, Y + t + 2, 2 * t - 4, t - 10);
-  rpx(g, "#3fa9b8", bx + 2, Y + t + 2, 2 * t - 4, 5);
-  // Water cooler (front-left of the back wall, under the name tag)
+  // Water cooler (back-left corner, under the name tag)
   const wx = (room.x + 1) * t;
   const wy = (room.y + 1) * t - 10;
   rpx(g, OUT, wx + 10, wy, t - 20, t + 6);
   rpx(g, "#f4f1ea", wx + 12, wy + 16, t - 24, t - 12);
   rpx(g, "#7fd0f0", wx + 13, wy + 2, t - 26, 16);
   rpx(g, "#3f7ad9", wx + t / 2 - 2, wy + 22, 4, 4);
-  // Chalk bucket next to the door
+  // Chalk bucket
   rpx(g, OUT, (room.x + 2) * t + 8, Y + t + 8, 24, 22);
   rpx(g, "#f4f1ea", (room.x + 2) * t + 10, Y + t + 10, 20, 18);
   rpx(g, "#d8d2c6", (room.x + 2) * t + 10, Y + t + 10, 20, 4);
