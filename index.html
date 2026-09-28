@@ -2498,44 +2498,69 @@
       font-size: 12px;
       text-align: left;
     }
+    /* Composer: rounded pill input + a round send button outside it (never covered) */
     .gc-composer {
       display: flex;
       align-items: center;
-      gap: 6px;
-      margin: 8px 12px 12px;
-      padding: 6px 6px 6px 12px;
-      border: 1px solid rgba(255, 255, 255, 0.35);
-      border-radius: 12px;
-      background: #1a1e36;
+      gap: 8px;
+      margin: 8px 10px 10px;
+      padding: 0;
+      border: none;
+      background: transparent;
       flex-shrink: 0;
+      min-width: 0;
     }
     .gc-composer input {
-      flex: 1;
+      flex: 1 1 auto;
+      width: 0;
       min-width: 0;
-      border: none !important;
-      background: transparent !important;
+      height: 44px;
+      box-sizing: border-box;
+      border: 1px solid rgba(255, 255, 255, 0.18) !important;
+      border-radius: 22px !important;
+      background: #2a2e4a !important;
       color: #eef0ff !important;
-      font-size: 14px;
-      padding: 8px 0 !important;
+      font-size: 15px;
+      padding: 0 16px !important;
       outline: none;
+    }
+    .gc-composer input:focus {
+      border-color: rgba(255, 255, 255, 0.45) !important;
     }
     .gc-composer input::placeholder {
       color: #8f93b8;
     }
     .gc-send {
-      width: 36px;
-      height: 36px;
+      flex: 0 0 auto;
+      width: 44px;
+      height: 44px;
       border: none !important;
-      border-radius: 8px !important;
-      background: transparent !important;
-      color: #a8acd0 !important;
+      border-radius: 50% !important;
+      background: #e8573b !important;
+      color: #fff !important;
       font-size: 18px;
+      line-height: 1;
       cursor: pointer;
-      padding: 0 !important;
+      padding: 0 0 0 3px !important;
+      box-shadow: 0 2px 8px rgba(232, 87, 59, 0.35);
+      transition: transform 0.1s ease, filter 0.1s ease;
     }
     .gc-send:hover {
-      color: #fff !important;
-      background: rgba(255, 255, 255, 0.1) !important;
+      filter: brightness(1.1);
+    }
+    .gc-send:active {
+      transform: scale(0.92);
+    }
+    /* Phones: 16px+ text stops iOS Safari from zooming the page when the input is focused
+       (that zoom is what pushed the send button off-screen) */
+    @media (max-width: 956px) {
+      input[type="text"],
+      textarea {
+        font-size: 16px !important;
+      }
+      .gc-composer {
+        margin: 8px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+      }
     }
     /* People view in the dark theme */
     .gc .online-panel {
@@ -3393,7 +3418,7 @@
           </header>
           <div class="gc-messages" id="chat-messages"></div>
           <div class="gc-composer">
-            <input id="chat-input" type="text" maxlength="120" placeholder="傳訊息到 公共頻道（所有人都看得到）" />
+            <input id="chat-input" type="text" maxlength="120" placeholder="傳訊息到公共頻道…" />
             <button id="chat-send" type="button" class="gc-send" title="送出">➤</button>
           </div>
         </section>
