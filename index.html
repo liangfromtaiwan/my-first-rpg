@@ -8348,6 +8348,13 @@
     const answerInvite = (status) => {
       const invite = currentInvite;
       if (!invite) return;
+      // Don't send a guest into an empty house: the host has to still be around
+      if (status === "accepted" && !isUserOnline(invite.fromUid)) {
+        updateDoc(doc(db, "homeInvites", invite.id), { status: "declined", answeredAt: serverTimestamp() }).catch(() => {});
+        showNextInvite();
+        showIcebreakerToast(`${invite.fromName || "主人"} 已經離線，這個邀請過期了`, 3500);
+        return;
+      }
       updateDoc(doc(db, "homeInvites", invite.id), { status, answeredAt: serverTimestamp() }).catch((err) =>
         console.error("Answer invite failed", err)
       );
@@ -8390,7 +8397,16 @@
           snapshot.docChanges().forEach((change) => {
             if (change.type !== "modified") return;
             const d = change.doc.data();
-            if (d.status === "accepted") showIcebreakerToast(`🎉 ${d.toName || "對方"} 接受了邀請，正在過去你家`, 3500);
+            if (d.status === "accepted") {
+              // Head home together, so the guest isn't standing in an empty house
+              const me = auth.currentUser;
+              if (me && currentMapName !== homeMapName(me.uid)) {
+                showIcebreakerToast(`🎉 ${d.toName || "對方"} 接受了邀請，一起回家囉！`, 3500);
+                goHome();
+              } else {
+                showIcebreakerToast(`🎉 ${d.toName || "對方"} 接受了邀請，馬上就到`, 3500);
+              }
+            }
             if (d.status === "declined") showIcebreakerToast(`${d.toName || "對方"} 這次不方便過去`);
           });
         },
