@@ -168,7 +168,7 @@ const drawFurniture = (g, f, t) => {
       px(g, "#2e2a45", X, Y + 4, W, H - 8);
       px(g, "#8a6a4a", X + 4, Y + 8, W - 8, H - 16);
       g.fillStyle = "#f4e3a1";
-      g.font = "bold 10px Arial, sans-serif";
+      g.font = "bold 14px Arial, sans-serif";
       g.textAlign = "center";
       g.textBaseline = "middle";
       g.fillText("EXIT", X + W / 2, Y + H / 2);
@@ -320,7 +320,7 @@ export const drawOfficeBuilding = (g, tileX, tileY, t) => {
   px(g, "#2a1f1a", X + W / 2 - 34, Y + 30, 68, 20);
   px(g, "#f2c14e", X + W / 2 - 32, Y + 32, 64, 16);
   g.fillStyle = "#2a1f1a";
-  g.font = "bold 12px Arial, sans-serif";
+  g.font = "bold 14px Arial, sans-serif";
   g.textAlign = "center";
   g.textBaseline = "middle";
   g.fillText("EQU", X + W / 2, Y + 40);

@@ -116,10 +116,10 @@ const drawEmptyLot = (g, plot, t) => {
   px(g, "#a38357", X + 70, Y + 44, 22, 8);
   // Little "for sale" sign
   px(g, OUT, X + 3 * t / 2 - 2, Y + 30, 4, 34);
-  px(g, OUT, X + 3 * t / 2 - 24, Y + 18, 48, 22);
-  px(g, "#f4f1ea", X + 3 * t / 2 - 22, Y + 20, 44, 18);
+  px(g, OUT, X + 3 * t / 2 - 28, Y + 16, 56, 26);
+  px(g, "#f4f1ea", X + 3 * t / 2 - 26, Y + 18, 52, 22);
   g.fillStyle = OUT;
-  g.font = "bold 11px \"Noto Sans TC\", \"PingFang TC\", Arial, sans-serif";
+  g.font = "bold 14px \"Noto Sans TC\", \"PingFang TC\", Arial, sans-serif";
   g.textAlign = "center";
   g.textBaseline = "middle";
   g.fillText("空地", X + 3 * t / 2, Y + 29);
@@ -170,10 +170,10 @@ export const buildResidentialLayer = (layout, t) => {
   const signX = 17 * t - 60;
   const signY = layout.plazaY * t + 4;
   px(g, OUT, signX - 30, signY, 4, 30);
-  px(g, OUT, signX - 50, signY - 4, 44, 16);
-  px(g, "#f2c14e", signX - 48, signY - 2, 40, 12);
+  px(g, OUT, signX - 58, signY - 8, 60, 24);
+  px(g, "#f2c14e", signX - 56, signY - 6, 56, 20);
   g.fillStyle = OUT;
-  g.font = "bold 9px \"Noto Sans TC\", Arial, sans-serif";
+  g.font = "bold 14px \"Noto Sans TC\", Arial, sans-serif";
   g.textAlign = "center";
   g.textBaseline = "middle";
   g.fillText("住宅區", signX - 28, signY + 4);
@@ -181,7 +181,7 @@ export const buildResidentialLayer = (layout, t) => {
   px(g, OUT, m.x * t, m.y * t + 6, t * 2, t - 12);
   px(g, "#8a6a4a", m.x * t + 4, m.y * t + 10, t * 2 - 8, t - 20);
   g.fillStyle = "#f4e3a1";
-  g.font = "bold 10px Arial, sans-serif";
+  g.font = "bold 14px Arial, sans-serif";
   g.fillText("EXIT", m.x * t + t, m.y * t + t / 2);
   return layer;
 };
@@ -209,7 +209,7 @@ export const drawHouseFront = (ctx, plot, t, { online, atHome, isMine, interests
   px(ctx, doorColors[home.door] || doorColors.open, X + W / 2 - 12, Y + 48, 24, 2 * t - 48);
   px(ctx, "#f2c14e", X + W / 2 + 6, Y + 62, 3, 3);
   ctx.save();
-  ctx.font = "12px \"Apple Color Emoji\", \"Segoe UI Emoji\", sans-serif";
+  ctx.font = "14px \"Apple Color Emoji\", \"Segoe UI Emoji\", sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(DOOR_ICONS[home.door] || DOOR_ICONS.open, X + W / 2, Y + 60);
@@ -217,58 +217,58 @@ export const drawHouseFront = (ctx, plot, t, { online, atHome, isMine, interests
 
   // Nameplate above the roof
   ctx.save();
-  ctx.font = "bold 12px \"Noto Sans TC\", \"PingFang TC\", Arial, sans-serif";
+  ctx.font = "bold 14px \"Noto Sans TC\", \"PingFang TC\", Arial, sans-serif";
   const label = `${isMine ? "⭐ " : ""}${home.ownerName || "玩家"} 的家`;
   const tw = Math.min(ctx.measureText(label).width, W + 30);
   const plateW = tw + 26;
   const plateX = Math.round(X + W / 2 - plateW / 2);
-  const plateY = Y - 22;
-  px(ctx, OUT, plateX, plateY, plateW, 20);
-  px(ctx, isMine ? "#fff1b8" : "#f4f1ea", plateX + 2, plateY + 2, plateW - 4, 16);
+  const plateY = Y - 24;
+  px(ctx, OUT, plateX, plateY, plateW, 22);
+  px(ctx, isMine ? "#fff1b8" : "#f4f1ea", plateX + 2, plateY + 2, plateW - 4, 18);
   ctx.fillStyle = online ? "#1f7a5f" : "#9b9b9b";
   ctx.beginPath();
-  ctx.arc(plateX + 10, plateY + 10, 4, 0, Math.PI * 2);
+  ctx.arc(plateX + 10, plateY + 11, 4, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = OUT;
   ctx.textBaseline = "middle";
   ctx.textAlign = "left";
-  ctx.fillText(label, plateX + 18, plateY + 11, tw);
+  ctx.fillText(label, plateX + 18, plateY + 12, tw);
   // Interest wall: the owner's interests as a row of emoji on a little board by the door
   if (interests) {
-    ctx.font = "13px \"Apple Color Emoji\", \"Segoe UI Emoji\", sans-serif";
+    ctx.font = "14px \"Apple Color Emoji\", \"Segoe UI Emoji\", sans-serif";
     const iw = ctx.measureText(interests).width + 10;
     const ix = Math.round(X + W - iw + 6);
-    const iy = Y + 2 * t - 20;
-    px(ctx, OUT, ix - 1, iy - 1, iw + 2, 20);
-    px(ctx, "#fdf6e3", ix, iy, iw, 18);
+    const iy = Y + 2 * t - 22;
+    px(ctx, OUT, ix - 1, iy - 1, iw + 2, 22);
+    px(ctx, "#fdf6e3", ix, iy, iw, 20);
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
     ctx.fillStyle = OUT;
-    ctx.fillText(interests, ix + 5, iy + 10);
+    ctx.fillText(interests, ix + 5, iy + 11);
   }
   if (party) {
     // House party: a bright banner that pulses so it's easy to spot from the street
-    ctx.font = "bold 11px \"Noto Sans TC\", Arial, sans-serif";
+    ctx.font = "bold 14px \"Noto Sans TC\", Arial, sans-serif";
     const tag = `🎉 派對中「${party.title}」`;
     const tagW = Math.min(ctx.measureText(tag).width + 12, W + 60);
     const pulse = 0.75 + 0.25 * Math.sin(performance.now() / 250);
     ctx.globalAlpha = pulse;
-    px(ctx, OUT, Math.round(X + W / 2 - tagW / 2) - 1, plateY - 19, tagW + 2, 18);
-    px(ctx, "#e46f86", Math.round(X + W / 2 - tagW / 2), plateY - 18, tagW, 16);
+    px(ctx, OUT, Math.round(X + W / 2 - tagW / 2) - 1, plateY - 23, tagW + 2, 22);
+    px(ctx, "#e46f86", Math.round(X + W / 2 - tagW / 2), plateY - 22, tagW, 20);
     ctx.globalAlpha = 1;
     ctx.fillStyle = "#ffffff";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(tag, X + W / 2, plateY - 10, tagW - 8);
+    ctx.fillText(tag, X + W / 2, plateY - 12, tagW - 8);
   }
   if (atHome) {
-    ctx.font = "bold 10px \"Noto Sans TC\", Arial, sans-serif";
+    ctx.font = "bold 14px \"Noto Sans TC\", Arial, sans-serif";
     const tag = "🏠 在家";
     const tagW = ctx.measureText(tag).width + 10;
-    px(ctx, "#1f7a5f", Math.round(X + W / 2 - tagW / 2), plateY + 20, tagW, 14);
+    px(ctx, "#1f7a5f", Math.round(X + W / 2 - tagW / 2), plateY + 22, tagW, 20);
     ctx.fillStyle = "#ffffff";
     ctx.textAlign = "center";
-    ctx.fillText(tag, X + W / 2, plateY + 27);
+    ctx.fillText(tag, X + W / 2, plateY + 32);
   }
   ctx.restore();
 };
@@ -292,7 +292,7 @@ export const drawResidentialGate = (ctx, tileX, tileY, t) => {
   px(ctx, "#f2c14e", X + W / 2 - 47, Y - 75, 94, 20);
   ctx.save();
   ctx.fillStyle = OUT;
-  ctx.font = "bold 13px \"Noto Sans TC\", \"PingFang TC\", Arial, sans-serif";
+  ctx.font = "bold 14px \"Noto Sans TC\", \"PingFang TC\", Arial, sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText("🏘️ 住宅區", X + W / 2, Y - 64);

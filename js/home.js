@@ -218,17 +218,17 @@ export const buildHomeLayer = (home, t) => {
     px(g, "#c85a54", gbX + 3 + ox + 6, 17 + oy + 1, 2, 2);
   });
   g.fillStyle = "#2e2a45";
-  g.font = "bold 9px Arial, sans-serif";
+  g.font = "bold 14px \"Noto Sans TC\", \"PingFang TC\", Arial, sans-serif";
   g.textAlign = "center";
   g.textBaseline = "top";
-  g.fillText("GUESTBOOK", gbX + (GUESTBOOK_SPOT.w * t - 12) / 2, 17 + t - 6);
+  g.fillText("留言板", gbX + (GUESTBOOK_SPOT.w * t - 12) / 2, 17 + t - 6);
 
   // Exit door mat
   const [m1] = HOME_EXIT_TILES;
   px(g, "#2e2a45", m1.x * t, m1.y * t + 6, t * 2, t - 12);
   px(g, "#8a6a4a", m1.x * t + 4, m1.y * t + 10, t * 2 - 8, t - 20);
   g.fillStyle = "#f4e3a1";
-  g.font = "bold 10px Arial, sans-serif";
+  g.font = "bold 14px Arial, sans-serif";
   g.textAlign = "center";
   g.textBaseline = "middle";
   g.fillText("EXIT", m1.x * t + t, m1.y * t + t / 2);

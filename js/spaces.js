@@ -100,7 +100,7 @@ export const drawZones = (ctx, mapName, tileSize, activeZoneId) => {
 
 const drawZoneTag = (ctx, z, x, y) => {
   ctx.save();
-  ctx.font = "bold 13px \"Noto Sans TC\", \"PingFang TC\", Arial, sans-serif";
+  ctx.font = "bold 14px \"Noto Sans TC\", \"PingFang TC\", Arial, sans-serif";
   const label = `${z.private ? "🔒 " : ""}${z.name}`;
   const tw = ctx.measureText(label).width + 14;
   ctx.fillStyle = "#2a1f1a";
