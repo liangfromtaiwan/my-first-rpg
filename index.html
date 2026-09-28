@@ -3759,6 +3759,7 @@
     } from "./js/pixel-avatar.js";
     import { buildFloorLayer, pathTileSet } from "./js/terrain.js";
     import { makeGymImageUrl } from "./js/gym.js?v=3";
+    import { buildGymInteriorLayer, gymBlockedTiles, gymMinimapColor } from "./js/gym-interior.js?v=2";
     import { findPath, nearestOpenTile } from "./js/pathfind.js";
     import { arcadeRoomBlockedTiles, drawArcadeRoom, drawGameTable, drawLoungeRoom, drawMeetingRoom, drawZones, getGameTables, getZones, isZoneTile, loungeRoomBlockedTiles, meetingRoomBlockedTiles, registerZones, zoneAt } from "./js/spaces.js?v=20260928d";
     import {
@@ -6120,7 +6121,8 @@
     [...meetingRoomBlockedTiles(), ...arcadeRoomBlockedTiles()].forEach(([x, y]) => {
       worldMap[y][x] = 1;
     });
-    loungeRoomBlockedTiles().forEach(([x, y]) => {
+    // 抱石村 is the inside of a bouldering gym: climbing walls, the boulder and the front desk block walking
+    [...gymBlockedTiles(villageMap[0].length), ...loungeRoomBlockedTiles()].forEach(([x, y]) => {
       villageMap[y][x] = 1;
     });
 
@@ -6196,13 +6198,13 @@
         reserved: [
           { x: 23, y: 20, w: 8, h: 7 }, // exit door, guide, bulletin board and the space around them
         ],
-        paths: [
-          { x: 26, y: 6, w: 2, h: 20 }, // from the exit door up to the main street
-          { x: 1, y: 4, w: 30, h: 2 }, // main street
-          { x: 13, y: 6, w: 2, h: 12 }, // down to the climbers' lounge
-        ],
+        // Indoors: no trees / animals / sidewalks; the gym floor, walls and mats come from js/gym-interior.js
+        indoor: true,
+        buildLayer: () => buildGymInteriorLayer(villageMap, tileSize),
+        minimapColor: gymMinimapColor(villageMap),
+        paths: [],
         signs: [
-          { x: 15, y: 6, lines: ["🧗 休息室 ↓"] },
+          { x: 15, y: 16, lines: ["🧗 休息室 ↓"] },
           { x: 28, y: 21, lines: ["🚪 出口 ↓"] },
         ],
         crowd: [],
