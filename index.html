@@ -459,7 +459,7 @@
       }
     }
 
-    @media (max-width: 899px) {
+    @media (max-width: 956px) {
       .chat-overlay-mobile {
         position: fixed !important;
         inset: 0 !important;
@@ -489,7 +489,7 @@
       }
     }
 
-    @media (min-width: 900px) {
+    @media (min-width: 957px) {
       .chat-mobile-btn {
         display: none !important;
       }
@@ -554,7 +554,7 @@
       min-height: 0;
     }
 
-    @media (max-width: 899px) {
+    @media (max-width: 956px) {
       .chat-overlay-content {
         position: absolute;
         left: 50%;
@@ -1875,7 +1875,7 @@
     .joystick {
       display: none;
     }
-    @media (max-width: 899px) {
+    @media (max-width: 956px) {
       /* Virtual joystick, bottom-right: press and slide your thumb any direction */
       .joystick {
         position: absolute;
@@ -1955,7 +1955,7 @@
     .avatar-account-btn {
       margin-right: auto;
     }
-    @media (max-width: 899px) {
+    @media (max-width: 956px) {
       /* Phones: no top bar, map edge-to-edge down to the toolbar */
       .game-content .auth-bar,
       .game-content .hint {
@@ -2043,7 +2043,7 @@
       font-size: 12px;
       color: var(--chrome-muted);
     }
-    @media (max-width: 899px) {
+    @media (max-width: 956px) {
       .tool-label {
         display: none;
       }
@@ -2788,7 +2788,7 @@
     .avatar-actions button.is-primary:hover {
       background: var(--game-primary-hover);
     }
-    @media (max-width: 899px) {
+    @media (max-width: 956px) {
       /* Keep emotes right under the map and clear of the floating Chat button */
       .game-canvas-wrap {
         flex: 0 0 auto;
@@ -5747,7 +5747,7 @@
     };
     /** On phones the canvas fills the screen, so the world view follows its aspect ratio. */
     const updateViewportSize = () => {
-      if (window.matchMedia("(max-width: 899px)").matches) {
+      if (window.matchMedia("(max-width: 956px)").matches) {
         const r = canvas.getBoundingClientRect();
         if (r.width > 0 && r.height > 0) {
           // Phones see ~420 world px across; wider tablets see more (never more than desktop's 720)
@@ -6192,7 +6192,7 @@
     };
 
     const mainLayout = document.querySelector(".main-layout");
-    const isMobileLayout = () => window.matchMedia("(max-width: 899px)").matches;
+    const isMobileLayout = () => window.matchMedia("(max-width: 956px)").matches;
     const showChatPanel = (tab) => {
       if (tab) {
         activeChatTab = tab;
@@ -9733,7 +9733,7 @@
       const now = performance.now();
       canvasRect = canvas.getBoundingClientRect();
       if (canvasRect.width > 0) {
-        const wantMobile = window.matchMedia("(max-width: 899px)").matches;
+        const wantMobile = window.matchMedia("(max-width: 956px)").matches;
         const wantW = Math.min(720, Math.max(MOBILE_VIEW_WIDTH, Math.round(canvasRect.width / 0.9)));
         const aspectOff =
           Math.abs(canvasRect.height / canvasRect.width - viewportHeight / viewportWidth) > 0.01 || wantW !== viewportWidth;
