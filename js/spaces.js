@@ -3,7 +3,8 @@
 
 export const ZONES = {
   worldMap: [
-    { id: "meeting", name: "會議室", x: 24, y: 20, w: 8, h: 7, private: true, color: "#8e5cc4" },
+    // A furnished room (see drawMeetingRoom), so only its tag is drawn like indoor rooms
+    { id: "meeting", name: "會議室", x: 24, y: 20, w: 8, h: 7, private: true, color: "#8e5cc4", indoor: true },
     { id: "arcade", name: "遊戲區", x: 24, y: 4, w: 12, h: 7, private: false, color: "#e8773b" },
   ],
   villageMap: [
@@ -146,4 +147,117 @@ export const drawGameTable = (ctx, table, tileSize, board) => {
     ctx.fillStyle = mark === "X" ? "#c85a54" : "#4c8bd6";
     ctx.fillRect(bx + (i % 3) * cell + 2, by + Math.floor(i / 3) * cell + 2, 4, 4);
   }
+};
+
+// ---- The world map's meeting room: a real little room instead of a bare carpet ----
+// Walls on the border (door on the left, where the path comes in), a long table, chairs,
+// a wall screen and plants. Walls, table and plants block walking.
+export const MEETING_ROOM = { x: 24, y: 20, w: 8, h: 7, doorRows: [23, 24] };
+
+export const meetingRoomBlockedTiles = (room = MEETING_ROOM) => {
+  const out = [];
+  for (let x = room.x; x < room.x + room.w; x++) {
+    out.push([x, room.y]); // back wall
+    out.push([x, room.y + room.h - 1]); // front wall
+  }
+  for (let y = room.y + 1; y < room.y + room.h - 1; y++) {
+    if (!room.doorRows.includes(y)) out.push([room.x, y]); // left wall (door gap)
+    out.push([room.x + room.w - 1, y]); // right wall
+  }
+  for (let x = room.x + 2; x <= room.x + 5; x++) {
+    out.push([x, room.y + 2]); // table
+    out.push([x, room.y + 3]);
+  }
+  out.push([room.x + 1, room.y + room.h - 2]); // plants (front corners keep the back chairs reachable)
+  out.push([room.x + room.w - 2, room.y + room.h - 2]);
+  return out;
+};
+
+const rpx = (g, color, x, y, w, h) => {
+  g.fillStyle = color;
+  g.fillRect(x, y, w, h);
+};
+
+/** Draw the room into the world floor layer (static). */
+export const drawMeetingRoom = (g, t, room = MEETING_ROOM) => {
+  const X = room.x * t;
+  const Y = room.y * t;
+  const W = room.w * t;
+  const H = room.h * t;
+  const OUT = "#2a1f1a";
+  // Wooden floor
+  for (let ty = room.y; ty < room.y + room.h; ty++) {
+    for (let tx = room.x; tx < room.x + room.w; tx++) {
+      const x = tx * t;
+      const y = ty * t;
+      rpx(g, ty % 2 ? "#b98a5e" : "#b28457", x, y, t, t);
+      rpx(g, "#a47650", x, y + t / 2 - 1, t, 2);
+      rpx(g, "#a47650", x + ((ty * 17) % t), y, 2, t / 2);
+    }
+  }
+  // Rug under the table
+  rpx(g, "#5b5f9e", X + 1.6 * t, Y + 1.6 * t, 4.8 * t, 2.8 * t);
+  g.strokeStyle = "rgba(255,255,255,0.35)";
+  g.lineWidth = 2;
+  g.setLineDash([6, 4]);
+  g.strokeRect(X + 1.8 * t, Y + 1.8 * t, 4.4 * t, 2.4 * t);
+  g.setLineDash([]);
+  // Back wall (a tall cream wall face) with a big screen
+  rpx(g, "#2e2a45", X, Y, W, 10);
+  rpx(g, "#e9dfcf", X, Y + 10, W, t - 16);
+  rpx(g, "#7c5b3f", X, Y + t - 6, W, 6);
+  rpx(g, OUT, X + 2.5 * t, Y + 4, 3 * t, 30);
+  rpx(g, "#3f4a7a", X + 2.5 * t + 3, Y + 7, 3 * t - 6, 24);
+  rpx(g, "#f2c14e", X + 2.5 * t + 12, Y + 12, 50, 4);
+  rpx(g, "#9ad4f5", X + 2.5 * t + 12, Y + 20, 80, 3);
+  // Side and front half-walls (dark wood railing), door gap on the left
+  const rail = (x, y, w, h) => {
+    rpx(g, OUT, x, y, w, h);
+    rpx(g, "#8b5e3c", x + 2, y + 2, w - 4, h - 4);
+    rpx(g, "#a8773f", x + 2, y + 2, w - 4, 4);
+  };
+  rail(X, Y + H - t + 8, W, t - 8); // front
+  for (let ty = room.y + 1; ty < room.y + room.h - 1; ty++) {
+    if (!room.doorRows.includes(ty)) rail(X, ty * t, 16, t);
+    rail(X + W - 16, ty * t, 16, t);
+  }
+  // Door mat
+  rpx(g, "#8a6a4a", X + 2, room.doorRows[0] * t + 6, 20, room.doorRows.length * t - 12);
+  // Long table
+  const tx = (room.x + 2) * t;
+  const ty = (room.y + 2) * t;
+  rpx(g, OUT, tx - 2, ty + 2, 4 * t + 4, 2 * t - 2);
+  rpx(g, "#8b5e3c", tx, ty + 4, 4 * t, 2 * t - 8);
+  rpx(g, "#a2714a", tx, ty + 4, 4 * t, 6);
+  for (let i = 0; i < 4; i++) {
+    rpx(g, "#e9e4da", tx + i * t + 12, ty + 14, 16, 11); // laptops / notes
+    rpx(g, "#e9e4da", tx + i * t + 12, ty + 2 * t - 28, 16, 11);
+  }
+  // Chairs above and below the table
+  const chair = (cx, cy) => {
+    rpx(g, OUT, cx + 8, cy + 8, 24, 24);
+    rpx(g, "#7b5cc4", cx + 10, cy + 10, 20, 20);
+    rpx(g, "#9677d8", cx + 10, cy + 10, 20, 5);
+  };
+  for (let i = 0; i < 4; i++) {
+    chair((room.x + 2 + i) * t, (room.y + 1) * t);
+    chair((room.x + 2 + i) * t, (room.y + 4) * t);
+  }
+  // Potted plants in the front corners
+  const plant = (px, py) => {
+    rpx(g, "rgba(0,0,0,0.18)", px + 6, py + t - 8, t - 12, 6);
+    rpx(g, OUT, px + 9, py + t - 20, t - 18, 16);
+    rpx(g, "#b0643a", px + 11, py + t - 18, t - 22, 12);
+    rpx(g, OUT, px + 3, py + 1, t - 6, t - 18);
+    rpx(g, "#2f7d4f", px + 5, py + 3, t - 10, t - 22);
+    rpx(g, "#43a266", px + 9, py + 5, t - 20, 8);
+    rpx(g, "#5cc27d", px + 13, py + 7, 6, 4);
+  };
+  plant((room.x + 1) * t, (room.y + room.h - 2) * t);
+  plant((room.x + room.w - 2) * t, (room.y + room.h - 2) * t);
+  // Whiteboard on the back wall, left of the screen
+  rpx(g, OUT, X + t + 4, Y + 8, t - 8, 24);
+  rpx(g, "#fbfaf5", X + t + 6, Y + 10, t - 12, 20);
+  rpx(g, "#e04a3a", X + t + 10, Y + 14, 14, 2);
+  rpx(g, "#3f7ad9", X + t + 10, Y + 20, 20, 2);
 };
