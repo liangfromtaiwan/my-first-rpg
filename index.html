@@ -6732,7 +6732,7 @@
 
     const castleImage = new Image();
     // The village entrance is a pixel bouldering gym (抱石館), drawn in js/gym.js
-    castleImage.src = makeGymImageUrl();
+    castleImage.src = makeGymImageUrl(420);
 
     const whiteboardImage = new Image();
     whiteboardImage.src = "image/whirteboard.png";
@@ -9833,7 +9833,7 @@
         return null;
       }
       const isCastle = image === castleImage;
-      const scale = isCastle ? 5 * 0.7 : 1;
+      const scale = isCastle ? 5 : 1; // the gym is 5 tiles wide
       const size = tileSize * scale;
       // Centred over the two-tile path, base resting on the path's top edge
       const x = (currentMap.entrance.x + 1) * tileSize - size / 2;
