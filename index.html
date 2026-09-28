@@ -7035,6 +7035,64 @@
     document.querySelectorAll("#chat-view-map .gc-back").forEach((b) => b.addEventListener("click", () => setChatView("list")));
     document.querySelector("#gc-channel-item")?.addEventListener("click", () => setChatView("map"));
 
+    // Phones: swipe right (like iOS "back") inside the chat. The page follows the finger;
+    // letting go past the threshold presses that view's ‹ back button, or closes the chat on the list.
+    (() => {
+      const panel = document.querySelector("#chat-panel");
+      if (!panel) return;
+      let start = null;
+      let dragging = false;
+      let view = null;
+      const reset = (animate) => {
+        if (!view) return;
+        view.style.transition = animate ? "transform 0.18s ease" : "";
+        view.style.transform = "";
+        const v = view;
+        if (animate) setTimeout(() => { v.style.transition = ""; }, 200);
+      };
+      panel.addEventListener("touchstart", (e) => {
+        if (!isMobileLayout() || e.touches.length !== 1) return;
+        // Leave sliders, inputs and horizontally scrollable bits alone
+        if (e.target.closest("input, textarea, select, [data-no-swipe]")) return;
+        const t = e.touches[0];
+        start = { x: t.clientX, y: t.clientY, time: Date.now() };
+        dragging = false;
+        view = panel.querySelector(".gc-view.is-active");
+      }, { passive: true });
+      panel.addEventListener("touchmove", (e) => {
+        if (!start || !view) return;
+        const t = e.touches[0];
+        const dx = t.clientX - start.x;
+        const dy = t.clientY - start.y;
+        if (!dragging) {
+          if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { start = null; return; } // vertical scroll
+          if (dx > 12 && dx > Math.abs(dy) * 1.5) dragging = true;
+          else return;
+        }
+        view.style.transform = `translateX(${Math.max(0, dx)}px)`;
+      }, { passive: true });
+      const finish = (e) => {
+        if (!start) return;
+        const t = e.changedTouches?.[0];
+        const dx = t ? t.clientX - start.x : 0;
+        const fast = dx > 50 && Date.now() - start.time < 250;
+        const wasDragging = dragging;
+        start = null;
+        dragging = false;
+        if (!wasDragging) return reset(false);
+        if (dx > window.innerWidth * 0.3 || fast) {
+          const back = view?.querySelector(".gc-back");
+          reset(false);
+          if (back && back.offsetParent !== null) back.click();
+          else closeChatPanel();
+        } else {
+          reset(true);
+        }
+      };
+      panel.addEventListener("touchend", finish);
+      panel.addEventListener("touchcancel", finish);
+    })();
+
     // --- Zoom (Gather-style +/-) ---
     const ZOOM_LEVELS = [0.75, 1, 1.25, 1.5];
     const savedZoom = Number(readSetting("mapZoom", "1"));
