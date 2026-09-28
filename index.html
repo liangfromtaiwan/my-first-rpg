@@ -3759,7 +3759,7 @@
     } from "./js/pixel-avatar.js";
     import { buildFloorLayer, pathTileSet } from "./js/terrain.js";
     import { findPath, nearestOpenTile } from "./js/pathfind.js";
-    import { arcadeRoomBlockedTiles, drawArcadeRoom, drawGameTable, drawLoungeRoom, drawMeetingRoom, drawZones, getGameTables, getZones, isZoneTile, loungeRoomBlockedTiles, meetingRoomBlockedTiles, registerZones, zoneAt } from "./js/spaces.js?v=20260928c";
+    import { arcadeRoomBlockedTiles, drawArcadeRoom, drawGameTable, drawLoungeRoom, drawMeetingRoom, drawZones, getGameTables, getZones, isZoneTile, loungeRoomBlockedTiles, meetingRoomBlockedTiles, registerZones, zoneAt } from "./js/spaces.js?v=20260928d";
     import {
       HOME_COLS,
       HOME_EXIT_TILES,
@@ -6124,21 +6124,24 @@
     });
 
     // 🏘️ Gate to the residential district (posts block, the two middle tiles lead in)
-    const RES_GATE = { tileX: 7, tileY: 29, w: 4 };
+    const RES_GATE = { tileX: 12, tileY: 18, w: 4 };
     worldMap[RES_GATE.tileY][RES_GATE.tileX] = 1;
     worldMap[RES_GATE.tileY][RES_GATE.tileX + RES_GATE.w - 1] = 1;
+
+    // Village bulletin board and guide stand right by the exit, where everyone arrives
+    const VILLAGE_BOARD = { tileX: 30, tileY: 24 };
 
     const maps = {
       worldMap: {
         tiles: worldMap,
         entrance: { x: 44, y: 22 },
         spawn: { x: 42, y: 24 },
-        npc: { tileX: 12, tileY: 12 },
+        npc: { tileX: 44, tileY: 25 }, // guide greets you right where you arrive
         portals: [
           { x: 15, y: 29, to: "officeMap", spawn: OFFICE_SPAWN },
           { x: 16, y: 29, to: "officeMap", spawn: OFFICE_SPAWN },
-          { x: 8, y: 29, to: "residentialMap", spawn: null },
-          { x: 9, y: 29, to: "residentialMap", spawn: null },
+          { x: 13, y: 18, to: "residentialMap", spawn: null },
+          { x: 14, y: 18, to: "residentialMap", spawn: null },
         ],
         // Sidewalks linking the main places, so it's clear where to go
         paths: [
@@ -6146,26 +6149,26 @@
           { x: 38, y: 22, w: 2, h: 8 }, // castle entrance -> avenue
           { x: 40, y: 24, w: 4, h: 2 }, // spawn -> castle path
           { x: 20, y: 3, w: 2, h: 27 }, // central north–south path
-          { x: 12, y: 13, w: 8, h: 2 }, // to the NPC
+          { x: 13, y: 19, w: 2, h: 1 }, // residential gate -> west path
           { x: 3, y: 10, w: 17, h: 2 }, // to the house at (4, 8)
           { x: 3, y: 20, w: 17, h: 2 }, // to the house at (4, 18)
           { x: 22, y: 23, w: 2, h: 2 }, // into the meeting room
           { x: 22, y: 7, w: 2, h: 2 }, // into the arcade
         ],
         signs: [
-          { x: 19, y: 28, lines: ["← 🏘️ 住宅區 · 🏢 辦公室", "🏰 城堡 →"] },
+          { x: 19, y: 28, lines: ["← 🏢 辦公室", "🏰 城堡 →"] },
           { x: 22, y: 21, lines: ["🔒 會議室 ↓"] },
           { x: 22, y: 9, lines: ["🎮 遊戲區 ↑"] },
-          { x: 17, y: 12, lines: ["← 💬 嚮導 · 🏠 房子"] },
+          { x: 17, y: 19, lines: ["← 🏘️ 住宅區 · 🏠 房子"] },
         ],
         // Keep random trees / animals away from building entrances (the space in front of every door)
         reserved: [
           { x: 13, y: 29, w: 6, h: 2 }, // EQU office door
-          { x: 6, y: 27, w: 6, h: 4 }, // residential gate
+          { x: 11, y: 15, w: 6, h: 5 }, // residential gate
           { x: 36, y: 21, w: 7, h: 3 }, // castle entrance
           { x: 2, y: 10, w: 5, h: 2 }, // house (4, 8) front
           { x: 2, y: 20, w: 5, h: 2 }, // house (4, 18) front
-          { x: 11, y: 13, w: 3, h: 1 }, // in front of the NPC
+          { x: 43, y: 24, w: 3, h: 3 }, // around the guide NPC
         ],
         // Building lots: trees must not take these, but the buildings themselves go here
         houseLots: [
@@ -6187,22 +6190,18 @@
           { x: 27, y: 26 },
         ],
         spawn: { x: 26, y: 23 },
-        npc: { tileX: 20, tileY: 14 },
+        npc: { tileX: 25, tileY: 21 },
         reserved: [
-          { x: 24, y: 22, w: 6, h: 5 }, // exit door and the space in front of it
-          { x: 3, y: 4, w: 3, h: 2 }, // in front of the bulletin board
-          { x: 19, y: 15, w: 3, h: 1 }, // in front of the NPC
+          { x: 23, y: 20, w: 8, h: 7 }, // exit door, guide, bulletin board and the space around them
         ],
         paths: [
           { x: 26, y: 6, w: 2, h: 20 }, // from the exit door up to the main street
           { x: 1, y: 4, w: 30, h: 2 }, // main street
-          { x: 20, y: 6, w: 2, h: 8 }, // to the guide NPC
           { x: 13, y: 6, w: 2, h: 12 }, // down to the climbers' lounge
         ],
         signs: [
           { x: 15, y: 6, lines: ["🧗 休息室 ↓"] },
-          { x: 22, y: 6, lines: ["💬 嚮導 ↓"] },
-          { x: 28, y: 22, lines: ["🚪 出口 ↓"] },
+          { x: 28, y: 21, lines: ["🚪 出口 ↓"] },
         ],
         crowd: [],
         decorations: [],
@@ -6274,7 +6273,7 @@
         npc: null,
         portals: [
           ...layout.plots.filter((p) => p.home).map((p) => ({ x: p.doorX, y: p.doorY, to: "__visit", ownerUid: p.home.ownerUid })),
-          ...layout.exitTiles.map((t) => ({ ...t, to: "worldMap", spawn: { x: 8, y: 30 } })),
+          ...layout.exitTiles.map((t) => ({ ...t, to: "worldMap", spawn: { x: 13, y: 20 } })),
         ],
         crowd: [],
         decorations: [],
@@ -7303,7 +7302,7 @@
       if (mapName === "villageMap") {
         for (let dy = -1; dy <= 1; dy++)
           for (let dx = -1; dx <= 1; dx++)
-            blockedTiles.add(`${4 + dx},${2 + dy}`);
+            blockedTiles.add(`${VILLAGE_BOARD.tileX + dx},${VILLAGE_BOARD.tileY + dy}`);
       }
       if (mapName === "worldMap") {
         for (const [hx, hy] of [[4, 8], [4, 18]]) {
@@ -7408,7 +7407,7 @@
       if (mapName === "villageMap") {
         for (let dy = -1; dy <= 1; dy++)
           for (let dx = -1; dx <= 1; dx++)
-            blockedTiles.add(`${4 + dx},${2 + dy}`);
+            blockedTiles.add(`${VILLAGE_BOARD.tileX + dx},${VILLAGE_BOARD.tileY + dy}`);
       }
       mapData.crowd.forEach((m) => {
         for (let dy = -1; dy <= 1; dy++) {
@@ -7532,7 +7531,7 @@
       if (mapName === "villageMap") {
         for (let dy = -1; dy <= 1; dy++)
           for (let dx = -1; dx <= 1; dx++)
-            usedTiles.add(`${4 + dx},${2 + dy}`);
+            usedTiles.add(`${VILLAGE_BOARD.tileX + dx},${VILLAGE_BOARD.tileY + dy}`);
       }
       mapData.crowd.forEach((m) => {
         for (let dy = -1; dy <= 1; dy++)
@@ -7599,7 +7598,7 @@
         for (let tx = left; tx <= right; tx++) {
           if (currentMap.tiles[ty]?.[tx] !== 0) return true;
           if (isZoneTile(currentMapName, tx, ty) || isReservedTile(currentMapName, tx, ty)) return true;
-          if (currentMapName === "villageMap" && tx >= 3 && tx <= 5 && ty >= 1 && ty <= 3) return true; // bulletin board
+          if (currentMapName === "villageMap" && Math.abs(tx - VILLAGE_BOARD.tileX) <= 1 && Math.abs(ty - VILLAGE_BOARD.tileY) <= 1) return true; // bulletin board
         }
       }
       if (currentMap.crowd.some((m) => boxesOverlap(box, getTreeTrunkBox(m)))) return true;
@@ -7719,7 +7718,7 @@
       if (mapName === "villageMap") {
         for (let dy = -1; dy <= 1; dy++)
           for (let dx = -1; dx <= 1; dx++)
-            usedTiles.add(`${4 + dx},${2 + dy}`);
+            usedTiles.add(`${VILLAGE_BOARD.tileX + dx},${VILLAGE_BOARD.tileY + dy}`);
       }
       mapData.crowd.forEach((m) => {
         for (let dy = -1; dy <= 1; dy++)
@@ -9569,8 +9568,8 @@
 
     const whiteboardInfo = {
       mapName: "villageMap",
-      tileX: 4,
-      tileY: 2,
+      tileX: VILLAGE_BOARD.tileX,
+      tileY: VILLAGE_BOARD.tileY,
     };
 
     const getWhiteboardDrawInfo = () => {
