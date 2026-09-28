@@ -1089,6 +1089,14 @@
       box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
     }
 
+    .village-welcome-sub {
+      font-size: 13px;
+      color: var(--game-text-muted);
+      margin-top: -6px;
+    }
+    .village-welcome-sub:empty {
+      display: none;
+    }
     .village-welcome-text {
       font-size: 20px;
       font-weight: 600;
@@ -2835,7 +2843,8 @@
   <div class="village-welcome-overlay" id="village-welcome-overlay" aria-live="polite">
     <div class="village-welcome-backdrop"></div>
     <div class="village-welcome-card">
-      <div class="village-welcome-text">Welcome to Bouldering Village</div>
+      <div class="village-welcome-text" id="village-welcome-text">Welcome to Bouldering Village</div>
+      <div class="village-welcome-sub" id="village-welcome-sub"></div>
       <button class="village-welcome-close" id="village-welcome-close" type="button">OK</button>
     </div>
   </div>
@@ -3409,6 +3418,7 @@
         startInboxListener();
         startHomeInviteListeners();
         loadMyProfile(user);
+        showVillageWelcome(currentMapName);
         lastUserPresenceWrite = 0;
         updateUserPresence();
         forcePositionSync = true;
@@ -3831,14 +3841,35 @@
 
     // The welcome card never blocks for long: it closes after a few seconds, when you start walking,
     // or when you click anywhere outside it.
-    const WELCOME_AUTO_CLOSE_MS = 3000;
+    const WELCOME_AUTO_CLOSE_MS = 2000;
+    // What the welcome card says for each place (homes are handled by name)
+    const MAP_WELCOME = {
+      worldMap: ["🌳 歡迎來到主世界", "Main World · 城堡、辦公室和住宅區都在這裡"],
+      villageMap: ["🧗 歡迎來到攀岩村", "Bouldering Village"],
+      officeMap: ["🏢 歡迎來到 EQU 辦公室", "EQU Office"],
+      residentialMap: ["🏘️ 歡迎來到住宅區", "走到門口就能拜訪大家的家"],
+    };
     let welcomeTimer = null;
     const closeVillageWelcome = () => {
       clearTimeout(welcomeTimer);
       welcomeTimer = null;
       villageWelcomeOverlay?.classList.remove("visible");
     };
-    const showVillageWelcome = () => {
+    const showVillageWelcome = (mapName = "villageMap") => {
+      let title;
+      let sub;
+      if (isHomeMap(mapName)) {
+        const owner = maps[mapName]?.home?.ownerName || "玩家";
+        const mine = auth.currentUser && mapName === homeMapName(auth.currentUser.uid);
+        title = mine ? "🏠 歡迎回家" : `🏠 歡迎來到 ${owner} 的家`;
+        sub = mine ? "按「🔨 佈置」可以裝飾你的家" : "";
+      } else {
+        [title, sub] = MAP_WELCOME[mapName] || [`📍 ${getMapLabel(mapName)}`, ""];
+      }
+      const titleEl = document.querySelector("#village-welcome-text");
+      const subEl = document.querySelector("#village-welcome-sub");
+      if (titleEl) titleEl.textContent = title;
+      if (subEl) subEl.textContent = sub || "";
       villageWelcomeOverlay?.classList.add("visible");
       clearTimeout(welcomeTimer);
       welcomeTimer = setTimeout(closeVillageWelcome, WELCOME_AUTO_CLOSE_MS);
@@ -8347,9 +8378,8 @@
       clearMovePath();
       closeTable();
       resetPrivateContext();
-      if (mapName === "villageMap") {
-        showVillageWelcome();
-      }
+      // Tell people where they just arrived (auto-closes after 2s, or when they walk / click)
+      if (!gameContent || gameContent.classList.contains("visible")) showVillageWelcome(mapName);
       isDialogueOpen = false;
       dialogueStage = "question";
       selectedOption = 0;
