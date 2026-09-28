@@ -3758,6 +3758,7 @@
       randomAvatar,
     } from "./js/pixel-avatar.js";
     import { buildFloorLayer, pathTileSet } from "./js/terrain.js";
+    import { makeGymImageUrl } from "./js/gym.js?v=3";
     import { findPath, nearestOpenTile } from "./js/pathfind.js";
     import { arcadeRoomBlockedTiles, drawArcadeRoom, drawGameTable, drawLoungeRoom, drawMeetingRoom, drawZones, getGameTables, getZones, isZoneTile, loungeRoomBlockedTiles, meetingRoomBlockedTiles, registerZones, zoneAt } from "./js/spaces.js?v=20260928d";
     import {
@@ -4521,7 +4522,7 @@
     const WELCOME_AUTO_CLOSE_MS = 2000;
     // What the welcome card says for each place (homes are handled by name)
     const MAP_WELCOME = {
-      worldMap: ["🌳 歡迎來到主世界", "Main World · 城堡、辦公室和住宅區都在這裡"],
+      worldMap: ["🌳 歡迎來到主世界", "Main World · 抱石館、辦公室和住宅區都在這裡"],
       villageMap: ["🧗 歡迎來到攀岩村", "Bouldering Village"],
       officeMap: ["🏢 歡迎來到 EQU 辦公室", "EQU Office"],
       residentialMap: ["🏘️ 歡迎來到住宅區", "走到門口就能拜訪大家的家"],
@@ -6134,7 +6135,7 @@
     const maps = {
       worldMap: {
         tiles: worldMap,
-        entrance: { x: 44, y: 22 },
+        entrance: { x: 38, y: 22 }, // castle door = top of the path at x 38–39
         spawn: { x: 42, y: 24 },
         npc: { tileX: 44, tileY: 25 }, // guide greets you right where you arrive
         portals: [
@@ -6145,21 +6146,22 @@
         ],
         // Sidewalks linking the main places, so it's clear where to go
         paths: [
-          { x: 5, y: 30, w: 41, h: 1 }, // south avenue past the gate and office doors
+          { x: 14, y: 30, w: 32, h: 1 }, // south avenue from the office to the east
+          { x: 15, y: 29, w: 2, h: 1 }, // office door -> avenue
           { x: 38, y: 22, w: 2, h: 8 }, // castle entrance -> avenue
           { x: 40, y: 24, w: 4, h: 2 }, // spawn -> castle path
           { x: 20, y: 3, w: 2, h: 27 }, // central north–south path
           { x: 13, y: 19, w: 2, h: 1 }, // residential gate -> west path
           { x: 3, y: 10, w: 17, h: 2 }, // to the house at (4, 8)
-          { x: 3, y: 20, w: 17, h: 2 }, // to the house at (4, 18)
+          { x: 13, y: 20, w: 7, h: 2 }, // central path -> residential gate
           { x: 22, y: 23, w: 2, h: 2 }, // into the meeting room
           { x: 22, y: 7, w: 2, h: 2 }, // into the arcade
         ],
         signs: [
-          { x: 19, y: 28, lines: ["← 🏢 辦公室", "🏰 城堡 →"] },
+          { x: 19, y: 28, lines: ["← 🏢 辦公室", "🧗 抱石館 →"] },
           { x: 22, y: 21, lines: ["🔒 會議室 ↓"] },
           { x: 22, y: 9, lines: ["🎮 遊戲區 ↑"] },
-          { x: 17, y: 19, lines: ["← 🏘️ 住宅區 · 🏠 房子"] },
+          { x: 17, y: 19, lines: ["← 🏘️ 住宅區"] },
         ],
         // Keep random trees / animals away from building entrances (the space in front of every door)
         reserved: [
@@ -6526,7 +6528,8 @@
     treeImage.src = "image/tree.png";
 
     const castleImage = new Image();
-    castleImage.src = "image/castle.png";
+    // The village entrance is a pixel bouldering gym (抱石館), drawn in js/gym.js
+    castleImage.src = makeGymImageUrl();
 
     const whiteboardImage = new Image();
     whiteboardImage.src = "image/whirteboard.png";
@@ -9528,14 +9531,9 @@
       const isCastle = image === castleImage;
       const scale = isCastle ? 5 * 0.7 : 1;
       const size = tileSize * scale;
-      const x =
-        currentMap.entrance.x * tileSize -
-        (size - tileSize) / 2 -
-        tileSize * 5;
-      const y =
-        currentMap.entrance.y * tileSize -
-        (size - tileSize) -
-        tileSize * 2;
+      // Centred over the two-tile path, base resting on the path's top edge
+      const x = (currentMap.entrance.x + 1) * tileSize - size / 2;
+      const y = currentMap.entrance.y * tileSize - size + tileSize * 0.2;
       return { image, x, y, size, isCastle };
     };
 
