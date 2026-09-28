@@ -1869,6 +1869,57 @@
     .mobile-only {
       display: none !important;
     }
+    .travel-where {
+      display: none;
+    }
+    .avatar-account-btn {
+      margin-right: auto;
+    }
+    @media (max-width: 719px) {
+      /* Phones: no top bar, map edge-to-edge down to the toolbar */
+      .game-content .auth-bar,
+      .game-content .hint {
+        display: none;
+      }
+      .game-wrap {
+        gap: 0;
+      }
+      .main-layout {
+        padding: 0 !important;
+        gap: 0;
+      }
+      .map-column {
+        padding: 0 !important;
+        gap: 0;
+      }
+      .game-canvas-wrap {
+        padding: 0;
+      }
+      .canvas-frame {
+        max-width: none;
+      }
+      .canvas-frame #game {
+        width: 100vw;
+        height: calc(100vh - 60px - env(safe-area-inset-bottom));
+        height: calc(100dvh - 60px - env(safe-area-inset-bottom));
+        max-height: none;
+        aspect-ratio: auto;
+        border-radius: 0;
+        box-shadow: none;
+      }
+      .travel-where {
+        display: inline;
+        font-size: 13px;
+        font-weight: 700;
+        max-width: 96px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .video-wrap {
+        top: 12px;
+      }
+    }
     .travel-wrap {
       position: relative;
       flex-shrink: 0;
@@ -2825,7 +2876,7 @@
       <button id="build-btn" class="tool-btn" type="button" title="佈置我的家" aria-pressed="false" style="display:none">🔨<span class="tool-label">佈置</span></button>
       <button id="party-btn" class="tool-btn" type="button" title="家庭派對" style="display:none">🎉<span class="tool-label">派對</span></button>
       <div class="travel-wrap">
-        <button id="travel-btn" class="tool-btn" type="button" title="前往" aria-haspopup="menu" aria-expanded="false">📍<span class="tool-label">前往 ▾</span></button>
+        <button id="travel-btn" class="tool-btn" type="button" title="前往" aria-haspopup="menu" aria-expanded="false">📍<span class="tool-label">前往 ▾</span><span class="travel-where" id="travel-where"></span></button>
         <div class="travel-menu" id="travel-menu" role="menu" hidden>
           <button type="button" role="menuitem" data-go="home">🏠 我的家</button>
           <button type="button" role="menuitem" data-go="worldMap">🌳 主世界</button>
@@ -3069,6 +3120,7 @@
         </div>
       </div>
       <div class="avatar-actions">
+        <button type="button" id="avatar-switch-account" class="avatar-account-btn">🔄 切換帳號</button>
         <button type="button" id="avatar-random">🎲 隨機</button>
         <button type="button" id="avatar-cancel">取消</button>
         <button type="button" id="avatar-save" class="is-primary">儲存</button>
@@ -5211,8 +5263,10 @@
     const ctx = canvas.getContext("2d");
 
     const tileSize = 40;
-    const viewportWidth = 720;
-    const viewportHeight = 560;
+    // Visible world size in px. Desktop keeps 720x560; phones match the screen's (portrait) shape.
+    let viewportWidth = 720;
+    let viewportHeight = 560;
+    const MOBILE_VIEW_WIDTH = 420;
     const camera = { x: 0, y: 0 };
 
     const makeMapTiles = (cols, rows) => {
@@ -5603,13 +5657,28 @@
     let renderScale = 1;
     const resizeCanvasBacking = () => {
       const dpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
-      if (dpr === renderScale && canvas.width === viewportWidth * dpr) return;
+      if (dpr === renderScale && canvas.width === viewportWidth * dpr && canvas.height === viewportHeight * dpr) return;
       renderScale = dpr;
       canvas.width = viewportWidth * dpr;
       canvas.height = viewportHeight * dpr;
     };
-    resizeCanvasBacking();
-    window.addEventListener("resize", resizeCanvasBacking);
+    /** On phones the canvas fills the screen, so the world view follows its aspect ratio. */
+    const updateViewportSize = () => {
+      if (window.matchMedia("(max-width: 719px)").matches) {
+        const r = canvas.getBoundingClientRect();
+        if (r.width > 0 && r.height > 0) {
+          viewportWidth = MOBILE_VIEW_WIDTH;
+          viewportHeight = Math.round((MOBILE_VIEW_WIDTH * r.height) / r.width);
+        }
+      } else {
+        viewportWidth = 720;
+        viewportHeight = 560;
+      }
+      resizeCanvasBacking();
+    };
+    updateViewportSize();
+    window.addEventListener("resize", updateViewportSize);
+    window.addEventListener("orientationchange", () => setTimeout(updateViewportSize, 200));
 
     // Canvas rect is read once per frame (avoids repeated forced layouts from overlay buttons).
     let canvasRect = canvas.getBoundingClientRect();
@@ -6005,6 +6074,11 @@
       closeAvatarEditor();
     };
     document.querySelector("#avatar-btn")?.addEventListener("click", () => openAvatarEditor());
+    // On phones the top bar is hidden, so account switching lives in the profile editor
+    document.querySelector("#avatar-switch-account")?.addEventListener("click", () => {
+      closeAvatarEditor();
+      doGoogleLogin();
+    });
     document.querySelector("#avatar-cancel")?.addEventListener("click", closeAvatarEditor);
     document.querySelector("#avatar-save")?.addEventListener("click", saveAvatar);
     document.querySelector("#avatar-random")?.addEventListener("click", () => {
@@ -6106,6 +6180,8 @@
       if (text !== lastLocationText) {
         lastLocationText = text;
         if (locationLabel) locationLabel.textContent = text;
+        const where = document.querySelector("#travel-where");
+        if (where) where.textContent = `${z && !isHomeMap(currentMapName) ? z.name : mapLabel.replace(/^🏘️ /, "")} ▾`;
       }
       setDomVisible(buildBtn, isInOwnHome(), "inline-flex");
       setDomVisible(partyBtn, isInOwnHome(), "inline-flex");
@@ -9498,6 +9574,11 @@
     const render = () => {
       const now = performance.now();
       canvasRect = canvas.getBoundingClientRect();
+      if (canvasRect.width > 0) {
+        const wantMobile = window.matchMedia("(max-width: 719px)").matches;
+        const aspectOff = Math.abs(canvasRect.height / canvasRect.width - viewportHeight / viewportWidth) > 0.01;
+        if ((wantMobile && aspectOff) || (!wantMobile && viewportWidth !== 720)) updateViewportSize();
+      }
       ctx.setTransform(renderScale, 0, 0, renderScale, 0, 0);
       ctx.imageSmoothingEnabled = true;
       ctx.clearRect(0, 0, viewportWidth, viewportHeight);
@@ -9919,13 +10000,15 @@
       setDomVisible(icebreakerDiceBtn, false, "flex"); // 🎲 now lives in the 👋 menu
       updateEncounterUi();
 
-      // Border around the viewport
-      ctx.save();
-      ctx.strokeStyle = "#c49a88";
-      ctx.lineWidth = 2;
-      drawRoundedRect(ctx, 1, 1, viewportWidth - 2, viewportHeight - 2, 12);
-      ctx.stroke();
-      ctx.restore();
+      // Border around the viewport (desktop only — phones go edge to edge)
+      if (!isMobileLayout()) {
+        ctx.save();
+        ctx.strokeStyle = "#c49a88";
+        ctx.lineWidth = 2;
+        drawRoundedRect(ctx, 1, 1, viewportWidth - 2, viewportHeight - 2, 12);
+        ctx.stroke();
+        ctx.restore();
+      }
 
       drawMinimap();
 
