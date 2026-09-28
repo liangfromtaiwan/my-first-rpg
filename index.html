@@ -2218,6 +2218,36 @@
     .gc-view.is-active {
       display: flex;
     }
+    @media (max-width: 956px) {
+      /* LINE-style page transition: the list sits underneath while a chat slides over it */
+      #chat-panel {
+        position: relative;
+      }
+      #chat-panel .gc-view {
+        background: #202540;
+      }
+      #chat-panel .gc-view.is-active {
+        position: relative;
+        z-index: 1;
+      }
+      #chat-panel .gc-view.gc-under,
+      #chat-panel .gc-view.gc-leaving {
+        display: flex;
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      #chat-panel .gc-view.gc-under {
+        z-index: 0;
+      }
+      #chat-panel .gc-view.gc-leaving {
+        z-index: 2;
+      }
+      #chat-panel .gc-view.is-active:not(#gc-list),
+      #chat-panel .gc-view.gc-leaving {
+        box-shadow: -10px 0 24px rgba(0, 0, 0, 0.35);
+      }
+    }
     .gc .private-chat {
       display: flex !important;
       flex-direction: column;
@@ -5101,10 +5131,62 @@
 
     // The chat panel shows one view at a time: list / channel ("map") / private / people
     const CHAT_VIEW_IDS = { list: "gc-list", map: "chat-view-map", private: "chat-view-private", people: "gc-people" };
+    // LINE-style slide between the list and a chat (phones only, while the chat is open)
+    const CHAT_SLIDE_MS = 280;
+    const CHAT_UNDER_SHIFT = 0.3; // the list peeks from 30% to the left
+    let prevChatTab = "list";
+    let chatSlideStartPx = 0; // set by the swipe gesture so "back" continues from the finger
+    const chatSlide = (dir, fromEl, toEl) => {
+      const panelEl = document.querySelector("#chat-panel");
+      const w = panelEl?.clientWidth || window.innerWidth;
+      const top = dir === "forward" ? toEl : fromEl; // the chat page
+      const under = dir === "forward" ? fromEl : toEl; // the list
+      if (!top || !under || !top.animate) return;
+      // Finish any slide still running, so layers never pile up
+      document.querySelectorAll("#chat-panel .gc-view").forEach((v) => {
+        v.getAnimations?.().forEach((an) => an.cancel());
+        v.classList.remove("gc-under", "gc-leaving");
+      });
+      const start = dir === "back" ? Math.min(Math.max(chatSlideStartPx, 0), w) : 0;
+      chatSlideStartPx = 0;
+      const p0 = dir === "back" ? start / w : 0; // how far the chat page has already moved
+      fromEl.classList.add(dir === "forward" ? "gc-under" : "gc-leaving"); // keep the old page visible during the slide
+      const opts = { duration: CHAT_SLIDE_MS * (dir === "back" ? 1 - p0 * 0.5 : 1), easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" };
+      const underAt = (p) => ({ transform: `translateX(${-w * CHAT_UNDER_SHIFT * (1 - p)}px)`, filter: `brightness(${0.7 + 0.3 * p})` });
+      const a = top.animate(
+        dir === "forward"
+          ? [{ transform: `translateX(${w}px)` }, { transform: "translateX(0)" }]
+          : [{ transform: `translateX(${start}px)` }, { transform: `translateX(${w}px)` }],
+        opts
+      );
+      under.animate(dir === "forward" ? [underAt(1), underAt(0)] : [underAt(p0), underAt(1)], opts);
+      const cleanup = () => {
+        fromEl.classList.remove("gc-under", "gc-leaving");
+        top.style.transform = "";
+        under.style.transform = "";
+        under.style.filter = "";
+      };
+      top.style.transform = "";
+      under.style.transform = "";
+      under.style.filter = "";
+      // A timer (not onfinish): animations pause in background tabs and would leave layers behind
+      setTimeout(cleanup, opts.duration + 30);
+    };
     const updateChatTabs = () => {
+      const from = prevChatTab;
+      const to = activeChatTab;
+      prevChatTab = to;
       Object.entries(CHAT_VIEW_IDS).forEach(([name, id]) => {
         document.getElementById(id)?.classList.toggle("is-active", name === activeChatTab);
       });
+      if (from !== to && isMobileLayout() && chatOverlayMobile?.classList.contains("is-open")) {
+        const fromEl = document.getElementById(CHAT_VIEW_IDS[from]);
+        const toEl = document.getElementById(CHAT_VIEW_IDS[to]);
+        if (from === "list") chatSlide("forward", fromEl, toEl);
+        else if (to === "list") chatSlide("back", fromEl, toEl);
+      } else {
+        chatSlideStartPx = 0;
+      }
       if (activeChatTab === "list") renderDmList();
       if (activeChatTab === "map") chatMessages.scrollTop = chatMessages.scrollHeight;
       if (activeChatTab === "private" && privateMessagesEl) privateMessagesEl.scrollTop = privateMessagesEl.scrollHeight;
@@ -7047,29 +7129,62 @@
     document.querySelectorAll("#chat-view-map .gc-back").forEach((b) => b.addEventListener("click", () => setChatView("list")));
     document.querySelector("#gc-channel-item")?.addEventListener("click", () => setChatView("map"));
 
-    // Phones: swipe sideways (either direction, like iOS "back") inside the chat. The page follows the
-    // finger; letting go past the threshold presses that view's ‹ back button, or closes the chat on the list.
+    // Phones: swipe to go back, LINE-style. Dragging a chat to the right slides it off and reveals
+    // the list underneath (a quick flick either way also counts); on the list itself it closes the chat.
     (() => {
       const panel = document.querySelector("#chat-panel");
       if (!panel) return;
+      const listEl = document.getElementById(CHAT_VIEW_IDS.list);
       let start = null;
       let dragging = false;
       let view = null;
-      const reset = (animate) => {
-        if (!view) return;
-        view.style.transition = animate ? "transform 0.18s ease" : "";
+      let isDetail = false;
+      const setDrag = (dx) => {
+        const w = panel.clientWidth || window.innerWidth;
+        if (!isDetail) {
+          view.style.transform = `translateX(${Math.max(0, dx)}px)`;
+          return;
+        }
+        const x = Math.min(Math.max(0, dx), w);
+        const p = x / w;
+        view.style.transform = `translateX(${x}px)`;
+        listEl.classList.add("gc-under");
+        listEl.style.transform = `translateX(${-w * CHAT_UNDER_SHIFT * (1 - p)}px)`;
+        listEl.style.filter = `brightness(${0.7 + 0.3 * p})`;
+      };
+      const clearDrag = () => {
         view.style.transform = "";
+        listEl.classList.remove("gc-under");
+        listEl.style.transform = "";
+        listEl.style.filter = "";
+      };
+      const snapBack = () => {
         const v = view;
-        if (animate) setTimeout(() => { v.style.transition = ""; }, 200);
+        const from = v.style.transform || "translateX(0)";
+        const listFrom = listEl.style.transform || "translateX(0)";
+        const listFilter = listEl.style.filter || "none";
+        clearDrag();
+        if (!v.animate) return;
+        const opts = { duration: 200, easing: "ease-out" };
+        v.animate([{ transform: from }, { transform: "translateX(0)" }], opts);
+        if (isDetail) {
+          listEl.classList.add("gc-under");
+          const w = panel.clientWidth || window.innerWidth;
+          listEl.animate(
+            [{ transform: listFrom, filter: listFilter }, { transform: `translateX(${-w * CHAT_UNDER_SHIFT}px)`, filter: "brightness(0.7)" }],
+            opts
+          );
+          setTimeout(() => listEl.classList.remove("gc-under"), opts.duration + 30);
+        }
       };
       panel.addEventListener("touchstart", (e) => {
         if (!isMobileLayout() || e.touches.length !== 1) return;
-        // Leave sliders, inputs and horizontally scrollable bits alone
         if (e.target.closest("input, textarea, select, [data-no-swipe]")) return;
         const t = e.touches[0];
         start = { x: t.clientX, y: t.clientY, time: Date.now() };
         dragging = false;
         view = panel.querySelector(".gc-view.is-active");
+        isDetail = Boolean(view && view !== listEl && view.querySelector(".gc-back")?.offsetParent);
       }, { passive: true });
       panel.addEventListener("touchmove", (e) => {
         if (!start || !view) return;
@@ -7081,24 +7196,29 @@
           if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.2) dragging = true;
           else return;
         }
-        view.style.transform = `translateX(${dx}px)`;
+        setDrag(dx);
       }, { passive: true });
       const finish = (e) => {
-        if (!start) return;
+        if (!start || !view) return;
         const t = e.changedTouches?.[0];
         const dx = t ? t.clientX - start.x : 0;
         const fast = Math.abs(dx) > 40 && Date.now() - start.time < 300;
         const wasDragging = dragging;
         start = null;
         dragging = false;
-        if (!wasDragging) return reset(false);
-        if (Math.abs(dx) > window.innerWidth * 0.25 || fast) {
-          const back = view?.querySelector(".gc-back");
-          reset(false);
-          if (back && back.offsetParent !== null) back.click();
-          else closeChatPanel();
+        if (!wasDragging) return;
+        const w = panel.clientWidth || window.innerWidth;
+        if (Math.abs(dx) > w * 0.25 || fast) {
+          if (isDetail) {
+            chatSlideStartPx = Math.max(0, dx); // the slide-out continues from the finger
+            clearDrag();
+            view.querySelector(".gc-back").click();
+          } else {
+            clearDrag();
+            closeChatPanel();
+          }
         } else {
-          reset(true);
+          snapBack();
         }
       };
       panel.addEventListener("touchend", finish);
