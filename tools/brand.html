@@ -1,0 +1,164 @@
+<!doctype html>
+<!--
+  Brand image generator (home-screen icon + link-preview image), drawn with the game's own pixel art.
+  Render with headless Chrome while a local server serves the repo root, e.g.:
+    chrome --headless=new --hide-scrollbars --window-size=1024,1024 --screenshot=icon.png "http://127.0.0.1:8765/tools/brand.html?kind=icon"
+    chrome --headless=new --hide-scrollbars --window-size=1200,630  --screenshot=og.png   "http://127.0.0.1:8765/tools/brand.html?kind=og"
+-->
+<meta charset="utf-8" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@700;900&family=Press+Start+2P&display=block" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; overflow: hidden; background: #1b1a2e; }
+  canvas { display: block; }
+</style>
+<canvas id="c"></canvas>
+<script type="module">
+  import { avatarFromSeed, drawCharacter } from "../js/pixel-avatar.js";
+  import { makeGymImageUrl } from "../js/gym.js?v=3";
+  import { drawPixelAnimal } from "../js/pixel-animals.js";
+
+  const kind = new URLSearchParams(location.search).get("kind") || "icon";
+  const c = document.getElementById("c");
+  const g = c.getContext("2d");
+  g.imageSmoothingEnabled = false;
+  const OUT = "#2a1f1a";
+  const HOLDS = ["#e04a3a", "#f2c14e", "#43a266", "#3f7ad9", "#c85ad9", "#ff8a3d", "#5ee0ff"];
+  const RAINBOW = ["#e04a3a", "#ff8a3d", "#f2c14e", "#43a266", "#3f7ad9", "#8e5cc4"];
+  let seed = 42;
+  const rand = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+  for (let i = 0; i < 8; i++) rand();
+  const px = (color, x, y, w, h) => {
+    g.fillStyle = color;
+    g.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+  };
+  const hold = (x, y, s, color) => {
+    px(OUT, x - s * 0.15, y - s * 0.15, s * 1.3, s * 1.0);
+    px(color, x, y, s, s * 0.7);
+    px("rgba(255,255,255,0.35)", x, y, s, s * 0.18);
+    px("rgba(0,0,0,0.2)", x, y + s * 0.52, s, s * 0.18);
+  };
+  const loadImg = (src) => new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.src = src; });
+
+  const drawIcon = async () => {
+    const S = 1024;
+    c.width = c.height = S;
+    const u = S / 64; // 64-unit pixel grid
+    // Climbing wall panels
+    const panels = ["#2f8c9a", "#2a7f8c", "#34979f", "#2c8591"];
+    for (let r = 0; r < 4; r++) for (let q = 0; q < 4; q++) px(panels[(r + q) % 4], q * 16 * u, r * 16 * u, 16 * u, 16 * u);
+    for (let i = 1; i < 4; i++) { px("rgba(0,0,0,0.18)", i * 16 * u, 0, u * 0.5, S); px("rgba(0,0,0,0.18)", 0, i * 16 * u, S, u * 0.5); }
+    // Bolt holes
+    for (let y = 4; y < 52; y += 6) for (let x = 3; x < 64; x += 6) px("rgba(0,0,0,0.22)", x * u, y * u, u * 0.7, u * 0.7);
+    // Holds scattered + a route of big holds leading up
+    for (let i = 0; i < 22; i++) hold((2 + rand() * 58) * u, (2 + rand() * 44) * u, (2 + rand() * 2) * u, HOLDS[Math.floor(rand() * HOLDS.length)]);
+    // Triangle volume
+    g.fillStyle = OUT;
+    g.beginPath(); g.moveTo(46 * u, 40 * u); g.lineTo(55 * u, 27 * u); g.lineTo(64 * u, 40 * u); g.fill();
+    g.fillStyle = "#f2c14e";
+    g.beginPath(); g.moveTo(47.6 * u, 39.2 * u); g.lineTo(55 * u, 28.6 * u); g.lineTo(62.4 * u, 39.2 * u); g.fill();
+    // Climber (back view) with both arms up on two big holds
+    const avatar = { skin: "#f1c19b", hairStyle: "short", hairColor: "#2b2118", shirt: "#e46f86", pants: "#394a74" };
+    const sc = u * 1.5;
+    const x0 = (S - 16 * sc) / 2;
+    const y0 = 14.5 * u;
+    const arm = (ax) => {
+      px(OUT, ax - sc * 0.5, y0 - 2.5 * sc, 3 * sc, 12 * sc);
+      px(avatar.skin, ax, y0 - 2 * sc, 2 * sc, 8 * sc);
+      px(avatar.shirt, ax, y0 + 6 * sc, 2 * sc, 3 * sc);
+    };
+    hold(x0 - 1.5 * sc, y0 - 5 * sc, 5 * sc, "#e04a3a");
+    hold(x0 + 12.5 * sc, y0 - 5 * sc, 5 * sc, "#c85ad9");
+    drawCharacter(g, avatar, "up", 0, x0, y0 + 4 * sc, 16 * sc, sc);
+    arm(x0 + 0.5 * sc);
+    arm(x0 + 13.5 * sc);
+    // Feet on a foothold
+    hold(x0 + 5.5 * sc, y0 + 20.5 * sc, 5 * sc, "#43a266");
+    // Rainbow crash pad
+    const padY = 52 * u;
+    px(OUT, 0, padY - u, S, S - padY + u);
+    RAINBOW.forEach((col, i) => px(col, 0, padY + i * 2 * u, S, 2 * u + 1));
+    px("rgba(255,255,255,0.25)", 0, padY, S, u * 0.6);
+    for (let x = 0; x < 64; x += 16) px("rgba(0,0,0,0.15)", x * u, padY, u * 0.5, S - padY);
+  };
+
+  const drawOg = async () => {
+    const W = 1200, H = 630;
+    c.width = W; c.height = H;
+    await Promise.all([
+      document.fonts.load("22px 'Press Start 2P'", "BOULDERING VILLAGE"),
+      document.fonts.load("900 104px 'Noto Sans TC'", "抱石村"),
+      document.fonts.load("700 30px 'Noto Sans TC'", "像素社交小鎮・邊走邊聊抱石館聊天視訊小遊戲我的家一起去抱石！嗨～"),
+    ]);
+    // Sky
+    const sky = g.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, "#8fd3f4"); sky.addColorStop(1, "#c9ecd8");
+    g.fillStyle = sky; g.fillRect(0, 0, W, H);
+    // Pixel clouds
+    const cloud = (x, y, s) => { px("#ffffff", x, y, 12 * s, 3 * s); px("#ffffff", x + 3 * s, y - 2 * s, 6 * s, 2 * s); px("#e6f4fb", x, y + 3 * s, 12 * s, s); };
+    cloud(760, 60, 8); cloud(1010, 120, 6); cloud(90, 520, 0);
+    // Grass
+    const groundY = 430;
+    for (let y = groundY; y < H; y += 20) for (let x = 0; x < W; x += 20) px(((x + y) / 20) % 2 ? "#5aa66a" : "#62ae71", x, y, 20, 20);
+    for (let i = 0; i < 160; i++) px(rand() < 0.5 ? "#4a9159" : "#7cc486", rand() * W, groundY + rand() * (H - groundY), 4, 4);
+    px("#3f8a50", 0, groundY, W, 6);
+    // Path up to the gym door
+    const gymSize = 420, gymX = 700, gymY = groundY - gymSize + 70;
+    px("#d8cfbf", gymX + gymSize / 2 - 50, groundY + 40, 100, H);
+    for (let y = groundY + 40; y < H; y += 25) px("#c9bfae", gymX + gymSize / 2 - 50, y, 100, 3);
+    // Trees
+    const tree = await loadImg("../image/tree.png");
+    [[610, 300, 150], [1080, 290, 150], [1130, 440, 120]].forEach(([x, y, s]) => g.drawImage(tree, x, y, s, s));
+    // Gym
+    const gym = await loadImg(makeGymImageUrl(gymSize));
+    g.drawImage(gym, gymX, gymY, gymSize, gymSize);
+    // Characters in front of the gym
+    const people = [
+      [{ skin: "#f1c19b", hairStyle: "short", hairColor: "#2b2118", shirt: "#e46f86", pants: "#394a74" }, "right", 640, 470],
+      [{ skin: "#a86b43", hairStyle: "long", hairColor: "#7b55c7", shirt: "#f2c14e", pants: "#3d3829" }, "down", 720, 500],
+      [{ skin: "#fbe0c8", hairStyle: "bob", hairColor: "#e8729f", shirt: "#4c8bd6", pants: "#5a7d5a" }, "left", 1000, 480],
+      [{ skin: "#d99b6c", hairStyle: "spiky", hairColor: "#2f8c9a", shirt: "#58a55c", pants: "#394a74" }, "down", 1080, 520],
+    ];
+    people.forEach(([a, f, x, y]) => {
+      px("rgba(0,0,0,0.18)", x + 14, y + 92, 52, 10);
+      drawCharacter(g, a, f, 0, x, y, 80, 5);
+    });
+    drawPixelAnimal(g, "pig", 3, 0, 560, 560, 70);
+    drawPixelAnimal(g, "chicken", 2, 0, 1150, 575, 44);
+    // Speech bubble
+    const bubble = (x, y, text) => {
+      g.font = "700 26px 'Noto Sans TC', sans-serif";
+      const w = g.measureText(text).width + 36;
+      px(OUT, x - 3, y - 3, w + 6, 52);
+      px("#ffffff", x, y, w, 46);
+      px(OUT, x + 22, y + 46, 12, 9); px("#ffffff", x + 25, y + 46, 6, 6);
+      g.fillStyle = OUT; g.textBaseline = "middle"; g.fillText(text, x + 18, y + 24);
+    };
+    bubble(660, 400, "一起去抱石！");
+    bubble(960, 410, "👋 嗨～");
+
+    // Title card on the left
+    px("rgba(27,26,46,0.88)", 50, 60, 560, 350);
+    px("#2f8c9a", 50, 60, 560, 8);
+    RAINBOW.forEach((col, i) => px(col, 50 + i * (560 / 6), 402, 560 / 6 + 1, 8));
+    g.textBaseline = "alphabetic";
+    g.font = "900 104px 'Noto Sans TC', sans-serif";
+    g.fillStyle = OUT; g.fillText("抱石村", 86, 196);
+    g.fillStyle = "#ffffff"; g.fillText("抱石村", 80, 190);
+    g.font = "22px 'Press Start 2P', monospace";
+    g.fillStyle = "#f2c14e"; g.fillText("BOULDERING VILLAGE", 82, 240);
+    g.font = "700 30px 'Noto Sans TC', sans-serif";
+    g.fillStyle = "#e9e4da"; g.fillText("像素社交小鎮・邊走邊聊", 82, 300);
+    g.font = "700 21px 'Noto Sans TC', sans-serif";
+    const tags = ["🧗 抱石館", "💬 聊天視訊", "🎮 小遊戲", "🏠 我的家"];
+    let tx = 82;
+    tags.forEach((t) => {
+      const w = g.measureText(t).width + 22;
+      px("#3d4150", tx, 332, w, 44);
+      g.fillStyle = "#ffffff"; g.fillText(t, tx + 11, 361);
+      tx += w + 10;
+    });
+  };
+
+  await (kind === "og" ? drawOg() : drawIcon());
+  document.title = "ready";
+</script>
