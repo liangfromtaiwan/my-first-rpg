@@ -3402,8 +3402,107 @@
       }
     }
 
+    /* ---- Guide chat (free FAQ): a panel at the bottom, answers also pop up over the guide ---- */
+    .guide-chat {
+      position: fixed;
+      left: 50%;
+      bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+      transform: translateX(-50%);
+      width: min(440px, calc(100vw - 24px));
+      box-sizing: border-box;
+      z-index: 36;
+      padding: 12px 12px 4px;
+      border-radius: 16px;
+      background: #202540;
+      color: #eef0ff;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+    }
+    .guide-chat[hidden] {
+      display: none;
+    }
+    .guide-chat-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .guide-chat-title {
+      font-size: 16px;
+      font-weight: 800;
+    }
+    .guide-chat-close {
+      border: none;
+      background: transparent;
+      color: #c9ccef;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+    .guide-chat-answer {
+      font-size: 16px;
+      line-height: 1.5;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #2a2e4a;
+      margin-bottom: 10px;
+    }
+    .guide-chat-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .guide-chat-chips button {
+      font-size: 14px;
+      font-weight: 600;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: transparent;
+      color: #eef0ff;
+      cursor: pointer;
+    }
+    .guide-chat-chips button:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .guide-chat-form {
+      margin: 10px 0 8px !important;
+    }
+    /* The panel sits on the side of the screen away from the guide, so their bubble stays visible */
+    .guide-chat.at-top {
+      bottom: auto;
+      top: calc(var(--topbar-h, 52px) + 12px);
+    }
+    @media (max-width: 956px) {
+      .guide-chat {
+        bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+      }
+      .guide-chat.at-top {
+        top: calc(64px + env(safe-area-inset-top, 0px));
+      }
+      /* Quick questions in one swipeable row, to keep the panel short */
+      .guide-chat-chips {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+        padding-bottom: 2px;
+      }
+      .guide-chat-chips::-webkit-scrollbar {
+        display: none;
+      }
+      .guide-chat-chips button {
+        flex-shrink: 0;
+        white-space: nowrap;
+      }
+      #guide-chat .guide-chat-chips {
+        touch-action: pan-x;
+      }
+    }
     /* While talking to the guide, the joystick / zoom / room buttons step aside on phones */
     @media (max-width: 956px) {
+      body.guide-chat-open .joystick,
+      body.guide-chat-open .zoom-controls,
+      body.guide-chat-open .zone-call-btn,
+      body.guide-chat-open .interact-btn,
       body.dialogue-open .joystick,
       body.dialogue-open .zoom-controls,
       body.dialogue-open .zone-call-btn,
@@ -3560,6 +3659,18 @@
           📌 攀岩時間表 ↲
         </button>
         <button class="board-action" id="npc-action" type="button">💬 和嚮導聊聊 ↲</button>
+        <div class="guide-chat" id="guide-chat" role="dialog" aria-label="和嚮導聊聊" hidden>
+          <div class="guide-chat-head">
+            <span class="guide-chat-title">💬 嚮導</span>
+            <button type="button" class="guide-chat-close" id="guide-chat-close" aria-label="關閉">✕</button>
+          </div>
+          <div class="guide-chat-answer" id="guide-chat-answer"></div>
+          <div class="guide-chat-chips" id="guide-chat-chips"></div>
+          <form class="gc-composer guide-chat-form" id="guide-chat-form">
+            <input id="guide-chat-input" type="text" maxlength="80" placeholder="問嚮導…" autocomplete="off" />
+            <button type="submit" class="gc-send" title="送出">➤</button>
+          </form>
+        </div>
         <button class="icebreaker-dice-btn" id="icebreaker-dice-btn" type="button" title="破冰問答">🎲</button>
       </div>
       <div class="chat-overlay-mobile" id="chat-overlay-mobile">
@@ -3993,6 +4104,7 @@
     import { buildFloorLayer, pathTileSet } from "./js/terrain.js";
     import { makeGymImageUrl } from "./js/gym.js?v=3";
     import { makeNoticeBoardImage } from "./js/notice-board.js?v=2";
+    import { GUIDE_GREETING, GUIDE_QUICK_QUESTIONS, answerGuideQuestion } from "./js/guide-faq.js?v=1";
     import { buildGymInteriorLayer, gymBlockedTiles, gymMinimapColor } from "./js/gym-interior.js?v=2";
     import { findPath, nearestOpenTile } from "./js/pathfind.js";
     import { arcadeRoomBlockedTiles, drawArcadeRoom, drawGameTable, drawLoungeRoom, drawMeetingRoom, drawZones, getGameTables, getZones, isZoneTile, loungeRoomBlockedTiles, meetingRoomBlockedTiles, registerZones, zoneAt } from "./js/spaces.js?v=20260929c";
@@ -8506,6 +8618,56 @@
       ctx.restore();
     };
 
+    // ---- Guide chat (free FAQ in js/guide-faq.js) ----
+    const guideChat = document.querySelector("#guide-chat");
+    const guideChatAnswer = document.querySelector("#guide-chat-answer");
+    const guideChatInput = document.querySelector("#guide-chat-input");
+    let guideSays = null; // { text, until } — drawn as a speech bubble over the guide's head
+    const isGuideChatOpen = () => Boolean(guideChat && !guideChat.hidden);
+    const guideSay = (text) => {
+      guideSays = { text, until: performance.now() + Math.min(12000, 4000 + text.length * 90) };
+      if (guideChatAnswer) guideChatAnswer.textContent = text;
+    };
+    const openGuideChat = () => {
+      if (!guideChat) return;
+      guideChat.hidden = false;
+      document.body.classList.add("guide-chat-open");
+      guideSay(GUIDE_GREETING);
+      if (guideChatInput) guideChatInput.value = "";
+      // Desktop: jump straight into typing (phones: wait for a tap, so the keyboard doesn't cover the map)
+      if (!isMobileLayout()) setTimeout(() => guideChatInput?.focus(), 50);
+    };
+    const closeGuideChat = () => {
+      if (!guideChat || guideChat.hidden) return;
+      guideChat.hidden = true;
+      document.body.classList.remove("guide-chat-open");
+      guideChatInput?.blur();
+      guideSays = null;
+    };
+    const askGuide = (question) => {
+      const q = String(question || "").trim();
+      if (!q) return;
+      guideSay(answerGuideQuestion(q));
+    };
+    const guideChips = document.querySelector("#guide-chat-chips");
+    GUIDE_QUICK_QUESTIONS.forEach((q) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = q;
+      b.addEventListener("click", () => askGuide(q));
+      guideChips?.appendChild(b);
+    });
+    document.querySelector("#guide-chat-form")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      askGuide(guideChatInput?.value);
+      if (guideChatInput) guideChatInput.value = "";
+    });
+    document.querySelector("#guide-chat-close")?.addEventListener("click", closeGuideChat);
+    guideChatInput?.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeGuideChat();
+      event.stopPropagation(); // typing here never moves the character
+    });
+
     /** When both the guide and a bulletin board are in reach, only the closer one is offered. */
     const nearestBubbleTarget = () => {
       const nearNpc = npc.active && isPlayerNearNpc();
@@ -8520,7 +8682,7 @@
 
     /** What the player can interact with right here (shared by Enter/X and the 👆 button). */
     const getInteraction = () => {
-      if (isAvatarEditorOpen() || isTableOpen() || isGuestbookOpen() || isNoticeOpen || isDialogueOpen || buildMode || isPartyDialogOpen()) return null;
+      if (isAvatarEditorOpen() || isTableOpen() || isGuestbookOpen() || isNoticeOpen || isDialogueOpen || isGuideChatOpen() || buildMode || isPartyDialogOpen()) return null;
       const c = getPlayerCenter();
       if (isHomeMap(currentMapName) && isNearGuestbook(c.x, c.y, tileSize)) {
         return { label: "📌 看留言板", run: () => openGuestbook(homeOwnerOfCurrentMap()) };
@@ -8532,12 +8694,7 @@
         return {
           label: "💬 對話",
           bubble: true, // shown as the white bubble over the guide's head
-          run: () => {
-            isDialogueOpen = true;
-            dialogueStage = "question";
-            selectedOption = 0;
-            resultMessage = "";
-          },
+          run: () => openGuideChat(),
         };
       }
       if (bubbleTarget === "board") return { label: "📌 看告示板", bubble: true, run: openNotice };
@@ -11008,10 +11165,12 @@
       drawCharacter(ctx, avatar, facing, getWalkFrame(walking, animMs), x, y, tileSize);
     };
 
-    const drawSpeechBubble = (centerX, bottomY, text) => {
+    const drawSpeechBubble = (centerX, bottomY, text, { maxWidth = 170, maxLines = 3 } = {}) => {
       ctx.save();
       ctx.font = "14px \"Noto Sans TC\", \"PingFang TC\", Arial, sans-serif";
-      const lines = wrapText(ctx, text, 170).slice(0, 3);
+      const all = wrapText(ctx, text, maxWidth);
+      const lines = all.slice(0, maxLines);
+      if (all.length > maxLines) lines[maxLines - 1] = `${lines[maxLines - 1].slice(0, -1)}…`;
       const lineH = 19;
       const w = Math.max(...lines.map((l) => ctx.measureText(l).width)) + 16;
       const h = lines.length * lineH + 10;
@@ -11329,7 +11488,15 @@
 
       if (npc.active) {
         addDrawable(npcPixel.y + npc.size, () => drawPixelCharacter(npcAvatar, "down", false, 0, npcPixel.x, npcPixel.y));
-        if (!isDialogueOpen && !isPlayerNearNpc()) {
+        if (isGuideChatOpen() && !isPlayerNearNpc()) closeGuideChat(); // walked away
+        if (isGuideChatOpen()) {
+          const p = worldToClient(npcPixel.x + npc.size / 2, npcPixel.y);
+          guideChat.classList.toggle("at-top", p.y > window.innerHeight * 0.45);
+        }
+        if (guideSays && guideSays.until > performance.now()) {
+          const say = guideSays.text;
+          overlays.push(() => drawSpeechBubble(npcPixel.x + npc.size / 2, npcPixel.y - 6, say, { maxWidth: 220, maxLines: 5 }));
+        } else if (!isDialogueOpen && !isPlayerNearNpc()) {
           // A bobbing "!" from afar; up close the white "💬 和嚮導聊聊" bubble takes over
           overlays.push(() => {
             const bob = Math.round(Math.sin(now / 250) * 3);
@@ -11518,7 +11685,7 @@
       if (showBoard) positionBoardAction();
 
       // The guide gets the same white bubble over their head when you're close
-      const showNpcBubble = bubbleTarget === "npc" && !isDialogueOpen && Boolean(getInteraction()?.bubble);
+      const showNpcBubble = bubbleTarget === "npc" && !isDialogueOpen && !isGuideChatOpen() && Boolean(getInteraction()?.bubble);
       setDomVisible(npcAction, showNpcBubble, "inline-flex");
       if (showNpcBubble && npcAction) {
         const p = worldToClient(npcPixel.x + npc.size / 2, npcPixel.y);
