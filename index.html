@@ -8924,6 +8924,8 @@
     let appliedPartyKey = "";
     let unsubscribePartyState = null;
     let unsubscribePartyDjs = null;
+    let partyLastPlayerState = null; // previous YouTube player state (to spot "a song just ended")
+    let partyLastWriteAt = 0;
     const isPartyDj = () => Boolean(auth.currentUser && partyDjs?.uids?.includes(auth.currentUser.uid));
     const partyKey = (st) => (st ? `${st.stopped ? "stop" : ""}|${st.videoId || ""}|${st.playlistId || ""}|${st.index || 0}|${st.startedAt || 0}` : "default");
     const expectedPartySeconds = (st) => Math.max(0, (Date.now() - (st?.startedAt || Date.now())) / 1000);
@@ -8983,17 +8985,19 @@
             },
             onStateChange: (e) => {
               const YTS = window.YT.PlayerState;
+              const justEnded = partyLastPlayerState === YTS.ENDED;
+              partyLastPlayerState = e.data;
               if (partyPlayBtn) partyPlayBtn.hidden = e.data === YTS.PLAYING || !inPartyRoom;
-              if (e.data === YTS.PLAYING) {
-                if (partyTitleEl) partyTitleEl.textContent = e.target.getVideoData?.().title || PARTY_MUSIC.title || "派對音樂";
-                correctPartyDrift();
-                // The DJ's player moving on to the next song in a playlist brings everyone along
-                const st = partyState;
-                if (isPartyDj() && st?.playlistId && !st.stopped) {
-                  const idx = e.target.getPlaylistIndex?.();
-                  if (typeof idx === "number" && idx >= 0 && idx !== (st.index || 0)) {
-                    setPartyState({ ...st, index: idx, startedAt: Date.now() - (e.target.getCurrentTime?.() || 0) * 1000 });
-                  }
+              if (e.data !== YTS.PLAYING) return;
+              if (partyTitleEl) partyTitleEl.textContent = e.target.getVideoData?.().title || PARTY_MUSIC.title || "派對音樂";
+              correctPartyDrift();
+              // Only when a song really finished and the DJ's playlist moved on by itself do we bring
+              // everyone along (never while a new song is still loading: that caused a reload loop)
+              const st = partyState;
+              if (justEnded && isPartyDj() && st?.playlistId && !st.stopped) {
+                const idx = e.target.getPlaylistIndex?.();
+                if (typeof idx === "number" && idx === (st.index || 0) + 1) {
+                  setPartyState({ ...st, videoId: "", index: idx, startedAt: Date.now() - (e.target.getCurrentTime?.() || 0) * 1000 });
                 }
               }
             },
@@ -9018,7 +9022,8 @@
       }
       const src = st && (st.videoId || st.playlistId) ? st : parseYouTube(PARTY_MUSIC.url);
       const start = st ? expectedPartySeconds(st) : 0;
-      if (src.playlistId) {
+      if (src.playlistId && !src.videoId) {
+        // (the object form is the one that takes a playlist ID; the short form expects video IDs)
         partyPlayer.loadPlaylist({ list: src.playlistId, listType: "playlist", index: src.index || 0, startSeconds: start });
       } else if (src.videoId) {
         partyPlayer.loadVideoById({ videoId: src.videoId, startSeconds: start });
@@ -9027,24 +9032,42 @@
       else partyPlayer.unMute();
     };
     /** Nudge the player back to the room's shared time if it drifted (ads, slow network, tab asleep). */
+    let partyLastSeekAt = 0;
     const correctPartyDrift = () => {
       const st = partyState;
       if (!partyPlayerReady || !partyPlayer || !inPartyRoom || !st || st.stopped) return;
-      if (st.playlistId && partyPlayer.getPlaylistIndex?.() !== (st.index || 0)) return; // moved on by itself
+      // Only nudge the song the DJ actually picked (never a live stream, or whatever was playing
+      // before the new one finished loading: seeking those looped buffering forever)
+      if (st.playlistId) {
+        if (partyPlayer.getPlaylistId?.() !== st.playlistId) return;
+        if (partyPlayer.getPlaylistIndex?.() !== (st.index || 0)) return; // moved on by itself
+      } else if (partyPlayer.getVideoData?.().video_id !== st.videoId) {
+        return;
+      }
+      if (partyPlayer.getVideoData?.().isLive) return;
+      if (Date.now() - partyLastSeekAt < 8000) return;
       const d = partyPlayer.getDuration?.() || 0;
       let target = expectedPartySeconds(st);
       if (st.videoId && !st.playlistId && d > 0) target %= d; // a single song loops for late-comers
       if (d > 0 && target > d) return;
       const now = partyPlayer.getCurrentTime?.() || 0;
-      if (Math.abs(now - target) > 3) partyPlayer.seekTo(target, true);
+      if (Math.abs(now - target) > 3) {
+        partyLastSeekAt = Date.now();
+        partyPlayer.seekTo(target, true);
+      }
     };
     setInterval(correctPartyDrift, 10000);
 
-    const setPartyState = (data) =>
-      setDoc(doc(db, "partyRoom", "state"), { ...data, by: auth.currentUser?.uid || "", byName: myDisplayName(), updatedAt: serverTimestamp() }).catch((err) => {
+    const setPartyState = (data, { force = false } = {}) => {
+      // Safety valve: never write the room's music more than once every 3 seconds automatically
+      const now = Date.now();
+      if (!force && now - partyLastWriteAt < 3000) return Promise.resolve();
+      partyLastWriteAt = now;
+      return setDoc(doc(db, "partyRoom", "state"), { ...data, by: auth.currentUser?.uid || "", byName: myDisplayName(), updatedAt: serverTimestamp() }).catch((err) => {
         console.error("Party state write failed", err);
         showIcebreakerToast("只有 DJ 可以點歌");
       });
+    };
 
     const setInPartyRoom = (inside) => {
       if (inside === inPartyRoom) return;
@@ -9100,7 +9123,13 @@
         showIcebreakerToast("看不懂這個連結，請貼 YouTube 影片或播放清單的網址");
         return;
       }
-      setPartyState({ videoId: src.videoId || "", playlistId: src.playlistId || "", index: 0, startedAt: Date.now(), stopped: false });
+      // A song link (even one copied from inside a playlist, …watch?v=X&list=Y) plays that song;
+      // a playlist link (…playlist?list=Y) plays the whole list
+      const song = Boolean(src.videoId);
+      setPartyState(
+        { videoId: song ? src.videoId : "", playlistId: song ? "" : src.playlistId || "", index: 0, startedAt: Date.now(), stopped: false },
+        { force: true }
+      );
       if (djUrlInput) djUrlInput.value = "";
       showIcebreakerToast("🎵 已播放給派對房的大家");
     });
@@ -9108,10 +9137,10 @@
     document.querySelector("#party-dj-next")?.addEventListener("click", () => {
       const st = partyState;
       if (!st?.playlistId) return;
-      setPartyState({ ...st, index: (st.index || 0) + 1, startedAt: Date.now(), stopped: false });
+      setPartyState({ ...st, videoId: "", index: (st.index || 0) + 1, startedAt: Date.now(), stopped: false }, { force: true });
     });
     document.querySelector("#party-dj-stop")?.addEventListener("click", () => {
-      setPartyState({ ...(partyState || {}), stopped: true, startedAt: Date.now() });
+      setPartyState({ ...(partyState || {}), stopped: true, startedAt: Date.now() }, { force: true });
     });
 
     // ---- Guide chat (free FAQ in js/guide-faq.js) ----
