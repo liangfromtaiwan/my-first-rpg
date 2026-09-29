@@ -104,7 +104,7 @@ service cloud.firestore {
 
     // ---- 🎉 Party room DJ ----
     // partyRoom/djs: who may pick songs. The first person to claim it becomes the DJ;
-    // after that only a DJ can change the list.
+    // after that any DJ can add / remove DJs or open song picking to everyone ("open").
     // partyRoom/state: what's playing now (everyone reads it; only a DJ writes it).
     match /partyRoom/{docId} {
       allow read: if signedIn();
@@ -115,7 +115,8 @@ service cloud.firestore {
         && request.resource.data.uids is list;
       allow create, update: if signedIn() && docId == "state"
         && exists(/databases/$(database)/documents/partyRoom/djs)
-        && request.auth.uid in get(/databases/$(database)/documents/partyRoom/djs).data.uids;
+        && (request.auth.uid in get(/databases/$(database)/documents/partyRoom/djs).data.uids
+          || get(/databases/$(database)/documents/partyRoom/djs).data.get("open", false) == true);
       allow delete: if false;
     }
 

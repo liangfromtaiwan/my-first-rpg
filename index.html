@@ -3509,8 +3509,54 @@
     }
     .party-dj-form[hidden],
     .party-dj-actions[hidden],
-    .party-dj-claim[hidden] {
+    .party-dj-claim[hidden],
+    .party-dj-manage[hidden],
+    .party-dj-friends[hidden] {
       display: none;
+    }
+    .party-dj-manage {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .party-dj-open {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .party-dj button.party-dj-friends-btn {
+      background: #3a4175;
+    }
+    .party-dj-friends {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    .party-dj-friend {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+    }
+    .party-dj-friend span {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .party-dj button.is-remove {
+      background: #3a4175;
+    }
+    .party-dj-empty {
+      font-size: 14px;
+      color: #a8acd0;
     }
     .party-dj-form input {
       flex: 1;
@@ -3868,6 +3914,11 @@
             <div class="party-dj-actions" id="party-dj-actions" hidden>
               <button type="button" id="party-dj-next">⏭ 下一首</button>
               <button type="button" id="party-dj-stop">⏹ 停止</button>
+            </div>
+            <div class="party-dj-manage" id="party-dj-manage" hidden>
+              <label class="party-dj-open"><input type="checkbox" id="party-dj-open" /> 🎉 開放大家點歌</label>
+              <button type="button" class="party-dj-friends-btn" id="party-dj-friends-btn">👥 讓朋友當 DJ</button>
+              <div class="party-dj-friends" id="party-dj-friends" hidden></div>
             </div>
           </div>
         </div>
@@ -8927,14 +8978,21 @@
     let partyLastPlayerState = null; // previous YouTube player state (to spot "a song just ended")
     let partyLastWriteAt = 0;
     const isPartyDj = () => Boolean(auth.currentUser && partyDjs?.uids?.includes(auth.currentUser.uid));
+    const canPickPartySongs = () => isPartyDj() || Boolean(auth.currentUser && partyDjs?.open);
     const partyKey = (st) => (st ? `${st.stopped ? "stop" : ""}|${st.videoId || ""}|${st.playlistId || ""}|${st.index || 0}|${st.startedAt || 0}` : "default");
     const expectedPartySeconds = (st) => Math.max(0, (Date.now() - (st?.startedAt || Date.now())) / 1000);
 
     const renderPartyDj = () => {
       const dj = isPartyDj();
+      const canPick = canPickPartySongs();
       if (djClaimBtn) djClaimBtn.hidden = !partyDjsLoaded || Boolean(partyDjs?.uids?.length) || !auth.currentUser;
-      if (djForm) djForm.hidden = !dj;
-      if (djActions) djActions.hidden = !dj;
+      if (djForm) djForm.hidden = !canPick;
+      if (djActions) djActions.hidden = !canPick;
+      const manage = document.querySelector("#party-dj-manage");
+      if (manage) manage.hidden = !dj;
+      const openBox = document.querySelector("#party-dj-open");
+      if (openBox) openBox.checked = Boolean(partyDjs?.open);
+      if (dj && !document.querySelector("#party-dj-friends")?.hidden) renderPartyDjFriends();
       const next = document.querySelector("#party-dj-next");
       if (next) next.hidden = !(partyState?.playlistId);
       let status;
@@ -8946,6 +9004,7 @@
         status = partyDjs?.uids?.length ? "🎧 DJ 還沒點歌，先聽預設歌單" : "🎧 還沒有 DJ";
       }
       if (dj) status += "（你是 DJ）";
+      else if (canPick) status += " · 🎉 大家都能點歌";
       if (djStatusEl) djStatusEl.textContent = status;
     };
     const startPartyListeners = () => {
@@ -9134,6 +9193,75 @@
       showIcebreakerToast("🎵 已播放給派對房的大家");
     });
     djUrlInput?.addEventListener("keydown", (event) => event.stopPropagation());
+    // DJs can make friends in the room DJs too, or open song picking to everyone
+    const partyDjFriendsEl = document.querySelector("#party-dj-friends");
+    const writePartyDjs = (next) =>
+      setDoc(doc(db, "partyRoom", "djs"), { ...partyDjs, ...next }, { merge: true }).catch((err) => {
+        console.error("DJ list update failed", err);
+        showIcebreakerToast("只有 DJ 可以設定");
+      });
+    const peopleInPartyRoom = () => {
+      const now = Date.now();
+      const list = [];
+      onlineUsers.forEach((u, uid) => {
+        if (uid === auth.currentUser?.uid) return;
+        const last = u.lastActiveAt?.toMillis ? u.lastActiveAt.toMillis() : 0;
+        if (now - last > 5 * 60 * 1000) return;
+        if (u.mapName !== "worldMap" || u.areaName !== "派對房") return;
+        list.push({ uid, name: u.displayName || u.userName || "Player" });
+      });
+      return list;
+    };
+    const renderPartyDjFriends = () => {
+      if (!partyDjFriendsEl) return;
+      partyDjFriendsEl.innerHTML = "";
+      const uids = partyDjs?.uids || [];
+      const names = partyDjs?.names || [];
+      const rows = new Map();
+      uids.forEach((uid, i) => {
+        if (uid !== auth.currentUser?.uid) rows.set(uid, { uid, name: names[i] || "DJ", isDj: true });
+      });
+      peopleInPartyRoom().forEach((p) => {
+        if (!rows.has(p.uid)) rows.set(p.uid, { ...p, isDj: false });
+      });
+      if (!rows.size) {
+        const empty = document.createElement("div");
+        empty.className = "party-dj-empty";
+        empty.textContent = "派對房裡還沒有其他人，朋友進來後就能加他當 DJ";
+        partyDjFriendsEl.appendChild(empty);
+        return;
+      }
+      rows.forEach((r) => {
+        const row = document.createElement("div");
+        row.className = "party-dj-friend";
+        const name = document.createElement("span");
+        name.textContent = `${r.isDj ? "🎧 " : ""}${r.name}`;
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = r.isDj ? "✕ 移除" : "➕ DJ";
+        if (r.isDj) btn.classList.add("is-remove");
+        btn.addEventListener("click", () => {
+          const i = uids.indexOf(r.uid);
+          if (r.isDj && i >= 0) {
+            writePartyDjs({ uids: uids.filter((u) => u !== r.uid), names: names.filter((_, j) => j !== i) });
+          } else if (!r.isDj) {
+            writePartyDjs({ uids: [...uids, r.uid], names: [...names, r.name] });
+            showIcebreakerToast(`🎧 ${r.name} 現在也是 DJ 了！`);
+          }
+        });
+        row.append(name, btn);
+        partyDjFriendsEl.appendChild(row);
+      });
+    };
+    document.querySelector("#party-dj-friends-btn")?.addEventListener("click", () => {
+      if (!partyDjFriendsEl) return;
+      partyDjFriendsEl.hidden = !partyDjFriendsEl.hidden;
+      if (!partyDjFriendsEl.hidden) renderPartyDjFriends();
+    });
+    document.querySelector("#party-dj-open")?.addEventListener("change", (event) => {
+      writePartyDjs({ open: Boolean(event.target.checked) });
+      showIcebreakerToast(event.target.checked ? "🎉 現在派對房的大家都能點歌！" : "🎧 只有 DJ 能點歌了");
+    });
     document.querySelector("#party-dj-next")?.addEventListener("click", () => {
       const st = partyState;
       if (!st?.playlistId) return;
@@ -11685,6 +11813,36 @@
       drawShadow(x, y, 24);
       drawCharacter(ctx, avatar, facing, getWalkFrame(walking, animMs), x, y, tileSize);
     };
+    // 🕺 Anyone standing in the party room dances: bounce, turn left/right, step to the beat.
+    // Everyone gets their own offset so the room doesn't move like one robot.
+    const DANCE_BEAT_MS = 480;
+    const dancePhase = (id) => {
+      let h = 0;
+      for (const ch of String(id || "")) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+      return (h % 1000) / 1000;
+    };
+    const isInPartyRoomAt = (x, y) =>
+      currentMapName === "worldMap" && zoneAt(currentMapName, x + player.size / 2, y + player.size * 0.8, tileSize)?.id === "party";
+    const drawAvatarMaybeDancing = (id, avatar, facing, walking, animMs, x, y) => {
+      if (walking || !isInPartyRoomAt(x, y)) {
+        drawPixelCharacter(avatar, facing, walking, animMs, x, y);
+        return;
+      }
+      const t = performance.now() / DANCE_BEAT_MS + dancePhase(id) * 4;
+      const beat = Math.floor(t);
+      const bob = Math.round(Math.abs(Math.sin(Math.PI * t)) * 6);
+      const moves = ["down", "left", "down", "right"];
+      drawShadow(x, y, 24 - Math.round(bob / 2));
+      drawCharacter(ctx, avatar, moves[beat % 4], beat % 2 ? 1 : 2, x, y - bob, tileSize);
+      if (beat % 4 === 1) {
+        ctx.save();
+        ctx.font = "bold 14px Arial, sans-serif";
+        ctx.fillStyle = ["#ff6fb1", "#5ee0ff", "#f2c14e"][beat % 3];
+        ctx.textAlign = "center";
+        ctx.fillText("♪", x + player.size / 2 + (beat % 8 < 4 ? 14 : -14), y - 8 - (t % 1) * 10);
+        ctx.restore();
+      }
+    };
 
     const drawSpeechBubble = (centerX, bottomY, text, { maxWidth = 170, maxLines = 3 } = {}) => {
       ctx.save();
@@ -11986,7 +12144,7 @@
           return;
         }
         addDrawable(state.y + player.size, () =>
-          drawPixelCharacter(state.avatar, state.facing, state.walking, state.animMs, state.x, state.y)
+          drawAvatarMaybeDancing(playerId, state.avatar, state.facing, state.walking, state.animMs, state.x, state.y)
         );
         // 同好: shared interests with someone nearby
         let affinity = "";
@@ -12033,7 +12191,7 @@
 
       const selfId = auth.currentUser?.uid || "me";
       addDrawable(player.y + player.size, () =>
-        drawPixelCharacter(myAvatar, player.facing, player.walking, player.animMs, player.x, player.y)
+        drawAvatarMaybeDancing(selfId, myAvatar, player.facing, player.walking, player.animMs, player.x, player.y)
       );
       overlays.push(() =>
         drawCharacterOverlays(
