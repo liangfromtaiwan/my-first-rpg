@@ -3993,6 +3993,7 @@
     } from "./js/pixel-avatar.js";
     import { buildFloorLayer, pathTileSet } from "./js/terrain.js";
     import { makeGymImageUrl } from "./js/gym.js?v=3";
+    import { makeNoticeBoardImage } from "./js/notice-board.js?v=2";
     import { buildGymInteriorLayer, gymBlockedTiles, gymMinimapColor } from "./js/gym-interior.js?v=2";
     import { findPath, nearestOpenTile } from "./js/pathfind.js";
     import { arcadeRoomBlockedTiles, drawArcadeRoom, drawGameTable, drawLoungeRoom, drawMeetingRoom, drawZones, getGameTables, getZones, isZoneTile, loungeRoomBlockedTiles, meetingRoomBlockedTiles, registerZones, zoneAt } from "./js/spaces.js?v=20260929a";
@@ -6507,12 +6508,7 @@
           { x: 22, y: 23, w: 2, h: 2 }, // into the meeting room
           { x: 22, y: 7, w: 2, h: 2 }, // into the arcade
         ],
-        signs: [
-          { x: 19, y: 28, lines: ["← 🏢 辦公室", "🧗 抱石館 →"] },
-          { x: 22, y: 21, lines: ["🔒 會議室 ↓"] },
-          { x: 22, y: 9, lines: ["🎮 遊戲區 ↑"] },
-          { x: 17, y: 19, lines: ["← 🏘️ 住宅區"] },
-        ],
+        signs: [], // no wooden signposts: rooms and buildings carry their own name tags
         // Keep random trees / animals away from building entrances (the space in front of every door)
         reserved: [
           { x: 13, y: 29, w: 6, h: 2 }, // EQU office door
@@ -6551,10 +6547,7 @@
         buildLayer: () => buildGymInteriorLayer(villageMap, tileSize),
         minimapColor: gymMinimapColor(villageMap),
         paths: [],
-        signs: [
-          { x: 15, y: 16, lines: ["🧗 休息室 ↓"] },
-          { x: 28, y: 21, lines: ["🚪 出口 ↓"] },
-        ],
+        signs: [],
         crowd: [],
         decorations: [],
         pigs: [],
@@ -6881,8 +6874,6 @@
     // The village entrance is a pixel bouldering gym (抱石館), drawn in js/gym.js
     castleImage.src = makeGymImageUrl(420);
 
-    const whiteboardImage = new Image();
-    whiteboardImage.src = "image/whirteboard.png";
 
     const decorationImages = [
       { img: new Image(), src: "image/bigTree.png" },
@@ -7727,7 +7718,7 @@
         return;
       }
 
-      const crowdCount = getRandomInt(35, 55);
+      const crowdCount = getRandomInt(18, 28); // half as many trees as before
       const usedTiles = new Set();
       const blockedTiles = new Set();
 
@@ -7936,7 +7927,7 @@
         tryAddTile(4, 18, HOUSE_02_INDEX, true);
       }
 
-      const decoCount = getRandomInt(20, 35);
+      const decoCount = getRandomInt(10, 18); // half as many bushes / small trees
       let attempts = 0;
       const pool = mapName === "villageMap" ? NON_HOUSE_INDICES : NON_HOUSE_INDICES;
 
@@ -10026,6 +10017,12 @@
       };
     };
 
+    // Pixel bulletin board (js/notice-board.js); redrawn once web fonts are ready so its label is crisp
+    let noticeBoardImage = makeNoticeBoardImage(136);
+    document.fonts?.ready.then(() => {
+      noticeBoardImage = makeNoticeBoardImage(136);
+    });
+
     const whiteboardInfo = {
       mapName: "villageMap",
       tileX: VILLAGE_BOARD.tileX,
@@ -10034,9 +10031,6 @@
 
     const getWhiteboardDrawInfo = () => {
       if (currentMapName !== whiteboardInfo.mapName) {
-        return null;
-      }
-      if (!whiteboardImage.complete) {
         return null;
       }
       const size = tileSize * 1.7;
@@ -11086,7 +11080,7 @@
       const whiteboardDraw = getWhiteboardDrawInfo();
       if (whiteboardDraw) {
         addDrawable(whiteboardDraw.y + whiteboardDraw.size * 0.8, () => {
-          ctx.drawImage(whiteboardImage, whiteboardDraw.x, whiteboardDraw.y, whiteboardDraw.size, whiteboardDraw.size);
+          ctx.drawImage(noticeBoardImage, whiteboardDraw.x, whiteboardDraw.y, whiteboardDraw.size, whiteboardDraw.size);
         });
       }
 
