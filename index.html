@@ -1120,16 +1120,16 @@
       max-width: min(420px, 90vw);
       padding: 10px 18px;
       border-radius: 14px;
-      background: rgba(27, 26, 46, 0.9);
+      /* Bright blue accent with a dark pixel outline: clearly not one of the dark buttons */
+      background: #3d8bf2;
       color: #fff;
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
+      border: 3px solid #1b2a4a;
+      box-shadow: 0 4px 0 #1b2a4a, 0 10px 22px rgba(0, 0, 0, 0.25);
       pointer-events: none;
     }
     .village-welcome-text {
       font-size: 16px;
-      font-weight: 700;
+      font-weight: 800;
       text-align: center;
       color: #fff;
       white-space: nowrap;
@@ -1139,7 +1139,7 @@
     }
     .village-welcome-sub {
       font-size: 14px;
-      color: #c9ccef;
+      color: #e3efff;
       text-align: center;
     }
     .village-welcome-sub:empty {
@@ -1150,9 +1150,10 @@
     @media (max-width: 956px) {
       .village-welcome-overlay {
         top: calc(env(safe-area-inset-top, 0px) + 12px);
-        left: 164px;
+        left: 12px;
         right: 12px;
         justify-content: center;
+        z-index: 40; /* over the minimap and buttons: it's gone in a moment anyway */
       }
       .village-welcome-card {
         max-width: 100%;
@@ -3494,9 +3495,6 @@
       }
       .zone-call-btn {
         bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-      }
-      .village-welcome-overlay {
-        top: calc(68px + env(safe-area-inset-top, 0px));
       }
       .video-wrap {
         top: calc(68px + env(safe-area-inset-top, 0px));
