@@ -3849,6 +3849,7 @@
           <div class="party-music-bar">
             <span class="party-music-title">🎵 <span id="party-music-title"></span></span>
             <button type="button" id="party-music-play" hidden>▶ 播放</button>
+            <button type="button" id="party-invite" title="邀請朋友來派對房">🔗 邀請</button>
             <button type="button" id="party-music-mute" title="靜音">🔊</button>
           </div>
           <div class="party-dj">
@@ -4313,7 +4314,7 @@
     import { buildFloorLayer, pathTileSet } from "./js/terrain.js";
     import { makeGymImageUrl } from "./js/gym.js?v=3";
     import { makeNoticeBoardImage } from "./js/notice-board.js?v=2";
-    import { GUIDE_GREETING, GUIDE_QUICK_QUESTIONS, answerGuideQuestion } from "./js/guide-faq.js?v=2";
+    import { GUIDE_GREETING, GUIDE_QUICK_QUESTIONS, answerGuideQuestion } from "./js/guide-faq.js?v=3";
     import { PARTY_MUSIC, drawPartyLights, drawPartyRoom, parseYouTube, partyRoomBlockedTiles } from "./js/party-room.js?v=3";
     import { buildGymInteriorLayer, gymBlockedTiles, gymMinimapColor } from "./js/gym-interior.js?v=2";
     import { findPath, nearestOpenTile } from "./js/pathfind.js";
@@ -4643,11 +4644,16 @@
         startInboxListener();
         startHomeInviteListeners();
         loadMyProfile(user);
-        // Back to where you were last time; the welcome toast shows once we know where that is
+        // An invite link (?go=party) takes you straight there; otherwise back to where you were
+        // last time. The welcome toast shows once we know where that is.
         const mapBefore = currentMapName;
-        restoreLastPosition(user).then(() => {
-          if (currentMapName === mapBefore) showVillageWelcome(currentMapName);
-        });
+        if (takeInviteTarget()) {
+          forcePositionSync = true;
+        } else {
+          restoreLastPosition(user).then(() => {
+            if (currentMapName === mapBefore) showVillageWelcome(currentMapName);
+          });
+        }
         lastUserPresenceWrite = 0;
         updateUserPresence();
       } else {
@@ -8794,6 +8800,42 @@
       ctx.restore();
     };
 
+    // ---- Invite links: ?go=party drops you right into the party room after signing in ----
+    const INVITE_TARGETS = {
+      party: { map: "worldMap", tile: { x: 9, y: 7 }, toast: "🎉 歡迎來到派對房！" },
+    };
+    const inviteLink = (target) => `${location.origin}${location.pathname}?go=${target}`;
+    let pendingInvite = new URLSearchParams(location.search).get("go");
+    const takeInviteTarget = () => {
+      const target = INVITE_TARGETS[pendingInvite];
+      pendingInvite = null;
+      // Drop ?go= from the address, so a reload goes back to your last spot as usual
+      if (new URLSearchParams(location.search).has("go")) {
+        const url = new URL(location.href);
+        url.searchParams.delete("go");
+        history.replaceState(null, "", url.pathname + url.search + url.hash);
+      }
+      if (!target || !maps[target.map]) return false;
+      setMap(target.map, target.tile);
+      player.facing = "up";
+      showIcebreakerToast(target.toast, 3500);
+      return true;
+    };
+    const shareInvite = async (target, text) => {
+      const url = inviteLink(target);
+      try {
+        if (navigator.share && isMobileLayout()) {
+          await navigator.share({ title: "抱石村 Bouldering Village", text, url });
+          return;
+        }
+        await navigator.clipboard.writeText(url);
+        showIcebreakerToast("🔗 已複製派對房連結，貼給朋友就能直接進來！", 3500);
+      } catch (err) {
+        if (err?.name === "AbortError") return; // closed the share sheet
+        showIcebreakerToast(`派對房連結：${url}`, 6000);
+      }
+    };
+
     // ---- 🎉 Party room music (YouTube) with a DJ ----
     // partyRoom/state in Firestore says what's playing and when it started; everyone's player
     // seeks to the same second, so the room hears the same song together. Only a DJ
@@ -8961,6 +9003,9 @@
         partyPlayer.pauseVideo();
       }
     };
+    document.querySelector("#party-invite")?.addEventListener("click", () =>
+      shareInvite("party", "來抱石村的派對房一起聽歌吧 🎉")
+    );
     partyMuteBtn?.addEventListener("click", () => {
       partyMuted = !partyMuted;
       partyMuteBtn.textContent = partyMuted ? "🔇" : "🔊";
