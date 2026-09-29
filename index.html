@@ -1524,8 +1524,25 @@
       background: transparent;
       cursor: pointer;
       font-size: 16px;
-      padding: 2px 4px;
-      border-radius: 6px;
+      padding: 4px 6px;
+      border-radius: 8px;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      min-width: 44px;
+      flex-shrink: 0;
+    }
+    .online-action-icon {
+      font-size: 18px;
+      line-height: 1;
+    }
+    .online-action-label {
+      font-size: 14px;
+      line-height: 1.1;
+      font-weight: 600;
+      color: #a8acd0;
+      white-space: nowrap;
     }
     .online-row .online-action:hover,
     .online-row .online-action.is-active {
@@ -5969,6 +5986,17 @@
       });
       const offlineRows = groups.get("__offline") || [];
       groups.delete("__offline");
+      // Icon with a small caption under it, so each action says what it does
+      const setAction = (btn, icon, caption) => {
+        btn.textContent = "";
+        const i = document.createElement("span");
+        i.className = "online-action-icon";
+        i.textContent = icon;
+        const c = document.createElement("span");
+        c.className = "online-action-label";
+        c.textContent = caption;
+        btn.append(i, c);
+      };
       const buildRow = ({ uid, userData, isOnline }) => {
         const status = isOnline ? (STATUS_LABELS[userData.status] ? userData.status : "online") : "offline";
         const row = document.createElement("div");
@@ -6002,7 +6030,7 @@
         const chatBtn = document.createElement("button");
         chatBtn.type = "button";
         chatBtn.className = "online-action" + (dmTarget?.uid === uid ? " is-active" : "");
-        chatBtn.textContent = "💬";
+        setAction(chatBtn, "💬", "私訊");
         chatBtn.title = "私訊";
         if (unreadFrom.has(uid)) {
           const dot = document.createElement("span");
@@ -6016,19 +6044,10 @@
         });
         if (!blocked) row.appendChild(chatBtn);
 
-        const locateBtn = document.createElement("button");
-        locateBtn.type = "button";
-        locateBtn.className = "online-action";
-        locateBtn.textContent = "📍";
-        locateBtn.title = "在地圖上定位";
-        locateBtn.addEventListener("click", (event) => {
-          event.stopPropagation();
-          locatePlayer(uid);
-        });
         const followBtn = document.createElement("button");
         followBtn.type = "button";
         followBtn.className = "online-action" + (followTargetId === uid ? " is-active" : "");
-        followBtn.textContent = "👣";
+        setAction(followBtn, "👣", followTargetId === uid ? "停止" : "跟隨");
         followBtn.title = followTargetId === uid ? "停止跟隨" : "跟隨";
         followBtn.setAttribute("aria-pressed", String(followTargetId === uid));
         followBtn.addEventListener("click", (event) => {
@@ -6036,12 +6055,11 @@
           if (followTargetId === uid) stopFollowing();
           else locatePlayer(uid, { follow: true });
         });
-        row.appendChild(locateBtn);
         row.appendChild(followBtn);
         const visitBtn = document.createElement("button");
         visitBtn.type = "button";
         visitBtn.className = "online-action";
-        visitBtn.textContent = "🏠";
+        setAction(visitBtn, "🏠", "拜訪");
         visitBtn.title = "拜訪他的家";
         visitBtn.addEventListener("click", (event) => {
           event.stopPropagation();
@@ -6052,7 +6070,7 @@
           const kickBtn = document.createElement("button");
           kickBtn.type = "button";
           kickBtn.className = "online-action";
-          kickBtn.textContent = "👋";
+          setAction(kickBtn, "👋", "請離開");
           kickBtn.title = "請他離開我的家";
           kickBtn.addEventListener("click", (event) => {
             event.stopPropagation();
