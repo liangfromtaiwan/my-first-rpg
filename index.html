@@ -6479,7 +6479,11 @@
     });
 
     // Village bulletin board and guide stand right by the exit, where everyone arrives
-    const VILLAGE_BOARD = { tileX: 30, tileY: 24 };
+    // Bulletin boards (告示板), one per map, next to that map's guide NPC
+    const NOTICE_BOARDS = {
+      villageMap: { tileX: 23, tileY: 21 }, // same row as the guide, to its left
+      worldMap: { tileX: 44, tileY: 23 }, // right above the guide by the spawn
+    };
 
     const maps = {
       worldMap: {
@@ -7753,10 +7757,11 @@
       if (mapData.spawn) {
         blockedTiles.add(`${mapData.spawn.x},${mapData.spawn.y}`);
       }
-      if (mapName === "villageMap") {
+      if (NOTICE_BOARDS[mapName]) {
+        const nb = NOTICE_BOARDS[mapName];
         for (let dy = -1; dy <= 1; dy++)
           for (let dx = -1; dx <= 1; dx++)
-            blockedTiles.add(`${VILLAGE_BOARD.tileX + dx},${VILLAGE_BOARD.tileY + dy}`);
+            blockedTiles.add(`${nb.tileX + dx},${nb.tileY + dy}`);
       }
       if (mapName === "worldMap") {
         for (const [hx, hy] of [[4, 8], [4, 18]]) {
@@ -7858,10 +7863,11 @@
       if (mapData.spawn) {
         blockedTiles.add(`${mapData.spawn.x},${mapData.spawn.y}`);
       }
-      if (mapName === "villageMap") {
+      if (NOTICE_BOARDS[mapName]) {
+        const nb = NOTICE_BOARDS[mapName];
         for (let dy = -1; dy <= 1; dy++)
           for (let dx = -1; dx <= 1; dx++)
-            blockedTiles.add(`${VILLAGE_BOARD.tileX + dx},${VILLAGE_BOARD.tileY + dy}`);
+            blockedTiles.add(`${nb.tileX + dx},${nb.tileY + dy}`);
       }
       mapData.crowd.forEach((m) => {
         for (let dy = -1; dy <= 1; dy++) {
@@ -7982,10 +7988,11 @@
       if (mapData.exit) usedTiles.add(`${mapData.exit.x},${mapData.exit.y}`);
       if (mapData.exitArea) mapData.exitArea.forEach((t) => usedTiles.add(`${t.x},${t.y}`));
       if (mapData.spawn) usedTiles.add(`${mapData.spawn.x},${mapData.spawn.y}`);
-      if (mapName === "villageMap") {
+      if (NOTICE_BOARDS[mapName]) {
+        const nb = NOTICE_BOARDS[mapName];
         for (let dy = -1; dy <= 1; dy++)
           for (let dx = -1; dx <= 1; dx++)
-            usedTiles.add(`${VILLAGE_BOARD.tileX + dx},${VILLAGE_BOARD.tileY + dy}`);
+            usedTiles.add(`${nb.tileX + dx},${nb.tileY + dy}`);
       }
       mapData.crowd.forEach((m) => {
         for (let dy = -1; dy <= 1; dy++)
@@ -8052,7 +8059,7 @@
         for (let tx = left; tx <= right; tx++) {
           if (currentMap.tiles[ty]?.[tx] !== 0) return true;
           if (isZoneTile(currentMapName, tx, ty) || isReservedTile(currentMapName, tx, ty)) return true;
-          if (currentMapName === "villageMap" && Math.abs(tx - VILLAGE_BOARD.tileX) <= 1 && Math.abs(ty - VILLAGE_BOARD.tileY) <= 1) return true; // bulletin board
+          if (NOTICE_BOARDS[currentMapName] && Math.abs(tx - NOTICE_BOARDS[currentMapName].tileX) <= 1 && Math.abs(ty - NOTICE_BOARDS[currentMapName].tileY) <= 1) return true; // bulletin board
         }
       }
       if (currentMap.crowd.some((m) => boxesOverlap(box, getTreeTrunkBox(m)))) return true;
@@ -8169,10 +8176,11 @@
       if (mapData.exit) usedTiles.add(`${mapData.exit.x},${mapData.exit.y}`);
       if (mapData.exitArea) mapData.exitArea.forEach((t) => usedTiles.add(`${t.x},${t.y}`));
       if (mapData.spawn) usedTiles.add(`${mapData.spawn.x},${mapData.spawn.y}`);
-      if (mapName === "villageMap") {
+      if (NOTICE_BOARDS[mapName]) {
+        const nb = NOTICE_BOARDS[mapName];
         for (let dy = -1; dy <= 1; dy++)
           for (let dx = -1; dx <= 1; dx++)
-            usedTiles.add(`${VILLAGE_BOARD.tileX + dx},${VILLAGE_BOARD.tileY + dy}`);
+            usedTiles.add(`${nb.tileX + dx},${nb.tileY + dy}`);
       }
       mapData.crowd.forEach((m) => {
         for (let dy = -1; dy <= 1; dy++)
@@ -10037,14 +10045,9 @@
       noticeBoardImage = makeNoticeBoardImage(136);
     });
 
-    const whiteboardInfo = {
-      mapName: "villageMap",
-      tileX: VILLAGE_BOARD.tileX,
-      tileY: VILLAGE_BOARD.tileY,
-    };
-
     const getWhiteboardDrawInfo = () => {
-      if (currentMapName !== whiteboardInfo.mapName) {
+      const whiteboardInfo = NOTICE_BOARDS[currentMapName];
+      if (!whiteboardInfo) {
         return null;
       }
       const size = tileSize * 1.7;
