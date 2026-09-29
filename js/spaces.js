@@ -6,6 +6,7 @@ export const ZONES = {
     // A furnished room (see drawMeetingRoom), so only its tag is drawn like indoor rooms
     { id: "meeting", name: "會議室", x: 24, y: 20, w: 8, h: 7, private: true, color: "#8e5cc4", indoor: true },
     { id: "arcade", name: "遊戲區", x: 24, y: 4, w: 12, h: 7, private: false, color: "#e8773b", indoor: true },
+    { id: "party", name: "派對房", x: 6, y: 4, w: 8, h: 6, private: false, color: "#ff6fb1", indoor: true },
   ],
   villageMap: [
     // The sofa corner is obviously a lounge, so no name tag on the map (the name still shows in 📍 and chat)

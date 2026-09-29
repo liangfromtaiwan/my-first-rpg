@@ -3409,6 +3409,68 @@
       }
     }
 
+    /* ---- 🎉 Party room music: a small YouTube player shown while you're in the room ---- */
+    .party-music {
+      position: fixed;
+      left: 12px;
+      bottom: calc(var(--toolbar-h, 68px) + 12px);
+      z-index: 34;
+      width: 224px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #202540;
+      color: #eef0ff;
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+      border: 2px solid #ff6fb1;
+    }
+    .party-music[hidden] {
+      display: none;
+    }
+    .party-music-video {
+      aspect-ratio: 16 / 9;
+      background: #000;
+    }
+    .party-music-video iframe,
+    .party-music-video > div {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border: 0;
+    }
+    .party-music-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 8px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .party-music-title {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .party-music-bar button {
+      border: none;
+      border-radius: 8px;
+      background: #3a4175;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+    @media (max-width: 956px) {
+      .party-music {
+        left: auto;
+        right: 12px;
+        top: calc(64px + env(safe-area-inset-top, 0px));
+        bottom: auto;
+        width: 176px;
+      }
+    }
     /* ---- Guide chat (free FAQ): a panel at the bottom, answers also pop up over the guide ---- */
     .guide-chat {
       position: fixed;
@@ -3698,6 +3760,14 @@
           📌 抱石時間表 ↲
         </button>
         <button class="board-action" id="npc-action" type="button">💬 和嚮導聊聊 ↲</button>
+        <div class="party-music" id="party-music" hidden>
+          <div class="party-music-video"><div id="party-music-player"></div></div>
+          <div class="party-music-bar">
+            <span class="party-music-title">🎵 <span id="party-music-title"></span></span>
+            <button type="button" id="party-music-play" hidden>▶ 播放</button>
+            <button type="button" id="party-music-mute" title="靜音">🔊</button>
+          </div>
+        </div>
         <div class="guide-chat" id="guide-chat" role="dialog" aria-label="和嚮導聊聊" hidden>
           <div class="guide-chat-head">
             <span class="guide-chat-title">💬 嚮導</span>
@@ -4144,9 +4214,10 @@
     import { makeGymImageUrl } from "./js/gym.js?v=3";
     import { makeNoticeBoardImage } from "./js/notice-board.js?v=2";
     import { GUIDE_GREETING, GUIDE_QUICK_QUESTIONS, answerGuideQuestion } from "./js/guide-faq.js?v=2";
+    import { PARTY_MUSIC, drawPartyLights, drawPartyRoom, parseYouTube, partyRoomBlockedTiles } from "./js/party-room.js?v=3";
     import { buildGymInteriorLayer, gymBlockedTiles, gymMinimapColor } from "./js/gym-interior.js?v=2";
     import { findPath, nearestOpenTile } from "./js/pathfind.js";
-    import { arcadeRoomBlockedTiles, drawArcadeRoom, drawGameTable, drawLoungeRoom, drawMeetingRoom, drawZones, getGameTables, getZones, isZoneTile, loungeRoomBlockedTiles, meetingRoomBlockedTiles, registerZones, zoneAt } from "./js/spaces.js?v=20260929d";
+    import { arcadeRoomBlockedTiles, drawArcadeRoom, drawGameTable, drawLoungeRoom, drawMeetingRoom, drawZones, getGameTables, getZones, isZoneTile, loungeRoomBlockedTiles, meetingRoomBlockedTiles, registerZones, zoneAt } from "./js/spaces.js?v=20260929e";
     import {
       HOME_COLS,
       HOME_EXIT_TILES,
@@ -6640,7 +6711,7 @@
     }
 
     // 會議室 / 遊戲區: walls and furniture of the furnished rooms block walking
-    [...meetingRoomBlockedTiles(), ...arcadeRoomBlockedTiles()].forEach(([x, y]) => {
+    [...meetingRoomBlockedTiles(), ...arcadeRoomBlockedTiles(), ...partyRoomBlockedTiles()].forEach(([x, y]) => {
       worldMap[y][x] = 1;
     });
     // 抱石村 is the inside of a bouldering gym: climbing walls, the boulder and the front desk block walking
@@ -8623,6 +8694,93 @@
       ctx.restore();
     };
 
+    // ---- 🎉 Party room music (YouTube). Loads the YouTube player the first time you walk in,
+    // plays while you're in the room and pauses when you leave. A live stream / long mix is
+    // started at the same point for everyone (clock-based), so people dance to the same part.
+    const partyMusicEl = document.querySelector("#party-music");
+    const partyMuteBtn = document.querySelector("#party-music-mute");
+    const partyPlayBtn = document.querySelector("#party-music-play");
+    const partyTitleEl = document.querySelector("#party-music-title");
+    if (partyTitleEl) partyTitleEl.textContent = PARTY_MUSIC.title || "派對音樂";
+    let partyPlayer = null;
+    let partyPlayerReady = false;
+    let partyApiRequested = false;
+    let inPartyRoom = false;
+    let partyMuted = false;
+    const loadYouTubeApi = () => {
+      if (partyApiRequested) return;
+      partyApiRequested = true;
+      window.onYouTubeIframeAPIReady = () => {
+        const src = parseYouTube(PARTY_MUSIC.url);
+        const playerVars = { autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1 };
+        if (src.channelLive) {
+          // "Whatever this channel is streaming now": never goes stale like a single stream link
+          src.videoId = "live_stream";
+          playerVars.channel = src.channelLive;
+        } else if (src.playlistId && !src.videoId) {
+          playerVars.listType = "playlist";
+          playerVars.list = src.playlistId;
+        } else if (src.playlistId) {
+          playerVars.list = src.playlistId;
+        }
+        partyPlayer = new window.YT.Player("party-music-player", {
+          videoId: src.videoId || undefined,
+          playerVars,
+          events: {
+            onReady: (e) => {
+              partyPlayerReady = true;
+              e.target.setVolume(PARTY_MUSIC.volume ?? 60);
+              // Same point for everyone on a long (non-live) video
+              const d = e.target.getDuration?.() || 0;
+              if (d > 60) e.target.seekTo(Math.floor(Date.now() / 1000) % d, true);
+              syncPartyMusic();
+            },
+            onStateChange: (e) => {
+              // Browsers may block sound until a tap: offer a play button when it doesn't start
+              if (partyPlayBtn) partyPlayBtn.hidden = e.data === window.YT.PlayerState.PLAYING || !inPartyRoom;
+            },
+          },
+        });
+      };
+      const tag = document.createElement("script");
+      tag.src = "https://www.youtube.com/iframe_api";
+      document.head.appendChild(tag);
+    };
+    const syncPartyMusic = () => {
+      if (!partyPlayerReady || !partyPlayer) return;
+      if (inPartyRoom) {
+        partyPlayer.playVideo();
+        if (partyMuted) partyPlayer.mute();
+        else partyPlayer.unMute();
+      } else {
+        partyPlayer.pauseVideo();
+      }
+    };
+    const setInPartyRoom = (inside) => {
+      if (inside === inPartyRoom) return;
+      inPartyRoom = inside;
+      if (partyMusicEl) partyMusicEl.hidden = !inside;
+      if (inside) loadYouTubeApi();
+      syncPartyMusic();
+      if (inside) {
+        // If the browser blocked autoplay, show ▶ after a moment
+        setTimeout(() => {
+          const playing = partyPlayerReady && partyPlayer?.getPlayerState?.() === window.YT?.PlayerState?.PLAYING;
+          if (inPartyRoom && partyPlayBtn) partyPlayBtn.hidden = playing;
+        }, 2500);
+      }
+    };
+    partyMuteBtn?.addEventListener("click", () => {
+      partyMuted = !partyMuted;
+      partyMuteBtn.textContent = partyMuted ? "🔇" : "🔊";
+      partyMuteBtn.title = partyMuted ? "取消靜音" : "靜音";
+      syncPartyMusic();
+    });
+    partyPlayBtn?.addEventListener("click", () => {
+      partyPlayBtn.hidden = true;
+      syncPartyMusic();
+    });
+
     // ---- Guide chat (free FAQ in js/guide-faq.js) ----
     const guideChat = document.querySelector("#guide-chat");
     const guideChatLog = document.querySelector("#guide-chat-log");
@@ -10110,6 +10268,7 @@
         if (mapName === "worldMap") {
           drawMeetingRoom(layer.getContext("2d"), tileSize);
           drawArcadeRoom(layer.getContext("2d"), tileSize);
+          drawPartyRoom(layer.getContext("2d"), tileSize);
         }
         if (mapName === "villageMap") drawLoungeRoom(layer.getContext("2d"), tileSize);
         floorLayers.set(mapName, layer);
@@ -11287,6 +11446,7 @@
       }
 
       drawZones(ctx, currentMapName, tileSize, privateContext?.zone?.id || null);
+      if (currentMapName === "worldMap") drawPartyLights(ctx, tileSize, now);
 
       // Click-to-move destination marker
       if (movePath.length && moveTarget.x !== null) {
@@ -11552,6 +11712,10 @@
       }
 
       drawRoomSpotlight(now);
+      {
+        const pc = getPlayerCenter();
+        setInPartyRoom(currentMapName === "worldMap" && zoneAt(currentMapName, pc.x, pc.y, tileSize)?.id === "party");
+      }
       overlays.forEach((draw) => draw());
 
       // Locate highlight: pulsing ring around the target when on screen
