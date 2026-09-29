@@ -2888,6 +2888,18 @@
       color: var(--game-text);
       cursor: pointer;
     }
+    .profile-card-status {
+      display: flex;
+      gap: 6px;
+      width: 100%;
+    }
+    .profile-card-status button {
+      flex: 1;
+    }
+    .profile-card-actions .profile-card-status button.is-current {
+      border-color: #1f7a5f;
+      background: #e3f4ec;
+    }
     .profile-card-actions button.is-danger {
       color: #b03a2e;
       border-color: rgba(176, 58, 46, 0.35);
@@ -3422,7 +3434,13 @@
         pointer-events: auto;
         z-index: 30;
       }
-      /* Bottom-left: me (avatar / status), emotes, raise hand */
+      /* Bottom-left group (avatar / status, emotes, raise hand) is hidden on phones:
+         tap your own character to get them in your name card */
+      .toolbar-left > .toolbar-me,
+      .toolbar-left > #emote-more-btn,
+      .toolbar-left > #raise-hand-btn {
+        display: none !important;
+      }
       .toolbar-left {
         left: 12px;
         bottom: calc(12px + env(safe-area-inset-bottom, 0px));
@@ -3451,14 +3469,14 @@
         bottom: auto;
       }
       .toolbar .emote-bar.is-open {
-        bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
       }
       /* Keep other floating bits clear of the two button groups */
       .zoom-controls {
-        bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
       }
       .zone-call-btn {
-        bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
       }
       .village-welcome-overlay {
         top: calc(68px + env(safe-area-inset-top, 0px));
@@ -5965,6 +5983,36 @@
           closeProfileCard();
           openAvatarEditor();
         });
+        // Phones: the bottom-left buttons (emotes, raise hand, status) live in your own card
+        if (isMobileLayout()) {
+          addCardButton(actions, "😊 表情", () => {
+            closeProfileCard();
+            document.querySelector("#emote-more-btn")?.click();
+          });
+          addCardButton(actions, myHandRaised ? "✋ 放下手" : "✋ 舉手", () => {
+            document.querySelector("#raise-hand-btn")?.click();
+            openProfileCard(uid, anchor);
+          });
+          const statusRow = document.createElement("div");
+          statusRow.className = "profile-card-status";
+          [["online", "🟢 在線"], ["busy", "🔴 忙碌"], ["away", "🌙 離開"]].forEach(([value, label]) => {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.textContent = label;
+            b.classList.toggle("is-current", myStatus === value);
+            b.addEventListener("click", (event) => {
+              event.stopPropagation();
+              const select = document.querySelector("#status-select");
+              if (select) {
+                select.value = value;
+                select.dispatchEvent(new Event("change"));
+              }
+              openProfileCard(uid, anchor);
+            });
+            statusRow.appendChild(b);
+          });
+          actions.appendChild(statusRow);
+        }
       } else if (myBlocked.has(uid)) {
         addCardButton(actions, "解除封鎖", () => {
           unblockUser(uid, name);
