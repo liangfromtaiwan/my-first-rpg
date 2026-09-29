@@ -8,7 +8,8 @@ export const ZONES = {
     { id: "arcade", name: "遊戲區", x: 24, y: 4, w: 12, h: 7, private: false, color: "#e8773b", indoor: true },
   ],
   villageMap: [
-    { id: "lounge", name: "攀岩休息室", x: 10, y: 18, w: 8, h: 6, private: true, color: "#2f8c9a", indoor: true },
+    // The sofa corner is obviously a lounge, so no name tag on the map (the name still shows in 📍 and chat)
+    { id: "lounge", name: "攀岩休息室", x: 10, y: 18, w: 8, h: 6, private: true, color: "#2f8c9a", indoor: true, hideTag: true },
   ],
   // Indoor zones follow the office rooms; their floors are already drawn, so only tags are shown.
   officeMap: [
