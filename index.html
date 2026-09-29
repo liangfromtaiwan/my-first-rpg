@@ -7588,21 +7588,37 @@
 
     treeImage.addEventListener("load", prepareTreeSprite);
 
+    // Wraps by words for Latin text (never "moo / d") and by character for Chinese / emoji
     const wrapText = (context, text, maxWidth) => {
       const lines = [];
       let line = "";
-      for (const char of text) {
-        const testLine = line + char;
-        if (context.measureText(testLine).width > maxWidth && line) {
-          lines.push(line);
-          line = char;
-        } else {
-          line = testLine;
+      const tokens = String(text).match(/[A-Za-z0-9'’.,!?:;()\-]+|\s+|./gu) || [];
+      const push = () => {
+        if (line.trim()) lines.push(line.trimEnd());
+        line = "";
+      };
+      for (const token of tokens) {
+        if (!line && /^\s+$/.test(token)) continue; // no leading spaces on a new line
+        if (context.measureText(line + token).width <= maxWidth) {
+          line += token;
+          continue;
+        }
+        if (/^\s+$/.test(token)) {
+          push();
+          continue;
+        }
+        if (line) push();
+        if (context.measureText(token).width <= maxWidth) {
+          line = token;
+          continue;
+        }
+        // A single word longer than the line: fall back to splitting it by character
+        for (const char of token) {
+          if (context.measureText(line + char).width > maxWidth && line) push();
+          line += char;
         }
       }
-      if (line) {
-        lines.push(line);
-      }
+      push();
       return lines;
     };
 
@@ -11478,8 +11494,9 @@
             ? wrapText(ctx, npcQuiz.question, maxTextWidth)
             : wrapText(ctx, resultMessage, maxTextWidth);
         const optionLines = dialogueStage === "question" ? npcQuiz.options.length : 0;
+        const hintSpace = touchUi ? 0 : 20; // phones: no hint line under the options
         const boxHeight =
-          pad * 2 + bodyLines.length * lineHeight + optionLines * (optionHeight + optionGap) + (optionLines ? 8 : 0) + 20;
+          pad * 2 + bodyLines.length * lineHeight + optionLines * (optionHeight + optionGap) + (optionLines ? 8 : 0) + hintSpace;
         const boxY = Math.round(viewportHeight - boxHeight - 16);
         dialogueBoxRect = { x: boxX, y: boxY, w: boxWidth, h: boxHeight };
 
@@ -11556,13 +11573,13 @@
         ctx.textAlign = "right";
         ctx.textBaseline = "bottom";
         const blink = Math.floor(now / 500) % 2 === 0 ? " ▼" : "  ";
-        ctx.fillText(
-          (touchUi
-            ? dialogueStage === "question" ? "點選項回答 · 點外面關閉" : "點一下關閉"
-            : dialogueStage === "question" ? "↑↓ 選擇 · Enter 確認 · 或直接點選項" : "Enter 或點一下關閉") + blink,
-          boxX + boxWidth - pad,
-          boxY + boxHeight - 10
-        );
+        if (!touchUi) {
+          ctx.fillText(
+            (dialogueStage === "question" ? "↑↓ 選擇 · Enter 確認 · 或直接點選項" : "Enter 或點一下關閉") + blink,
+            boxX + boxWidth - pad,
+            boxY + boxHeight - 10
+          );
+        }
         ctx.restore();
       }
     };
