@@ -2147,6 +2147,12 @@
     .travel-menu button:hover {
       background: var(--chrome-bg-2);
     }
+    .travel-menu .travel-invite {
+      margin-top: 4px;
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 0 0 8px 8px;
+      color: #9fd0ff;
+    }
     .travel-menu button.is-current {
       color: #f2c14e;
     }
@@ -4023,6 +4029,7 @@
           <button type="button" role="menuitem" data-go="villageMap">🧗 抱石村</button>
           <button type="button" role="menuitem" data-go="officeMap">🏢 EQU 辦公室</button>
           <button type="button" role="menuitem" data-go="residentialMap">🏘️ 住宅區</button>
+          <button type="button" role="menuitem" class="travel-invite" id="travel-invite">🔗 邀請朋友來這裡</button>
         </div>
       </div>
       <button id="chat-toggle-btn" class="tool-btn" type="button" title="聊天">💬<span class="tool-badge" id="chat-badge" hidden></span></button>
@@ -7146,6 +7153,9 @@
       travelMenu.hidden = !open;
       travelBtn.setAttribute("aria-expanded", String(open));
       if (open) {
+        const inviteBtn = document.querySelector("#travel-invite");
+        const here = currentInviteTarget();
+        if (inviteBtn) inviteBtn.textContent = here ? `🔗 邀請朋友來「${here.name}」` : "🔗 邀請朋友來這裡";
         const myHome = auth.currentUser ? homeMapName(auth.currentUser.uid) : "";
         travelMenu.querySelectorAll("button").forEach((b) => {
           const go = b.dataset.go;
@@ -7153,7 +7163,16 @@
         });
       }
     });
-    travelMenu?.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => travelTo(b.dataset.go)));
+    travelMenu?.querySelectorAll("button[data-go]").forEach((b) => b.addEventListener("click", () => travelTo(b.dataset.go)));
+    document.querySelector("#travel-invite")?.addEventListener("click", () => {
+      closeTravelMenu();
+      const target = currentInviteTarget();
+      if (!target) {
+        showIcebreakerToast("想請朋友來家裡，打開他的名片按「💌 邀請來我家」～", 3500);
+        return;
+      }
+      shareInvite(target.key, `來抱石村的「${target.name}」找我 👋`);
+    });
     document.addEventListener("pointerdown", (event) => {
       if (travelMenu && !travelMenu.hidden && !travelMenu.contains(event.target) && !travelBtn.contains(event.target)) closeTravelMenu();
     });
@@ -8800,9 +8819,51 @@
       ctx.restore();
     };
 
-    // ---- Invite links: ?go=party drops you right into the party room after signing in ----
+    // ---- Invite links: ?go=<place> drops you right into that space after signing in ----
+    // A place is a whole map, or a room (zone) on it; rooms put you near their middle.
     const INVITE_TARGETS = {
-      party: { map: "worldMap", tile: { x: 9, y: 7 }, toast: "🎉 歡迎來到派對房！" },
+      world: { map: "worldMap" },
+      party: { map: "worldMap", zone: "party", toast: "🎉 歡迎來到派對房！" },
+      meeting: { map: "worldMap", zone: "meeting" },
+      arcade: { map: "worldMap", zone: "arcade" },
+      village: { map: "villageMap" },
+      lounge: { map: "villageMap", zone: "lounge" },
+      office: { map: "officeMap" },
+      "office-desks": { map: "officeMap", zone: "desks" },
+      "office-meeting": { map: "officeMap", zone: "meeting" },
+      "office-lounge": { map: "officeMap", zone: "lounge" },
+      "office-cafe": { map: "officeMap", zone: "cafe" },
+      "office-arcade": { map: "officeMap", zone: "arcade" },
+      residential: { map: "residentialMap" },
+    };
+    /** The invite target for where you are now (null in a home: homes use 💌 invites). */
+    const currentInviteTarget = () => {
+      if (isHomeMap(currentMapName)) return null;
+      const c = getPlayerCenter();
+      const z = zoneAt(currentMapName, c.x, c.y, tileSize);
+      const key = Object.keys(INVITE_TARGETS).find((k) => {
+        const t = INVITE_TARGETS[k];
+        return t.map === currentMapName && (z ? t.zone === z.id : !t.zone);
+      });
+      if (!key) return null;
+      return { key, name: z ? z.name : getMapLabel(currentMapName).replace(/^🏘️ /, "") };
+    };
+    /** A free spot near the middle of a room (or the map's spawn). */
+    const inviteArrivalTile = (target) => {
+      const map = maps[target.map];
+      const z = target.zone ? getZones(target.map).find((zz) => zz.id === target.zone) : null;
+      if (!z) return map.spawn;
+      const cx = Math.floor(z.x + z.w / 2);
+      const cy = Math.floor(z.y + z.h / 2);
+      const free = (x, y) => map.tiles[y]?.[x] === 0 && x > z.x && x < z.x + z.w - 1 && y > z.y && y < z.y + z.h - 1;
+      for (let r = 0; r <= 4; r++) {
+        for (let dy = -r; dy <= r; dy++) {
+          for (let dx = -r; dx <= r; dx++) {
+            if (free(cx + dx, cy + dy)) return { x: cx + dx, y: cy + dy };
+          }
+        }
+      }
+      return map.spawn;
     };
     const inviteLink = (target) => `${location.origin}${location.pathname}?go=${target}`;
     let pendingInvite = new URLSearchParams(location.search).get("go");
@@ -8816,9 +8877,10 @@
         history.replaceState(null, "", url.pathname + url.search + url.hash);
       }
       if (!target || !maps[target.map]) return false;
-      setMap(target.map, target.tile);
-      player.facing = "up";
-      showIcebreakerToast(target.toast, 3500);
+      setMap(target.map, inviteArrivalTile(target));
+      player.facing = "down";
+      const zone = target.zone ? getZones(target.map).find((z) => z.id === target.zone) : null;
+      if (zone || target.toast) showIcebreakerToast(target.toast || `👋 歡迎來到${zone.name}！`, 3500);
       return true;
     };
     const shareInvite = async (target, text) => {
@@ -8829,10 +8891,10 @@
           return;
         }
         await navigator.clipboard.writeText(url);
-        showIcebreakerToast("🔗 已複製派對房連結，貼給朋友就能直接進來！", 3500);
+        showIcebreakerToast("🔗 已複製邀請連結，貼給朋友就能直接進來！", 3500);
       } catch (err) {
         if (err?.name === "AbortError") return; // closed the share sheet
-        showIcebreakerToast(`派對房連結：${url}`, 6000);
+        showIcebreakerToast(`邀請連結：${url}`, 6000);
       }
     };
 
