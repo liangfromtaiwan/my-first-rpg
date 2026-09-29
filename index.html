@@ -8341,6 +8341,31 @@
       ctx.imageSmoothingEnabled = true;
       ctx.drawImage(cached.layer, offX, offY, contentW, contentH);
 
+      // Landmarks, so people know where to find them: the guide (purple dot) and the 告示板 (orange note)
+      const board = getWhiteboardDrawInfo();
+      if (board) {
+        const bx = offX + (board.x + board.size / 2) * scale;
+        const by = offY + (board.y + board.size / 2) * scale;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(Math.round(bx - 5), Math.round(by - 5), 10, 10);
+        ctx.fillStyle = "#e8773b";
+        ctx.fillRect(Math.round(bx - 3.5), Math.round(by - 3.5), 7, 7);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(Math.round(bx - 1), Math.round(by - 1), 2, 2);
+      }
+      if (npc.active) {
+        const nx = offX + (npcPixel.x + npc.size / 2) * scale;
+        const ny = offY + (npcPixel.y + npc.size / 2) * scale;
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(nx, ny, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#8e5cc4";
+        ctx.beginPath();
+        ctx.arc(nx, ny, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
       otherPlayers.forEach((playerData) => {
         if (
           !isPlayerOnlineOnMap(playerData) ||
