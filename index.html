@@ -3438,13 +3438,44 @@
       cursor: pointer;
       padding: 4px 8px;
     }
-    .guide-chat-answer {
+    /* Conversation: your question on the right, the guide's answer on the left */
+    .guide-chat-log {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: min(42vh, 320px);
+      overflow-y: auto;
+      padding: 2px 2px 10px;
+      overscroll-behavior: contain;
+    }
+    .guide-msg {
+      max-width: 85%;
+      text-align: left;
       font-size: 16px;
       line-height: 1.5;
-      padding: 10px 12px;
-      border-radius: 12px;
-      background: #2a2e4a;
-      margin-bottom: 10px;
+      padding: 8px 12px;
+      border-radius: 14px;
+      word-break: break-word;
+      animation: guide-msg-in 0.18s ease-out;
+    }
+    .guide-msg.from-guide {
+      align-self: flex-start;
+      background: #2f3558;
+      border-bottom-left-radius: 4px;
+    }
+    .guide-msg.from-me {
+      align-self: flex-end;
+      background: #3d8bf2;
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .guide-msg.is-typing {
+      color: #a8acd0;
+      letter-spacing: 2px;
+    }
+    @keyframes guide-msg-in {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: none; }
     }
     .guide-chat-chips {
       display: flex;
@@ -3491,11 +3522,7 @@
       body.guide-chat-open .joystick,
       body.guide-chat-open .zoom-controls,
       body.guide-chat-open .zone-call-btn,
-      body.guide-chat-open .interact-btn,
-      body.dialogue-open .joystick,
-      body.dialogue-open .zoom-controls,
-      body.dialogue-open .zone-call-btn,
-      body.dialogue-open .interact-btn {
+      body.guide-chat-open .interact-btn {
         visibility: hidden;
       }
     }
@@ -3653,7 +3680,7 @@
             <span class="guide-chat-title">💬 嚮導</span>
             <button type="button" class="guide-chat-close" id="guide-chat-close" aria-label="關閉">✕</button>
           </div>
-          <div class="guide-chat-answer" id="guide-chat-answer"></div>
+          <div class="guide-chat-log" id="guide-chat-log" aria-live="polite"></div>
           <div class="guide-chat-chips" id="guide-chat-chips"></div>
           <form class="gc-composer guide-chat-form" id="guide-chat-form">
             <input id="guide-chat-input" type="text" maxlength="80" placeholder="問嚮導…" autocomplete="off" />
@@ -7623,17 +7650,6 @@
       },
     };
 
-    const npcQuiz = {
-      question: "Welcome to the LGBTQ-friendly world. Pick a mood:",
-      options: ["1. I'll look around first", "2. I'd like to chat", "3. I'll explore elsewhere"],
-      correctIndex: 1,
-      correctMessage: "Sure～I'm here for you, take your time.",
-      wrongMessage: "No worries, go wherever you like. I'll be here when you're back.",
-    };
-    let isDialogueOpen = false;
-    let dialogueStage = "question";
-    let selectedOption = 0;
-    let resultMessage = "";
     const keys = {
       ArrowUp: false,
       ArrowDown: false,
@@ -7761,10 +7777,6 @@
         } else if (isDown && !event.repeat && rawKey.toLowerCase() === "h") {
           toggleRaiseHand();
         }
-        return;
-      }
-      // While choosing an NPC answer, left/right select options instead of walking
-      if (isDown && isDialogueOpen && dialogueStage === "question" && event.key.startsWith("Arrow")) {
         return;
       }
       keys[key] = isDown;
@@ -8517,49 +8529,7 @@
       // Gather-style: X also interacts with things nearby (tables, NPC, board)
       const isInteractKey = event.key === "Enter" || (event.key || "").toLowerCase() === "x";
 
-      if (isDialogueOpen && dialogueStage === "question") {
-        if (event.key === "ArrowLeft") {
-          selectedOption =
-            (selectedOption - 1 + npcQuiz.options.length) %
-            npcQuiz.options.length;
-          event.preventDefault();
-          return;
-        }
-        if (event.key === "ArrowRight") {
-          selectedOption = (selectedOption + 1) % npcQuiz.options.length;
-          event.preventDefault();
-          return;
-        }
-        if (event.key === "ArrowUp") {
-          selectedOption = (selectedOption - 1 + npcQuiz.options.length) % npcQuiz.options.length;
-          event.preventDefault();
-          return;
-        }
-        if (event.key === "ArrowDown") {
-          selectedOption = (selectedOption + 1) % npcQuiz.options.length;
-          event.preventDefault();
-          return;
-        }
-      }
-
       if (isInteractKey && !event.repeat) {
-        if (isDialogueOpen) {
-          if (dialogueStage === "question") {
-            const isCorrect = selectedOption === npcQuiz.correctIndex;
-            resultMessage = isCorrect
-              ? npcQuiz.correctMessage
-              : npcQuiz.wrongMessage;
-            dialogueStage = "result";
-          } else {
-            isDialogueOpen = false;
-            dialogueStage = "question";
-            selectedOption = 0;
-            resultMessage = "";
-          }
-          event.preventDefault();
-          return;
-        }
-
         if (isNoticeOpen) {
           closeNotice();
           event.preventDefault();
@@ -8609,17 +8579,26 @@
 
     // ---- Guide chat (free FAQ in js/guide-faq.js) ----
     const guideChat = document.querySelector("#guide-chat");
-    const guideChatAnswer = document.querySelector("#guide-chat-answer");
+    const guideChatLog = document.querySelector("#guide-chat-log");
     const guideChatInput = document.querySelector("#guide-chat-input");
     const isGuideChatOpen = () => Boolean(guideChat && !guideChat.hidden);
-    const guideSay = (text) => {
-      if (guideChatAnswer) guideChatAnswer.textContent = text;
+    const addGuideMessage = (text, from) => {
+      if (!guideChatLog) return null;
+      const m = document.createElement("div");
+      m.className = `guide-msg ${from === "me" ? "from-me" : "from-guide"}`;
+      m.textContent = text;
+      guideChatLog.appendChild(m);
+      guideChatLog.scrollTop = guideChatLog.scrollHeight;
+      return m;
     };
+    let guideReplyTimer = null;
     const openGuideChat = () => {
       if (!guideChat) return;
       guideChat.hidden = false;
       document.body.classList.add("guide-chat-open");
-      guideSay(GUIDE_GREETING);
+      clearTimeout(guideReplyTimer);
+      if (guideChatLog) guideChatLog.innerHTML = "";
+      addGuideMessage(GUIDE_GREETING, "guide");
       if (guideChatInput) guideChatInput.value = "";
       // Desktop: jump straight into typing (phones: wait for a tap, so the keyboard doesn't cover the map)
       if (!isMobileLayout()) setTimeout(() => guideChatInput?.focus(), 50);
@@ -8633,7 +8612,16 @@
     const askGuide = (question) => {
       const q = String(question || "").trim();
       if (!q) return;
-      guideSay(answerGuideQuestion(q));
+      addGuideMessage(q, "me");
+      // A short "typing…" beat, then the guide answers underneath
+      clearTimeout(guideReplyTimer);
+      guideChatLog?.querySelector(".is-typing")?.remove();
+      const typing = addGuideMessage("•••", "guide");
+      typing?.classList.add("is-typing");
+      guideReplyTimer = setTimeout(() => {
+        typing?.remove();
+        addGuideMessage(answerGuideQuestion(q), "guide");
+      }, 450);
     };
     const guideChips = document.querySelector("#guide-chat-chips");
     GUIDE_QUICK_QUESTIONS.forEach((q) => {
@@ -8668,7 +8656,7 @@
 
     /** What the player can interact with right here (shared by Enter/X and the 👆 button). */
     const getInteraction = () => {
-      if (isAvatarEditorOpen() || isTableOpen() || isGuestbookOpen() || isNoticeOpen || isDialogueOpen || isGuideChatOpen() || buildMode || isPartyDialogOpen()) return null;
+      if (isAvatarEditorOpen() || isTableOpen() || isGuestbookOpen() || isNoticeOpen || isGuideChatOpen() || buildMode || isPartyDialogOpen()) return null;
       const c = getPlayerCenter();
       if (isHomeMap(currentMapName) && isNearGuestbook(c.x, c.y, tileSize)) {
         return { label: "📌 看留言板", run: () => openGuestbook(homeOwnerOfCurrentMap()) };
@@ -8685,37 +8673,6 @@
       }
       if (bubbleTarget === "board") return { label: "📌 看告示板", bubble: true, run: openNotice };
       return null;
-    };
-
-    // Tap-friendly NPC dialogue: tap an option to choose it, tap anywhere to close the answer
-    let dialogueHitAreas = []; // canvas-space rects of the options, filled in by render()
-    let dialogueBoxRect = null; // canvas-space rect of the whole text box
-    const handleDialogueTap = (event) => {
-      const rect = canvas.getBoundingClientRect();
-      const cx = (event.clientX - rect.left) * (viewportWidth / rect.width);
-      const cy = (event.clientY - rect.top) * (viewportHeight / rect.height);
-      const b = dialogueBoxRect;
-      const insideBox = b && cx >= b.x && cx <= b.x + b.w && cy >= b.y - 20 && cy <= b.y + b.h;
-      if (dialogueStage === "question") {
-        const hit = dialogueHitAreas.find((a) => cx >= a.x && cx <= a.x + a.w && cy >= a.y && cy <= a.y + a.h);
-        if (!hit) {
-          if (!insideBox) {
-            // Tapping the map outside the box closes the conversation
-            isDialogueOpen = false;
-            dialogueStage = "question";
-            selectedOption = 0;
-          }
-          return;
-        }
-        selectedOption = hit.index;
-        resultMessage = selectedOption === npcQuiz.correctIndex ? npcQuiz.correctMessage : npcQuiz.wrongMessage;
-        dialogueStage = "result";
-      } else {
-        isDialogueOpen = false;
-        dialogueStage = "question";
-        selectedOption = 0;
-        resultMessage = "";
-      }
     };
 
     // Blocked-tile grid for pathfinding; rebuilt on map change.
@@ -9095,10 +9052,6 @@
 
     canvas.addEventListener("pointerdown", (event) => {
       event.preventDefault();
-      if (isDialogueOpen) {
-        handleDialogueTap(event);
-        return;
-      }
       if (buildMode) {
         handleBuildPointer(eventToWorld(event));
         return;
@@ -10084,10 +10037,7 @@
       resetPrivateContext();
       // Tell people where they just arrived, on every entry and exit (auto-closes after 2.5s)
       if (!gameContent || gameContent.classList.contains("visible")) showVillageWelcome(mapName);
-      isDialogueOpen = false;
-      dialogueStage = "question";
-      selectedOption = 0;
-      resultMessage = "";
+      closeGuideChat();
       updateChatVisibility();
       startPlayersListener();
       startTableListeners();
@@ -10952,12 +10902,6 @@
     };
 
     const update = (deltaMs = 16) => {
-      if (isDialogueOpen && npc.active && !isPlayerNearNpc()) {
-        isDialogueOpen = false;
-        dialogueStage = "question";
-        selectedOption = 0;
-        resultMessage = "";
-      }
       updatePigs(deltaMs);
       updateCows(deltaMs);
       updateAnimals(currentMap.chickens, deltaMs, ANIMAL_KINDS.chicken);
@@ -11475,7 +11419,7 @@
       if (npc.active) {
         addDrawable(npcPixel.y + npc.size, () => drawPixelCharacter(npcAvatar, "down", false, 0, npcPixel.x, npcPixel.y));
         if (isGuideChatOpen() && !isPlayerNearNpc()) closeGuideChat(); // walked away
-        if (!isDialogueOpen && !isPlayerNearNpc()) {
+        if (!isPlayerNearNpc()) {
           // A bobbing "!" from afar; up close the white "💬 和嚮導聊聊" bubble takes over
           overlays.push(() => {
             const bob = Math.round(Math.sin(now / 250) * 3);
@@ -11664,7 +11608,7 @@
       if (showBoard) positionBoardAction();
 
       // The guide gets the same white bubble over their head when you're close
-      const showNpcBubble = bubbleTarget === "npc" && !isDialogueOpen && !isGuideChatOpen() && Boolean(getInteraction()?.bubble);
+      const showNpcBubble = bubbleTarget === "npc" && !isGuideChatOpen() && Boolean(getInteraction()?.bubble);
       setDomVisible(npcAction, showNpcBubble, "inline-flex");
       if (showNpcBubble && npcAction) {
         const p = worldToClient(npcPixel.x + npc.size / 2, npcPixel.y);
@@ -11695,113 +11639,6 @@
       }
 
       drawMinimap();
-
-      document.body.classList.toggle("dialogue-open", isDialogueOpen);
-      if (isDialogueOpen) {
-        // RPG-style text box along the bottom of the viewport
-        const touchUi = isMobileLayout(); // phones: big tappable options, no keyboard hints
-        const boxWidth = Math.min(600, viewportWidth - (touchUi ? 24 : 40));
-        const boxX = Math.round((viewportWidth - boxWidth) / 2);
-        const pad = 18;
-        const lineHeight = 26;
-        const optionHeight = touchUi ? 52 : lineHeight;
-        const optionGap = touchUi ? 8 : 0;
-        const maxTextWidth = boxWidth - pad * 2;
-        ctx.save();
-        ctx.font = "17px \"Noto Sans TC\", \"PingFang TC\", Arial, sans-serif";
-        const bodyLines =
-          dialogueStage === "question"
-            ? wrapText(ctx, npcQuiz.question, maxTextWidth)
-            : wrapText(ctx, resultMessage, maxTextWidth);
-        const optionLines = dialogueStage === "question" ? npcQuiz.options.length : 0;
-        const hintSpace = touchUi ? 0 : 20; // phones: no hint line under the options
-        const boxHeight =
-          pad * 2 + bodyLines.length * lineHeight + optionLines * (optionHeight + optionGap) + (optionLines ? 8 : 0) + hintSpace;
-        const boxY = Math.round(viewportHeight - boxHeight - 16);
-        dialogueBoxRect = { x: boxX, y: boxY, w: boxWidth, h: boxHeight };
-
-        // Pixel frame: dark outline, light inner border, cream fill
-        ctx.fillStyle = "#2a1f1a";
-        ctx.fillRect(boxX - 4, boxY - 4, boxWidth + 8, boxHeight + 8);
-        ctx.fillStyle = "#e8c5a7";
-        ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
-        ctx.fillStyle = "#fdf6e3";
-        ctx.fillRect(boxX + 4, boxY + 4, boxWidth - 8, boxHeight - 8);
-
-        // Speaker tag
-        ctx.font = "bold 14px \"Noto Sans TC\", \"PingFang TC\", Arial, sans-serif";
-        const tag = "Guide";
-        const tagW = ctx.measureText(tag).width + 20;
-        ctx.fillStyle = "#2a1f1a";
-        ctx.fillRect(boxX + 12, boxY - 16, tagW + 4, 24);
-        ctx.fillStyle = "#7b55c7";
-        ctx.fillRect(boxX + 14, boxY - 14, tagW, 20);
-        ctx.fillStyle = "#ffffff";
-        ctx.textBaseline = "middle";
-        ctx.textAlign = "left";
-        ctx.fillText(tag, boxX + 24, boxY - 4);
-
-        ctx.font = "17px \"Noto Sans TC\", \"PingFang TC\", Arial, sans-serif";
-        ctx.textBaseline = "top";
-        ctx.fillStyle = "#3d3829";
-        let textY = boxY + pad;
-        bodyLines.forEach((line) => {
-          ctx.fillText(line, boxX + pad, textY);
-          textY += lineHeight;
-        });
-
-        if (dialogueStage === "question") {
-          textY += 8;
-          dialogueHitAreas = [];
-          npcQuiz.options.forEach((option, index) => {
-            const selected = index === selectedOption;
-            if (touchUi) {
-              // A button per option, easy to hit with a thumb
-              const bx = boxX + pad - 4;
-              const bw = maxTextWidth + 8;
-              dialogueHitAreas.push({ index, x: bx, y: textY, w: bw, h: optionHeight });
-              ctx.fillStyle = "#2a1f1a";
-              drawRoundedRect(ctx, bx, textY, bw, optionHeight, 12);
-              ctx.fill();
-              ctx.fillStyle = "#ffffff";
-              drawRoundedRect(ctx, bx + 2, textY + 2, bw - 4, optionHeight - 4, 10);
-              ctx.fill();
-              ctx.fillStyle = "#3d3829";
-              ctx.textBaseline = "middle";
-              ctx.fillText(option, bx + 16, textY + optionHeight / 2 + 1);
-              ctx.fillStyle = "#c85a54";
-              ctx.textAlign = "right";
-              ctx.fillText("›", bx + bw - 14, textY + optionHeight / 2);
-              ctx.textAlign = "left";
-              ctx.textBaseline = "top";
-              textY += optionHeight + optionGap;
-              return;
-            }
-            dialogueHitAreas.push({ index, x: boxX + pad - 6, y: textY - 3, w: maxTextWidth + 12, h: lineHeight - 2 });
-            if (selected) {
-              ctx.fillStyle = "rgba(200, 90, 84, 0.12)";
-              ctx.fillRect(boxX + pad - 6, textY - 3, maxTextWidth + 12, lineHeight - 2);
-            }
-            ctx.fillStyle = selected ? "#c85a54" : "#3d3829";
-            ctx.fillText(`${selected ? "▶" : "  "} ${option}`, boxX + pad, textY);
-            textY += lineHeight;
-          });
-        }
-
-        ctx.font = "14px \"Noto Sans TC\", \"PingFang TC\", Arial, sans-serif";
-        ctx.fillStyle = "#6b6355";
-        ctx.textAlign = "right";
-        ctx.textBaseline = "bottom";
-        const blink = Math.floor(now / 500) % 2 === 0 ? " ▼" : "  ";
-        if (!touchUi) {
-          ctx.fillText(
-            (dialogueStage === "question" ? "↑↓ 選擇 · Enter 確認 · 或直接點選項" : "Enter 或點一下關閉") + blink,
-            boxX + boxWidth - pad,
-            boxY + boxHeight - 10
-          );
-        }
-        ctx.restore();
-      }
     };
 
     registerResidentialMap([]); // empty street until homes load
