@@ -1526,23 +1526,7 @@
       font-size: 16px;
       padding: 4px 6px;
       border-radius: 8px;
-      display: inline-flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      min-width: 44px;
       flex-shrink: 0;
-    }
-    .online-action-icon {
-      font-size: 18px;
-      line-height: 1;
-    }
-    .online-action-label {
-      font-size: 14px;
-      line-height: 1.1;
-      font-weight: 600;
-      color: #a8acd0;
-      white-space: nowrap;
     }
     .online-row .online-action:hover,
     .online-row .online-action.is-active {
@@ -5987,16 +5971,10 @@
       });
       const offlineRows = groups.get("__offline") || [];
       groups.delete("__offline");
-      // Icon with a small caption under it, so each action says what it does
+      // Icon only (compact); the name is the tooltip / screen-reader label
       const setAction = (btn, icon, caption) => {
-        btn.textContent = "";
-        const i = document.createElement("span");
-        i.className = "online-action-icon";
-        i.textContent = icon;
-        const c = document.createElement("span");
-        c.className = "online-action-label";
-        c.textContent = caption;
-        btn.append(i, c);
+        btn.textContent = icon;
+        btn.setAttribute("aria-label", caption);
       };
       const buildRow = ({ uid, userData, isOnline }) => {
         const status = isOnline ? (STATUS_LABELS[userData.status] ? userData.status : "online") : "offline";
