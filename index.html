@@ -2012,7 +2012,8 @@
       }
       .joystick.is-active .joystick-knob {
         transition: none;
-        background: rgba(242, 193, 78, 0.9);
+        background: rgba(140, 206, 245, 0.92); /* light blue while dragging */
+        box-shadow: 0 0 0 3px rgba(140, 206, 245, 0.35), 0 2px 6px rgba(0, 0, 0, 0.18);
       }
       /* The 👆 button sits to the left of the D-pad */
       .interact-btn {
@@ -3400,6 +3401,13 @@
       }
     }
 
+    /* Phones: no double-tap zoom (taps also react faster); pinch zoom still works */
+    html,
+    body,
+    button,
+    canvas {
+      touch-action: manipulation;
+    }
     /* Toolbar groups: invisible wrappers on desktop (the bar looks exactly as before) */
     .toolbar-group {
       display: contents;
