@@ -1278,6 +1278,13 @@
       gap: 12px;
       flex-wrap: wrap;
     }
+    .notice-empty {
+      grid-column: 1 / -1;
+      margin: 24px 0;
+      text-align: center;
+      font-size: 16px;
+      color: #6b5a4a;
+    }
     .notice-hint {
       flex: 1;
       min-width: 180px;
@@ -3478,10 +3485,22 @@
       from { opacity: 0; transform: translateY(6px); }
       to { opacity: 1; transform: none; }
     }
+    /* Quick questions: one row you swipe / scroll sideways */
     .guide-chat-chips {
       display: flex;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      padding-bottom: 2px;
+      touch-action: pan-x;
+    }
+    .guide-chat-chips::-webkit-scrollbar {
+      display: none;
+    }
+    .guide-chat-chips button {
+      flex-shrink: 0;
+      white-space: nowrap;
     }
     .guide-chat-chips button {
       font-size: 14px;
@@ -3676,7 +3695,7 @@
         <div class="hint">方向鍵／WASD 移動 · Shift 跑步 · 點地圖自動尋路 · Enter／X 互動 · 1–7 表情 · H 舉手</div>
         <button class="call-start" id="call-start" type="button" title="Start call">📹</button>
         <button class="board-action" id="board-action" type="button">
-          📌 攀岩時間表 ↲
+          📌 抱石時間表 ↲
         </button>
         <button class="board-action" id="npc-action" type="button">💬 和嚮導聊聊 ↲</button>
         <div class="guide-chat" id="guide-chat" role="dialog" aria-label="和嚮導聊聊" hidden>
@@ -3853,8 +3872,8 @@
   <div class="notice-overlay" id="notice-overlay" role="dialog" aria-modal="true" aria-labelledby="notice-title">
     <div class="notice-board">
       <div class="notice-header">
-        <div class="notice-title" id="notice-title">🧗 攀岩團時間表</div>
-        <div class="notice-subtitle">Bouldering Schedule · 想一起爬就來！</div>
+        <div class="notice-title" id="notice-title">🧗 抱石團時間表</div>
+        <div class="notice-subtitle" id="notice-subtitle">Bouldering Schedule · 想一起爬就來！</div>
       </div>
       <div class="notice-body" id="notice-body">
         <article class="notice-item" style="--note: #f7c6d0; --tilt: -2deg">
@@ -3877,7 +3896,7 @@
         </article>
       </div>
       <div class="notice-footer">
-        <span class="notice-hint">💬 想參加？在聊天室喊一聲，或按名單上的 💬 私訊大家！</span>
+        <span class="notice-hint" id="notice-hint">💬 想參加？在聊天室喊一聲，或按名單上的 💬 私訊大家！</span>
         <button class="notice-close" id="notice-close" type="button">關閉 ↲</button>
       </div>
     </div>
@@ -3996,7 +4015,7 @@
         <p class="party-desc">開派對時，大家都能直接進你家（不用敲門），聊天室也會幫你公告。被你封鎖或請離開的人還是進不來。</p>
         <label class="avatar-field">
           <span>派對名稱</span>
-          <input id="party-name" type="text" maxlength="30" placeholder="例如：週五桌遊夜、攀岩後聚餐" />
+          <input id="party-name" type="text" maxlength="30" placeholder="例如：週五桌遊夜、抱石後聚餐" />
         </label>
         <label class="avatar-field">
           <span>持續時間</span>
@@ -4124,10 +4143,10 @@
     import { buildFloorLayer, pathTileSet } from "./js/terrain.js";
     import { makeGymImageUrl } from "./js/gym.js?v=3";
     import { makeNoticeBoardImage } from "./js/notice-board.js?v=2";
-    import { GUIDE_GREETING, GUIDE_QUICK_QUESTIONS, answerGuideQuestion } from "./js/guide-faq.js?v=1";
+    import { GUIDE_GREETING, GUIDE_QUICK_QUESTIONS, answerGuideQuestion } from "./js/guide-faq.js?v=2";
     import { buildGymInteriorLayer, gymBlockedTiles, gymMinimapColor } from "./js/gym-interior.js?v=2";
     import { findPath, nearestOpenTile } from "./js/pathfind.js";
-    import { arcadeRoomBlockedTiles, drawArcadeRoom, drawGameTable, drawLoungeRoom, drawMeetingRoom, drawZones, getGameTables, getZones, isZoneTile, loungeRoomBlockedTiles, meetingRoomBlockedTiles, registerZones, zoneAt } from "./js/spaces.js?v=20260929c";
+    import { arcadeRoomBlockedTiles, drawArcadeRoom, drawGameTable, drawLoungeRoom, drawMeetingRoom, drawZones, getGameTables, getZones, isZoneTile, loungeRoomBlockedTiles, meetingRoomBlockedTiles, registerZones, zoneAt } from "./js/spaces.js?v=20260929d";
     import {
       HOME_COLS,
       HOME_EXIT_TILES,
@@ -4158,7 +4177,7 @@
       getInterest,
       interestEmojis,
       normalizeProfile,
-    } from "./js/profile.js";
+    } from "./js/profile.js?v=20260929a";
     import {
       buildResidentialLayer,
       buildResidentialTiles,
@@ -4890,10 +4909,29 @@
       boardAction.style.top = `${Math.max(8, y - 24)}px`;
     };
 
+    // Each map's board has its own content: 抱石村 shows the bouldering schedule, the world
+    // map's board is empty for now
+    const noticeTitleEl = document.querySelector("#notice-title");
+    const noticeSubtitleEl = document.querySelector("#notice-subtitle");
+    const noticeBodyEl = document.querySelector("#notice-body");
+    const noticeHintEl = document.querySelector("#notice-hint");
+    const NOTICE_SCHEDULE = {
+      title: noticeTitleEl?.textContent || "",
+      subtitle: noticeSubtitleEl?.textContent || "",
+      body: noticeBodyEl?.innerHTML || "",
+    };
+    const NOTICE_BOARD_LABELS = { villageMap: "📌 抱石時間表 ↲", worldMap: "📌 公佈欄 ↲" };
     const openNotice = () => {
       if (!noticeOverlay) {
         return;
       }
+      const schedule = currentMapName === "villageMap";
+      if (noticeTitleEl) noticeTitleEl.textContent = schedule ? NOTICE_SCHEDULE.title : "📌 主世界公佈欄";
+      if (noticeSubtitleEl) noticeSubtitleEl.textContent = schedule ? NOTICE_SCHEDULE.subtitle : "Notice Board";
+      if (noticeBodyEl) {
+        noticeBodyEl.innerHTML = schedule ? NOTICE_SCHEDULE.body : '<p class="notice-empty">目前還沒有公告～</p>';
+      }
+      if (noticeHintEl) noticeHintEl.hidden = !schedule;
       isNoticeOpen = true;
       noticeOverlay.style.display = "flex";
     };
@@ -8397,10 +8435,13 @@
         for (let row = 0; row < mapRows; row++) {
           for (let col = 0; col < mapCols; col++) {
             const tile = currentMap.tiles[row][col];
+            const isEdge = row === 0 || col === 0 || row === mapRows - 1 || col === mapCols - 1;
             m.fillStyle = currentMap.minimapColor
               ? currentMap.minimapColor(col, row)
               : currentMapName === "officeMap"
               ? officeMinimapColor(col, row)
+              : currentMapName === "worldMap"
+              ? tile === 1 && !isEdge ? "#e8dcc8" : "#2f6b4a" // plain dark-green ground, light buildings
               : tile === 1 ? "#2d5016" : (currentMapName === "villageMap" ? "#8a7b4a" : "#3d7a5c");
             m.fillRect(col * tileSize * scale, row * tileSize * scale, tileSize * scale + 0.5, tileSize * scale + 0.5);
           }
@@ -8413,7 +8454,8 @@
             m.fillRect(px * tileSize * scale, py * tileSize * scale, tileSize * scale + 0.5, tileSize * scale + 0.5);
           });
         }
-        currentMap.crowd.forEach((member) => {
+        // Trees (not on the world map's minimap: its ground is kept plain)
+        (currentMapName === "worldMap" ? [] : currentMap.crowd).forEach((member) => {
           m.fillStyle = "#1a4d0e";
           m.fillRect(member.tileX * tileSize * scale, member.tileY * tileSize * scale, Math.max(1.5, tileSize * scale * 0.5), Math.max(1.5, tileSize * scale * 0.5));
         });
@@ -11529,7 +11571,7 @@
         locateTarget = null;
       }
 
-      // (the board's own white "📌 攀岩時間表" bubble is the only call to action near it)
+      // (the board's own white bubble is the only call to action near it)
 
       ctx.restore();
 
@@ -11609,6 +11651,8 @@
       const bubbleTarget = nearestBubbleTarget(); // only one white bubble at a time
       const showBoard = bubbleTarget === "board" && !isNoticeOpen;
       setDomVisible(boardAction, showBoard, "inline-flex");
+      const boardLabel = NOTICE_BOARD_LABELS[currentMapName] || "📌 公佈欄 ↲";
+      if (showBoard && boardAction && boardAction.textContent.trim() !== boardLabel) boardAction.textContent = boardLabel;
       if (showBoard) positionBoardAction();
 
       // The guide gets the same white bubble over their head when you're close

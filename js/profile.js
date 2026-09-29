@@ -2,7 +2,7 @@
 // Stored on users/{uid} (owner-only writes, see firestore.rules).
 
 export const INTERESTS = [
-  { id: "climbing", emoji: "🧗", label: "攀岩" },
+  { id: "climbing", emoji: "🧗", label: "抱石" },
   { id: "boardgames", emoji: "🎲", label: "桌遊" },
   { id: "gaming", emoji: "🎮", label: "電玩" },
   { id: "movies", emoji: "🎬", label: "電影" },

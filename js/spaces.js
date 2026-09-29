@@ -9,7 +9,7 @@ export const ZONES = {
   ],
   villageMap: [
     // The sofa corner is obviously a lounge, so no name tag on the map (the name still shows in 📍 and chat)
-    { id: "lounge", name: "攀岩休息室", x: 10, y: 18, w: 8, h: 6, private: true, color: "#2f8c9a", indoor: true, hideTag: true },
+    { id: "lounge", name: "抱石休息室", x: 10, y: 18, w: 8, h: 6, private: true, color: "#2f8c9a", indoor: true, hideTag: true },
   ],
   // Indoor zones follow the office rooms; their floors are already drawn, so only tags are shown.
   officeMap: [
@@ -363,7 +363,7 @@ export const drawArcadeRoom = (g, t, room = ARCADE_ROOM, tables = GAME_TABLES.wo
   rpx(g, "#f4f1ea", vx + t - 14, vy + 8, 4, 8);
 };
 
-// ---- 攀岩休息室 (village): a small bouldering wall with crash pads, sofa corner, chalk & water ----
+// ---- 抱石休息室 (village): a small bouldering wall with crash pads, sofa corner, chalk & water ----
 export const loungeRoomBlockedTiles = (room = LOUNGE_ROOM) => {
   const out = [];
   out.push([room.x + 3, room.y + 3], [room.x + 4, room.y + 3]); // coffee table
