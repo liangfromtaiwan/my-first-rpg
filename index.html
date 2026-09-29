@@ -8452,6 +8452,18 @@
     });
 
 
+    /** When both the guide and a bulletin board are in reach, only the closer one is offered. */
+    const nearestBubbleTarget = () => {
+      const nearNpc = npc.active && isPlayerNearNpc();
+      const nearBoard = isPlayerNearWhiteboard();
+      if (!nearNpc || !nearBoard) return nearNpc ? "npc" : nearBoard ? "board" : null;
+      const c = getPlayerCenter();
+      const b = getWhiteboardDrawInfo();
+      const dNpc = Math.hypot(c.x - (npcPixel.x + npc.size / 2), c.y - (npcPixel.y + npc.size / 2));
+      const dBoard = b ? Math.hypot(c.x - (b.x + b.size / 2), c.y - (b.y + b.size / 2)) : Infinity;
+      return dNpc <= dBoard ? "npc" : "board";
+    };
+
     /** What the player can interact with right here (shared by Enter/X and the 👆 button). */
     const getInteraction = () => {
       if (isAvatarEditorOpen() || isTableOpen() || isGuestbookOpen() || isNoticeOpen || isDialogueOpen || buildMode || isPartyDialogOpen()) return null;
@@ -8461,7 +8473,8 @@
       }
       const table = getNearestTable();
       if (table) return { label: "♟️ 下棋", run: () => openTable(table.id) };
-      if (npc.active && isPlayerNearNpc()) {
+      const bubbleTarget = nearestBubbleTarget();
+      if (bubbleTarget === "npc") {
         return {
           label: "💬 對話",
           bubble: true, // shown as the white bubble over the guide's head
@@ -8473,7 +8486,7 @@
           },
         };
       }
-      if (isPlayerNearWhiteboard()) return { label: "📌 看告示板", bubble: true, run: openNotice };
+      if (bubbleTarget === "board") return { label: "📌 看告示板", bubble: true, run: openNotice };
       return null;
     };
 
@@ -11444,12 +11457,13 @@
       const showCall = Boolean(activePrivatePartner && canAcceptCall());
       setDomVisible(callStart, false, "flex"); // replaced by the 👋 encounter menu
 
-      const showBoard = isPlayerNearWhiteboard() && !isNoticeOpen;
+      const bubbleTarget = nearestBubbleTarget(); // only one white bubble at a time
+      const showBoard = bubbleTarget === "board" && !isNoticeOpen;
       setDomVisible(boardAction, showBoard, "inline-flex");
       if (showBoard) positionBoardAction();
 
       // The guide gets the same white bubble over their head when you're close
-      const showNpcBubble = npc.active && !isDialogueOpen && isPlayerNearNpc() && Boolean(getInteraction()?.bubble);
+      const showNpcBubble = bubbleTarget === "npc" && !isDialogueOpen && Boolean(getInteraction()?.bubble);
       setDomVisible(npcAction, showNpcBubble, "inline-flex");
       if (showNpcBubble && npcAction) {
         const p = worldToClient(npcPixel.x + npc.size / 2, npcPixel.y);
