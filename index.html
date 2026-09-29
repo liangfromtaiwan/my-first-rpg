@@ -3443,6 +3443,11 @@
       display: block;
       border: 0;
     }
+    /* The video can't be clicked: a click inside it would give YouTube the keyboard and the
+       arrow keys would stop moving you. Use the buttons below it instead. */
+    .party-music-video {
+      pointer-events: none;
+    }
     .party-music-bar {
       display: flex;
       align-items: center;
@@ -9047,6 +9052,7 @@
           events: {
             onReady: (e) => {
               partyPlayerReady = true;
+              e.target.getIframe?.()?.setAttribute("tabindex", "-1");
               e.target.setVolume(PARTY_MUSIC.volume ?? 60);
               appliedPartyKey = "";
               applyPartyState();
@@ -9165,6 +9171,15 @@
         ? shareInvite("bar", "來抱石村的爵士酒吧坐坐吧 🎷")
         : shareInvite("party", "來抱石村的派對房一起聽歌吧 🎉")
     );
+    window.addEventListener("blur", () => {
+      setTimeout(() => {
+        const a = document.activeElement;
+        if (a && a.tagName === "IFRAME" && a.closest?.("#party-music")) {
+          a.blur();
+          window.focus();
+        }
+      }, 0);
+    });
     partyMuteBtn?.addEventListener("click", () => {
       partyMuted = !partyMuted;
       partyMuteBtn.textContent = partyMuted ? "🔇" : "🔊";
@@ -9204,7 +9219,11 @@
         { videoId: song ? src.videoId : "", playlistId: song ? "" : src.playlistId || "", index: 0, startedAt: Date.now(), stopped: false },
         { force: true }
       );
-      if (djUrlInput) djUrlInput.value = "";
+      if (djUrlInput) {
+        djUrlInput.value = "";
+        djUrlInput.blur(); // hand the keyboard straight back to the game (arrow keys move again)
+      }
+      document.activeElement?.blur?.();
       showIcebreakerToast("🎵 已播放給派對房的大家");
     });
     djUrlInput?.addEventListener("keydown", (event) => event.stopPropagation());
@@ -11871,8 +11890,32 @@
       const beat = Math.floor(t);
       const bob = Math.round(Math.abs(Math.sin(Math.PI * t)) * 6);
       const moves = ["down", "left", "down", "right"];
+      const facingNow = moves[beat % 4];
       drawShadow(x, y, 24 - Math.round(bob / 2));
-      drawCharacter(ctx, avatar, moves[beat % 4], beat % 2 ? 1 : 2, x, y - bob, tileSize);
+      // ✨ A glow stick in the hand on the side they're facing, waving to the beat
+      const stickColors = ["#ff6fb1", "#5ee0ff", "#7cff8a", "#ffe45e", "#c28bff"];
+      const stickColor = stickColors[Math.floor(dancePhase(id) * stickColors.length) % stickColors.length];
+      const drawStick = () => {
+        const hx = x + (facingNow === "left" ? 5 : 31);
+        const hy = y - bob + 17;
+        const swing = Math.sin(Math.PI * t) * 0.6 + (facingNow === "left" ? -0.35 : 0.35);
+        ctx.save();
+        ctx.translate(hx, hy);
+        ctx.rotate(swing);
+        ctx.shadowColor = stickColor;
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = stickColor;
+        ctx.fillRect(-2, -18, 4, 18);
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "rgba(255,255,255,0.75)";
+        ctx.fillRect(-1, -17, 1, 15);
+        ctx.fillStyle = "#2a1f1a";
+        ctx.fillRect(-2, -2, 4, 4); // the fist around the stick
+        ctx.restore();
+      };
+      if (facingNow === "up") drawStick(); // behind the body when facing away
+      drawCharacter(ctx, avatar, facingNow, beat % 2 ? 1 : 2, x, y - bob, tileSize);
+      if (facingNow !== "up") drawStick();
       if (beat % 4 === 1) {
         ctx.save();
         ctx.font = "bold 14px Arial, sans-serif";
