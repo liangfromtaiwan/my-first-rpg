@@ -3462,13 +3462,67 @@
       padding: 4px 8px;
       cursor: pointer;
     }
+    .party-music {
+      width: 260px;
+    }
+    .party-dj {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 0 8px 8px;
+    }
+    .party-dj-status {
+      font-size: 14px;
+      color: #c9ccef;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .party-dj button,
+    .party-dj-form button {
+      border: none;
+      border-radius: 8px;
+      background: #ff6fb1;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+    .party-dj-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .party-dj-actions button {
+      flex: 1;
+      background: #3a4175;
+    }
+    .party-dj-form {
+      display: flex;
+      gap: 6px;
+    }
+    .party-dj-form[hidden],
+    .party-dj-actions[hidden],
+    .party-dj-claim[hidden] {
+      display: none;
+    }
+    .party-dj-form input {
+      flex: 1;
+      min-width: 0;
+      font-size: 14px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      background: #2a2e4a;
+      color: #eef0ff;
+    }
     @media (max-width: 956px) {
       .party-music {
         left: auto;
         right: 12px;
         top: calc(64px + env(safe-area-inset-top, 0px));
         bottom: auto;
-        width: 176px;
+        width: min(260px, calc(100vw - 24px));
       }
     }
     /* ---- Guide chat (free FAQ): a panel at the bottom, answers also pop up over the guide ---- */
@@ -3546,6 +3600,36 @@
     @keyframes guide-msg-in {
       from { opacity: 0; transform: translateY(6px); }
       to { opacity: 1; transform: none; }
+    }
+    /* Arrow buttons on either end of the quick-question row (for a mouse) */
+    .guide-chips-wrap {
+      position: relative;
+    }
+    .guide-chips-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 1;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: #3a4175;
+      color: #fff;
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+    .guide-chips-arrow[hidden] {
+      display: none;
+    }
+    .guide-chips-arrow.is-left {
+      left: -4px;
+    }
+    .guide-chips-arrow.is-right {
+      right: -4px;
     }
     /* Quick questions: one row you swipe / scroll sideways */
     .guide-chat-chips {
@@ -3767,6 +3851,18 @@
             <button type="button" id="party-music-play" hidden>▶ 播放</button>
             <button type="button" id="party-music-mute" title="靜音">🔊</button>
           </div>
+          <div class="party-dj">
+            <div class="party-dj-status" id="party-dj-status">🎧 還沒有 DJ</div>
+            <button type="button" class="party-dj-claim" id="party-dj-claim" hidden>🎧 成為 DJ</button>
+            <form class="party-dj-form" id="party-dj-form" hidden>
+              <input id="party-dj-url" type="text" placeholder="貼上 YouTube 連結…" autocomplete="off" />
+              <button type="submit">▶ 播</button>
+            </form>
+            <div class="party-dj-actions" id="party-dj-actions" hidden>
+              <button type="button" id="party-dj-next">⏭ 下一首</button>
+              <button type="button" id="party-dj-stop">⏹ 停止</button>
+            </div>
+          </div>
         </div>
         <div class="guide-chat" id="guide-chat" role="dialog" aria-label="和嚮導聊聊" hidden>
           <div class="guide-chat-head">
@@ -3774,7 +3870,11 @@
             <button type="button" class="guide-chat-close" id="guide-chat-close" aria-label="關閉">✕</button>
           </div>
           <div class="guide-chat-log" id="guide-chat-log" aria-live="polite"></div>
-          <div class="guide-chat-chips" id="guide-chat-chips"></div>
+          <div class="guide-chips-wrap">
+            <button type="button" class="guide-chips-arrow is-left" id="guide-chips-left" aria-label="往左" hidden>‹</button>
+            <div class="guide-chat-chips" id="guide-chat-chips"></div>
+            <button type="button" class="guide-chips-arrow is-right" id="guide-chips-right" aria-label="往右">›</button>
+          </div>
           <form class="gc-composer guide-chat-form" id="guide-chat-form">
             <input id="guide-chat-input" type="text" maxlength="80" placeholder="問嚮導…" autocomplete="off" />
             <button type="submit" class="gc-send" title="送出">➤</button>
@@ -8694,50 +8794,104 @@
       ctx.restore();
     };
 
-    // ---- 🎉 Party room music (YouTube). Loads the YouTube player the first time you walk in,
-    // plays while you're in the room and pauses when you leave. A live stream / long mix is
-    // started at the same point for everyone (clock-based), so people dance to the same part.
+    // ---- 🎉 Party room music (YouTube) with a DJ ----
+    // partyRoom/state in Firestore says what's playing and when it started; everyone's player
+    // seeks to the same second, so the room hears the same song together. Only a DJ
+    // (partyRoom/djs; the first person to claim it) can change it. With no DJ song set, the
+    // default in js/party-room.js plays. The YouTube player loads the first time you walk in.
     const partyMusicEl = document.querySelector("#party-music");
     const partyMuteBtn = document.querySelector("#party-music-mute");
     const partyPlayBtn = document.querySelector("#party-music-play");
     const partyTitleEl = document.querySelector("#party-music-title");
+    const djStatusEl = document.querySelector("#party-dj-status");
+    const djClaimBtn = document.querySelector("#party-dj-claim");
+    const djForm = document.querySelector("#party-dj-form");
+    const djUrlInput = document.querySelector("#party-dj-url");
+    const djActions = document.querySelector("#party-dj-actions");
     if (partyTitleEl) partyTitleEl.textContent = PARTY_MUSIC.title || "派對音樂";
     let partyPlayer = null;
     let partyPlayerReady = false;
     let partyApiRequested = false;
     let inPartyRoom = false;
     let partyMuted = false;
+    let partyState = null; // Firestore partyRoom/state
+    let partyDjs = null; // Firestore partyRoom/djs ({ uids: [...] }), or null if nobody claimed it
+    let partyDjsLoaded = false;
+    let appliedPartyKey = "";
+    let unsubscribePartyState = null;
+    let unsubscribePartyDjs = null;
+    const isPartyDj = () => Boolean(auth.currentUser && partyDjs?.uids?.includes(auth.currentUser.uid));
+    const partyKey = (st) => (st ? `${st.stopped ? "stop" : ""}|${st.videoId || ""}|${st.playlistId || ""}|${st.index || 0}|${st.startedAt || 0}` : "default");
+    const expectedPartySeconds = (st) => Math.max(0, (Date.now() - (st?.startedAt || Date.now())) / 1000);
+
+    const renderPartyDj = () => {
+      const dj = isPartyDj();
+      if (djClaimBtn) djClaimBtn.hidden = !partyDjsLoaded || Boolean(partyDjs?.uids?.length) || !auth.currentUser;
+      if (djForm) djForm.hidden = !dj;
+      if (djActions) djActions.hidden = !dj;
+      const next = document.querySelector("#party-dj-next");
+      if (next) next.hidden = !(partyState?.playlistId);
+      let status;
+      if (partyState && !partyState.stopped && (partyState.videoId || partyState.playlistId)) {
+        status = `🎧 DJ ${partyState.byName || ""} 正在放歌`;
+      } else if (partyState?.stopped) {
+        status = "⏹ 音樂暫停中";
+      } else {
+        status = partyDjs?.uids?.length ? "🎧 DJ 還沒點歌，先聽預設歌單" : "🎧 還沒有 DJ";
+      }
+      if (dj) status += "（你是 DJ）";
+      if (djStatusEl) djStatusEl.textContent = status;
+    };
+    const startPartyListeners = () => {
+      if (unsubscribePartyState || !auth.currentUser) return;
+      unsubscribePartyState = onSnapshot(
+        doc(db, "partyRoom", "state"),
+        (snap) => {
+          partyState = snap.exists() ? snap.data() : null;
+          renderPartyDj();
+          applyPartyState();
+        },
+        (err) => console.error("Party state listener error", err)
+      );
+      unsubscribePartyDjs = onSnapshot(
+        doc(db, "partyRoom", "djs"),
+        (snap) => {
+          partyDjs = snap.exists() ? snap.data() : null;
+          partyDjsLoaded = true;
+          renderPartyDj();
+        },
+        (err) => console.error("Party DJ listener error", err)
+      );
+    };
+
     const loadYouTubeApi = () => {
       if (partyApiRequested) return;
       partyApiRequested = true;
       window.onYouTubeIframeAPIReady = () => {
-        const src = parseYouTube(PARTY_MUSIC.url);
-        const playerVars = { autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1 };
-        if (src.channelLive) {
-          // "Whatever this channel is streaming now": never goes stale like a single stream link
-          src.videoId = "live_stream";
-          playerVars.channel = src.channelLive;
-        } else if (src.playlistId && !src.videoId) {
-          playerVars.listType = "playlist";
-          playerVars.list = src.playlistId;
-        } else if (src.playlistId) {
-          playerVars.list = src.playlistId;
-        }
         partyPlayer = new window.YT.Player("party-music-player", {
-          videoId: src.videoId || undefined,
-          playerVars,
+          playerVars: { autoplay: 1, playsinline: 1, rel: 0, modestbranding: 1 },
           events: {
             onReady: (e) => {
               partyPlayerReady = true;
               e.target.setVolume(PARTY_MUSIC.volume ?? 60);
-              // Same point for everyone on a long (non-live) video
-              const d = e.target.getDuration?.() || 0;
-              if (d > 60) e.target.seekTo(Math.floor(Date.now() / 1000) % d, true);
-              syncPartyMusic();
+              appliedPartyKey = "";
+              applyPartyState();
             },
             onStateChange: (e) => {
-              // Browsers may block sound until a tap: offer a play button when it doesn't start
-              if (partyPlayBtn) partyPlayBtn.hidden = e.data === window.YT.PlayerState.PLAYING || !inPartyRoom;
+              const YTS = window.YT.PlayerState;
+              if (partyPlayBtn) partyPlayBtn.hidden = e.data === YTS.PLAYING || !inPartyRoom;
+              if (e.data === YTS.PLAYING) {
+                if (partyTitleEl) partyTitleEl.textContent = e.target.getVideoData?.().title || PARTY_MUSIC.title || "派對音樂";
+                correctPartyDrift();
+                // The DJ's player moving on to the next song in a playlist brings everyone along
+                const st = partyState;
+                if (isPartyDj() && st?.playlistId && !st.stopped) {
+                  const idx = e.target.getPlaylistIndex?.();
+                  if (typeof idx === "number" && idx >= 0 && idx !== (st.index || 0)) {
+                    setPartyState({ ...st, index: idx, startedAt: Date.now() - (e.target.getCurrentTime?.() || 0) * 1000 });
+                  }
+                }
+              }
             },
           },
         });
@@ -8746,39 +8900,111 @@
       tag.src = "https://www.youtube.com/iframe_api";
       document.head.appendChild(tag);
     };
-    const syncPartyMusic = () => {
-      if (!partyPlayerReady || !partyPlayer) return;
-      if (inPartyRoom) {
-        partyPlayer.playVideo();
-        if (partyMuted) partyPlayer.mute();
-        else partyPlayer.unMute();
-      } else {
-        partyPlayer.pauseVideo();
+
+    /** Load whatever the room should be playing (DJ's pick, or the default). */
+    const applyPartyState = () => {
+      if (!partyPlayerReady || !partyPlayer || !inPartyRoom) return;
+      const st = partyState;
+      const key = partyKey(st);
+      if (key === appliedPartyKey) return;
+      appliedPartyKey = key;
+      if (st?.stopped) {
+        partyPlayer.stopVideo();
+        return;
       }
+      const src = st && (st.videoId || st.playlistId) ? st : parseYouTube(PARTY_MUSIC.url);
+      const start = st ? expectedPartySeconds(st) : 0;
+      if (src.playlistId) {
+        partyPlayer.loadPlaylist({ list: src.playlistId, listType: "playlist", index: src.index || 0, startSeconds: start });
+      } else if (src.videoId) {
+        partyPlayer.loadVideoById({ videoId: src.videoId, startSeconds: start });
+      }
+      if (partyMuted) partyPlayer.mute();
+      else partyPlayer.unMute();
     };
+    /** Nudge the player back to the room's shared time if it drifted (ads, slow network, tab asleep). */
+    const correctPartyDrift = () => {
+      const st = partyState;
+      if (!partyPlayerReady || !partyPlayer || !inPartyRoom || !st || st.stopped) return;
+      if (st.playlistId && partyPlayer.getPlaylistIndex?.() !== (st.index || 0)) return; // moved on by itself
+      const d = partyPlayer.getDuration?.() || 0;
+      let target = expectedPartySeconds(st);
+      if (st.videoId && !st.playlistId && d > 0) target %= d; // a single song loops for late-comers
+      if (d > 0 && target > d) return;
+      const now = partyPlayer.getCurrentTime?.() || 0;
+      if (Math.abs(now - target) > 3) partyPlayer.seekTo(target, true);
+    };
+    setInterval(correctPartyDrift, 10000);
+
+    const setPartyState = (data) =>
+      setDoc(doc(db, "partyRoom", "state"), { ...data, by: auth.currentUser?.uid || "", byName: myDisplayName(), updatedAt: serverTimestamp() }).catch((err) => {
+        console.error("Party state write failed", err);
+        showIcebreakerToast("只有 DJ 可以點歌");
+      });
+
     const setInPartyRoom = (inside) => {
       if (inside === inPartyRoom) return;
       inPartyRoom = inside;
       if (partyMusicEl) partyMusicEl.hidden = !inside;
-      if (inside) loadYouTubeApi();
-      syncPartyMusic();
       if (inside) {
+        startPartyListeners();
+        loadYouTubeApi();
+        appliedPartyKey = ""; // re-join the room's current song at the current second
+        applyPartyState();
+        renderPartyDj();
         // If the browser blocked autoplay, show ▶ after a moment
         setTimeout(() => {
           const playing = partyPlayerReady && partyPlayer?.getPlayerState?.() === window.YT?.PlayerState?.PLAYING;
-          if (inPartyRoom && partyPlayBtn) partyPlayBtn.hidden = playing;
+          if (inPartyRoom && partyPlayBtn && !partyState?.stopped) partyPlayBtn.hidden = playing;
         }, 2500);
+      } else if (partyPlayerReady && partyPlayer) {
+        partyPlayer.pauseVideo();
       }
     };
     partyMuteBtn?.addEventListener("click", () => {
       partyMuted = !partyMuted;
       partyMuteBtn.textContent = partyMuted ? "🔇" : "🔊";
       partyMuteBtn.title = partyMuted ? "取消靜音" : "靜音";
-      syncPartyMusic();
+      if (partyMuted) partyPlayer?.mute?.();
+      else partyPlayer?.unMute?.();
     });
     partyPlayBtn?.addEventListener("click", () => {
       partyPlayBtn.hidden = true;
-      syncPartyMusic();
+      partyPlayer?.playVideo?.();
+      correctPartyDrift();
+    });
+    djClaimBtn?.addEventListener("click", async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+      try {
+        await setDoc(doc(db, "partyRoom", "djs"), { uids: [user.uid], names: [myDisplayName()], claimedAt: serverTimestamp() });
+        showIcebreakerToast("🎧 你現在是派對房的 DJ 了！");
+      } catch (err) {
+        console.error("DJ claim failed", err);
+        showIcebreakerToast("已經有 DJ 了");
+      }
+    });
+    djForm?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const url = (djUrlInput?.value || "").trim();
+      if (!url) return;
+      const src = parseYouTube(url);
+      if (!src.videoId && !src.playlistId) {
+        showIcebreakerToast("看不懂這個連結，請貼 YouTube 影片或播放清單的網址");
+        return;
+      }
+      setPartyState({ videoId: src.videoId || "", playlistId: src.playlistId || "", index: 0, startedAt: Date.now(), stopped: false });
+      if (djUrlInput) djUrlInput.value = "";
+      showIcebreakerToast("🎵 已播放給派對房的大家");
+    });
+    djUrlInput?.addEventListener("keydown", (event) => event.stopPropagation());
+    document.querySelector("#party-dj-next")?.addEventListener("click", () => {
+      const st = partyState;
+      if (!st?.playlistId) return;
+      setPartyState({ ...st, index: (st.index || 0) + 1, startedAt: Date.now(), stopped: false });
+    });
+    document.querySelector("#party-dj-stop")?.addEventListener("click", () => {
+      setPartyState({ ...(partyState || {}), stopped: true, startedAt: Date.now() });
     });
 
     // ---- Guide chat (free FAQ in js/guide-faq.js) ----
@@ -8803,6 +9029,8 @@
       clearTimeout(guideReplyTimer);
       if (guideChatLog) guideChatLog.innerHTML = "";
       addGuideMessage(GUIDE_GREETING, "guide");
+      if (guideChips) guideChips.scrollLeft = 0;
+      requestAnimationFrame(updateChipArrows);
       if (guideChatInput) guideChatInput.value = "";
       // Desktop: jump straight into typing (phones: wait for a tap, so the keyboard doesn't cover the map)
       if (!isMobileLayout()) setTimeout(() => guideChatInput?.focus(), 50);
@@ -8835,6 +9063,28 @@
       b.addEventListener("click", () => askGuide(q));
       guideChips?.appendChild(b);
     });
+    // ‹ › buttons (and the mouse wheel) scroll the quick-question row; each arrow hides at its end
+    const chipsLeft = document.querySelector("#guide-chips-left");
+    const chipsRight = document.querySelector("#guide-chips-right");
+    const updateChipArrows = () => {
+      if (!guideChips) return;
+      const max = guideChips.scrollWidth - guideChips.clientWidth;
+      if (chipsLeft) chipsLeft.hidden = guideChips.scrollLeft <= 2;
+      if (chipsRight) chipsRight.hidden = guideChips.scrollLeft >= max - 2;
+    };
+    chipsLeft?.addEventListener("click", () => guideChips?.scrollBy({ left: -220, behavior: "smooth" }));
+    chipsRight?.addEventListener("click", () => guideChips?.scrollBy({ left: 220, behavior: "smooth" }));
+    guideChips?.addEventListener("scroll", updateChipArrows, { passive: true });
+    guideChips?.addEventListener(
+      "wheel",
+      (event) => {
+        if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+          guideChips.scrollLeft += event.deltaY;
+          event.preventDefault();
+        }
+      },
+      { passive: false }
+    );
     document.querySelector("#guide-chat-form")?.addEventListener("submit", (event) => {
       event.preventDefault();
       askGuide(guideChatInput?.value);

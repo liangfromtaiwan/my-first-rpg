@@ -102,6 +102,23 @@ service cloud.firestore {
         && (request.auth.uid == resource.data.fromUid || request.auth.uid == resource.data.toUid);
     }
 
+    // ---- 🎉 Party room DJ ----
+    // partyRoom/djs: who may pick songs. The first person to claim it becomes the DJ;
+    // after that only a DJ can change the list.
+    // partyRoom/state: what's playing now (everyone reads it; only a DJ writes it).
+    match /partyRoom/{docId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && docId == "djs"
+        && request.resource.data.uids == [request.auth.uid];
+      allow update: if signedIn() && docId == "djs"
+        && request.auth.uid in resource.data.uids
+        && request.resource.data.uids is list;
+      allow create, update: if signedIn() && docId == "state"
+        && exists(/databases/$(database)/documents/partyRoom/djs)
+        && request.auth.uid in get(/databases/$(database)/documents/partyRoom/djs).data.uids;
+      allow delete: if false;
+    }
+
     // ---- Homes ("自己的家") ----
     // homes/{uid}: layout, colors and door mode. Everyone can look, only the owner can change it.
     match /homes/{ownerId} {
