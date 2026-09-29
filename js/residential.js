@@ -274,30 +274,164 @@ export const drawHouseFront = (ctx, plot, t, { online, atHome, isMine, interests
 };
 
 /** World-map arch over the entrance to the residential district (posts at both ends). */
+/**
+ * The entrance to the residential district on the world map: a two-storey suburban house
+ * (main block 4 tiles wide + a garage wing on the right). Its front door is the two middle
+ * tiles of the bottom row (tileX+1, tileX+2), which lead into the district.
+ */
+export const RES_HOUSE_BLOCKED = (tileX, tileY) => {
+  const out = [];
+  for (let y = tileY - 3; y < tileY; y++) for (let x = tileX; x <= tileX + 5; x++) out.push([x, y]);
+  [tileX, tileX + 3, tileX + 4, tileX + 5].forEach((x) => out.push([x, tileY]));
+  return out;
+};
+
 export const drawResidentialGate = (ctx, tileX, tileY, t) => {
-  const X = tileX * t;
-  const Y = tileY * t;
+  const X = tileX * t; // left edge of the main block
+  const B = (tileY + 1) * t; // ground line (bottom of the door row)
   const W = 4 * t;
-  // Posts
-  [X + 8, X + W - 32].forEach((postX) => {
-    px(ctx, "rgba(20,30,20,0.25)", postX - 2, Y + t - 6, 28, 8);
-    px(ctx, OUT, postX, Y - 50, 24, t + 50);
-    px(ctx, "#c9955f", postX + 3, Y - 47, 18, t + 44);
-    px(ctx, "#a8773f", postX + 3, Y - 47, 4, t + 44);
-  });
-  // Beam + sign
-  px(ctx, OUT, X, Y - 62, W, 20);
-  px(ctx, "#8b5e3c", X + 3, Y - 59, W - 6, 14);
-  px(ctx, OUT, X + W / 2 - 50, Y - 78, 100, 26);
-  px(ctx, "#f2c14e", X + W / 2 - 47, Y - 75, 94, 20);
-  ctx.save();
+  const WALL = "#f6e7d6";
+  const WALL_D = "#e8d3bd";
+  const TRIM = "#ffffff";
+  const ROOF = "#5b4a5e";
+  const ROOF_L = "#6f5c72";
+  const GLASS = "#9fd4ee";
+  const GLASS_L = "#d5eefa";
+  const DOOR = "#7a4a2e";
+  const wallTop = B - 3.3 * t;
+
+  // Shadow on the grass
+  px(ctx, "rgba(20,40,20,0.22)", X - 6, B - 6, W + 2 * t + 12, 10);
+
+  // ---- Garage wing (right, one storey) ----
+  const GX = X + W - 4;
+  const GW = 2 * t + 4;
+  const gTop = B - 1.9 * t;
+  px(ctx, OUT, GX, gTop, GW, B - gTop);
+  px(ctx, WALL, GX + 3, gTop + 3, GW - 6, B - gTop - 3);
+  // garage roof
   ctx.fillStyle = OUT;
+  ctx.beginPath();
+  ctx.moveTo(GX - 6, gTop + 4);
+  ctx.lineTo(GX + GW / 2, gTop - 0.8 * t);
+  ctx.lineTo(GX + GW + 6, gTop + 4);
+  ctx.fill();
+  ctx.fillStyle = ROOF;
+  ctx.beginPath();
+  ctx.moveTo(GX - 1, gTop + 1);
+  ctx.lineTo(GX + GW / 2, gTop - 0.8 * t + 5);
+  ctx.lineTo(GX + GW + 1, gTop + 1);
+  ctx.fill();
+  // garage door with panels
+  px(ctx, OUT, GX + 10, B - 1.2 * t, GW - 20, 1.2 * t);
+  px(ctx, "#fbf8f2", GX + 13, B - 1.2 * t + 3, GW - 26, 1.2 * t - 3);
+  for (let i = 1; i < 4; i++) px(ctx, "#ddd6ca", GX + 13, B - 1.2 * t + 3 + i * 11, GW - 26, 2);
+
+  // ---- Main block walls ----
+  px(ctx, OUT, X, wallTop, W, B - wallTop);
+  px(ctx, WALL, X + 3, wallTop + 3, W - 6, B - wallTop - 3);
+  px(ctx, WALL_D, X + 3, B - 10, W - 6, 7); // plinth
+  px(ctx, TRIM, X + 3, wallTop + 1.55 * t, W - 6, 4); // floor band
+  // Roof: hip roof with a front gable in the middle
+  const roofTop = wallTop - 1.05 * t;
+  ctx.fillStyle = OUT;
+  ctx.beginPath();
+  ctx.moveTo(X - 10, wallTop + 6);
+  ctx.lineTo(X + 0.7 * t, roofTop);
+  ctx.lineTo(X + W - 0.7 * t, roofTop);
+  ctx.lineTo(X + W + 10, wallTop + 6);
+  ctx.fill();
+  ctx.fillStyle = ROOF;
+  ctx.beginPath();
+  ctx.moveTo(X - 4, wallTop + 3);
+  ctx.lineTo(X + 0.7 * t + 3, roofTop + 3);
+  ctx.lineTo(X + W - 0.7 * t - 3, roofTop + 3);
+  ctx.lineTo(X + W + 4, wallTop + 3);
+  ctx.fill();
+  for (let i = 0; i < 4; i++) px(ctx, ROOF_L, X + 0.8 * t, roofTop + 8 + i * 9, W - 1.6 * t, 2); // shingle lines
+  // Front gable above the door
+  const gx = X + W / 2;
+  ctx.fillStyle = OUT;
+  ctx.beginPath();
+  ctx.moveTo(gx - 1.15 * t, wallTop + 0.55 * t);
+  ctx.lineTo(gx, wallTop - 0.75 * t);
+  ctx.lineTo(gx + 1.15 * t, wallTop + 0.55 * t);
+  ctx.fill();
+  ctx.fillStyle = WALL;
+  ctx.beginPath();
+  ctx.moveTo(gx - 1.15 * t + 7, wallTop + 0.55 * t - 1);
+  ctx.lineTo(gx, wallTop - 0.75 * t + 8);
+  ctx.lineTo(gx + 1.15 * t - 7, wallTop + 0.55 * t - 1);
+  ctx.fill();
+  // Chimney
+  px(ctx, OUT, X + 0.9 * t, roofTop - 14, 16, 22);
+  px(ctx, "#b86b4b", X + 0.9 * t + 3, roofTop - 11, 10, 18);
+
+  // Windows: white frames, light glass, cross bars
+  const win = (wx, wy, ww, wh, arch = false) => {
+    px(ctx, OUT, wx - 3, wy - 3, ww + 6, wh + 6);
+    px(ctx, TRIM, wx - 1, wy - 1, ww + 2, wh + 2);
+    px(ctx, GLASS, wx + 2, wy + 2, ww - 4, wh - 4);
+    px(ctx, GLASS_L, wx + 2, wy + 2, ww - 4, 4);
+    px(ctx, TRIM, wx + ww / 2 - 1, wy + 2, 2, wh - 4);
+    px(ctx, TRIM, wx + 2, wy + wh / 2 - 1, ww - 4, 2);
+    if (arch) {
+      ctx.fillStyle = TRIM;
+      ctx.beginPath();
+      ctx.arc(wx + ww / 2, wy, ww / 2, Math.PI, 0);
+      ctx.fill();
+      ctx.fillStyle = GLASS;
+      ctx.beginPath();
+      ctx.arc(wx + ww / 2, wy, ww / 2 - 3, Math.PI, 0);
+      ctx.fill();
+    }
+  };
+  const up = wallTop + 0.5 * t;
+  win(X + 0.3 * t, up, 0.9 * t, 0.8 * t);
+  win(gx - 0.35 * t, up + 4, 0.7 * t, 0.7 * t, true); // round-top window in the gable
+  win(X + W - 1.2 * t, up, 0.9 * t, 0.8 * t);
+  const low = wallTop + 1.95 * t;
+  win(X + 0.3 * t, low, 0.9 * t, 0.85 * t);
+  win(X + W - 1.2 * t, low, 0.9 * t, 0.85 * t);
+  // Flower boxes under the ground-floor windows
+  [X + 0.3 * t, X + W - 1.2 * t].forEach((fx) => {
+    px(ctx, OUT, fx - 2, low + 0.85 * t + 3, 0.9 * t + 4, 8);
+    px(ctx, "#8b5e3c", fx, low + 0.85 * t + 4, 0.9 * t, 5);
+    for (let i = 0; i < 5; i++) px(ctx, ["#e46f86", "#f2c14e", "#c85ad9"][i % 3], fx + 3 + i * 6, low + 0.85 * t, 4, 4);
+  });
+
+  // Front door (the two middle tiles): double door under a little porch roof
+  const dx = X + t + 10;
+  const dw = 2 * t - 20;
+  const dTop = B - 1.25 * t;
+  px(ctx, OUT, dx - 4, dTop - 4, dw + 8, B - dTop + 4);
+  px(ctx, DOOR, dx, dTop, dw, B - dTop);
+  px(ctx, "#8f5a38", dx, dTop, dw, 4);
+  px(ctx, OUT, dx + dw / 2 - 1, dTop, 2, B - dTop);
+  px(ctx, "#f2c14e", dx + dw / 2 - 6, dTop + 0.6 * t, 3, 5);
+  px(ctx, "#f2c14e", dx + dw / 2 + 3, dTop + 0.6 * t, 3, 5);
+  px(ctx, GLASS, dx + 6, dTop + 6, dw / 2 - 12, 10);
+  px(ctx, GLASS, dx + dw / 2 + 6, dTop + 6, dw / 2 - 12, 10);
+  // porch roof + sign
+  px(ctx, OUT, dx - 12, dTop - 14, dw + 24, 12);
+  px(ctx, ROOF, dx - 9, dTop - 11, dw + 18, 7);
+  ctx.save();
   ctx.font = "bold 14px \"Noto Sans TC\", \"PingFang TC\", Arial, sans-serif";
+  const label = "🏘️ 住宅區";
+  const lw = ctx.measureText(label).width + 16;
+  const ly = wallTop + 1.55 * t - 13;
+  px(ctx, OUT, gx - lw / 2 - 2, ly - 2, lw + 4, 26);
+  px(ctx, "#f2c14e", gx - lw / 2, ly, lw, 22);
+  ctx.fillStyle = OUT;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("🏘️ 住宅區", X + W / 2, Y - 64);
+  ctx.fillText(label, gx, ly + 12);
   ctx.restore();
-  // Stone path through the gate
-  px(ctx, "#cbc1b1", X + t, Y + 4, 2 * t, t - 8);
-  px(ctx, "#b8ad9b", X + t, Y + 4, 2 * t, 2);
+  // Doorstep + little bushes
+  px(ctx, "#cbc1b1", dx - 6, B - 4, dw + 12, 6);
+  [[X - 10, B - 20], [GX + GW - 12, B - 18]].forEach(([bx, by]) => {
+    px(ctx, OUT, bx, by, 24, 20);
+    px(ctx, "#43a266", bx + 2, by + 2, 20, 16);
+    px(ctx, "#5cc27d", bx + 5, by + 4, 10, 5);
+  });
 };

@@ -3931,8 +3931,9 @@
       computeResidentialLayout,
       drawHouseFront,
       drawResidentialGate,
+      RES_HOUSE_BLOCKED,
       residentialMinimapColor,
-    } from "./js/residential.js?v=20260929a";
+    } from "./js/residential.js?v=20260929b";
     import { EMPTY_BOARD, applyMove, getWinner, getWinningLine } from "./js/tictactoe.js";
     import {
       OFFICE_EXIT_TILES,
@@ -6347,8 +6348,10 @@
 
     // 🏘️ Gate to the residential district (posts block, the two middle tiles lead in)
     const RES_GATE = { tileX: 12, tileY: 18, w: 4 };
-    worldMap[RES_GATE.tileY][RES_GATE.tileX] = 1;
-    worldMap[RES_GATE.tileY][RES_GATE.tileX + RES_GATE.w - 1] = 1;
+    // The entrance is a two-storey house; everything but its front door (the two middle tiles) blocks
+    RES_HOUSE_BLOCKED(RES_GATE.tileX, RES_GATE.tileY).forEach(([x, y]) => {
+      worldMap[y][x] = 1;
+    });
 
     // Village bulletin board and guide stand right by the exit, where everyone arrives
     const VILLAGE_BOARD = { tileX: 30, tileY: 24 };
@@ -6387,7 +6390,7 @@
         // Keep random trees / animals away from building entrances (the space in front of every door)
         reserved: [
           { x: 13, y: 29, w: 6, h: 2 }, // EQU office door
-          { x: 11, y: 15, w: 6, h: 5 }, // residential gate
+          { x: 10, y: 14, w: 9, h: 6 }, // residential house (entrance)
           { x: 36, y: 21, w: 7, h: 3 }, // castle entrance
           { x: 2, y: 10, w: 5, h: 2 }, // house (4, 8) front
           { x: 2, y: 20, w: 5, h: 2 }, // house (4, 18) front
@@ -10997,7 +11000,7 @@
           addDrawable((b.tileY + b.h) * tileSize, () => drawOfficeBuilding(ctx, b.tileX, b.tileY, tileSize));
         }
         const g = RES_GATE;
-        if (inView(g.tileX * tileSize, (g.tileY - 2) * tileSize, g.w * tileSize, 3 * tileSize)) {
+        if (inView((g.tileX - 1) * tileSize, (g.tileY - 4) * tileSize, 8 * tileSize, 5 * tileSize)) {
           addDrawable((g.tileY + 1) * tileSize, () => drawResidentialGate(ctx, g.tileX, g.tileY, tileSize));
         }
       }
