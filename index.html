@@ -3559,6 +3559,7 @@
         <button class="board-action" id="board-action" type="button">
           📌 攀岩時間表 ↲
         </button>
+        <button class="board-action" id="npc-action" type="button">💬 和嚮導聊聊 ↲</button>
         <button class="icebreaker-dice-btn" id="icebreaker-dice-btn" type="button" title="破冰問答">🎲</button>
       </div>
       <div class="chat-overlay-mobile" id="chat-overlay-mobile">
@@ -4097,6 +4098,12 @@
     const dailyFrame = document.querySelector("#daily-frame");
     const callStart = document.querySelector("#call-start");
     const boardAction = document.querySelector("#board-action");
+    const npcAction = document.querySelector("#npc-action");
+    npcAction?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const interaction = getInteraction();
+      if (interaction?.bubble) interaction.run();
+    });
     const noticeOverlay = document.querySelector("#notice-overlay");
     const noticeClose = document.querySelector("#notice-close");
     const villageWelcomeOverlay = document.querySelector("#village-welcome-overlay");
@@ -7487,7 +7494,7 @@
       setDomVisible(partyBtn, isInOwnHome(), "inline-flex");
       partyBtn?.classList.toggle("is-live", isInOwnHome() && isPartyActive(getMyHome()));
       const interaction = getInteraction();
-      setDomVisible(interactBtn, Boolean(interaction), "inline-flex");
+      setDomVisible(interactBtn, Boolean(interaction && !interaction.bubble), "inline-flex");
       if (interaction && interactBtn && interactBtn.dataset.label !== interaction.label) {
         interactBtn.dataset.label = interaction.label;
         interactBtn.textContent = `👆 ${interaction.label}`;
@@ -8457,6 +8464,7 @@
       if (npc.active && isPlayerNearNpc()) {
         return {
           label: "💬 對話",
+          bubble: true, // shown as the white bubble over the guide's head
           run: () => {
             isDialogueOpen = true;
             dialogueStage = "question";
@@ -8465,7 +8473,7 @@
           },
         };
       }
-      if (isPlayerNearWhiteboard()) return { label: "📌 看告示板", run: openNotice };
+      if (isPlayerNearWhiteboard()) return { label: "📌 看告示板", bubble: true, run: openNotice };
       return null;
     };
 
@@ -11254,13 +11262,13 @@
 
       if (npc.active) {
         addDrawable(npcPixel.y + npc.size, () => drawPixelCharacter(npcAvatar, "down", false, 0, npcPixel.x, npcPixel.y));
-        if (!isDialogueOpen) {
-          const near = isPlayerNearNpc();
+        if (!isDialogueOpen && !isPlayerNearNpc()) {
+          // A bobbing "!" from afar; up close the white "💬 和嚮導聊聊" bubble takes over
           overlays.push(() => {
             const bob = Math.round(Math.sin(now / 250) * 3);
-            const label = near ? "Enter 對話" : "!";
+            const label = "!";
             ctx.save();
-            ctx.font = near ? "bold 14px \"Noto Sans TC\", Arial, sans-serif" : "bold 18px Arial, sans-serif";
+            ctx.font = "bold 18px Arial, sans-serif";
             ctx.textAlign = "center";
             ctx.textBaseline = "bottom";
             ctx.lineWidth = 4;
@@ -11359,21 +11367,7 @@
         locateTarget = null;
       }
 
-      if (whiteboardDraw && isPlayerNearWhiteboard() && !isNoticeOpen) {
-        ctx.save();
-        ctx.fillStyle = "#000000";
-        ctx.font = "14px Arial, Helvetica, sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "bottom";
-        ctx.font = "bold 14px \"Noto Sans TC\", Arial, sans-serif";
-        ctx.lineWidth = 4;
-        ctx.lineJoin = "round";
-        ctx.strokeStyle = "#2a1f1a";
-        ctx.fillStyle = "#f2c14e";
-        ctx.strokeText("Enter / X 看告示板", whiteboardDraw.x + whiteboardDraw.size / 2, whiteboardDraw.y - 4);
-        ctx.fillText("Enter / X 看告示板", whiteboardDraw.x + whiteboardDraw.size / 2, whiteboardDraw.y - 4);
-        ctx.restore();
-      }
+      // (the board's own white "📌 攀岩時間表" bubble is the only call to action near it)
 
       ctx.restore();
 
@@ -11453,6 +11447,16 @@
       const showBoard = isPlayerNearWhiteboard() && !isNoticeOpen;
       setDomVisible(boardAction, showBoard, "inline-flex");
       if (showBoard) positionBoardAction();
+
+      // The guide gets the same white bubble over their head when you're close
+      const showNpcBubble = npc.active && !isDialogueOpen && isPlayerNearNpc() && Boolean(getInteraction()?.bubble);
+      setDomVisible(npcAction, showNpcBubble, "inline-flex");
+      if (showNpcBubble && npcAction) {
+        const p = worldToClient(npcPixel.x + npc.size / 2, npcPixel.y);
+        const w = npcAction.offsetWidth || 150;
+        npcAction.style.left = `${Math.max(8, p.x - w / 2)}px`;
+        npcAction.style.top = `${Math.max(8, p.y - 52)}px`;
+      }
 
       // 破冰問答：距離內有玩家且無 overlay 時顯示 🎲
       const nearestForIcebreaker = getNearestPlayerWithinDistance();
