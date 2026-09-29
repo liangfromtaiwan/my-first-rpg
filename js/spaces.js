@@ -73,7 +73,7 @@ export const drawZones = (ctx, mapName, tileSize, activeZoneId) => {
         ctx.fillStyle = hexToRgba("#ffffff", 0.06);
         ctx.fillRect(x, y, w, h);
       }
-      if (!z.hideTag) drawZoneTag(ctx, z, x, y);
+      // No name tags on the map: furnished rooms speak for themselves (names still show in 📍 and chat)
       return;
     }
     ctx.fillStyle = hexToRgba(z.color, isActive ? 0.28 : 0.18);
@@ -95,23 +95,7 @@ export const drawZones = (ctx, mapName, tileSize, activeZoneId) => {
       ctx.fillRect(x, y + i, 4, 8);
       ctx.fillRect(x + w - 4, y + i, 4, 8);
     }
-    drawZoneTag(ctx, z, x, y);
   });
-};
-
-const drawZoneTag = (ctx, z, x, y) => {
-  ctx.save();
-  ctx.font = "bold 14px \"Noto Sans TC\", \"PingFang TC\", Arial, sans-serif";
-  const label = `${z.private ? "🔒 " : ""}${z.name}`;
-  const tw = ctx.measureText(label).width + 14;
-  ctx.fillStyle = "#2a1f1a";
-  ctx.fillRect(x + 6, y + 6, tw + 4, 24);
-  ctx.fillStyle = z.color;
-  ctx.fillRect(x + 8, y + 8, tw, 20);
-  ctx.fillStyle = "#ffffff";
-  ctx.textBaseline = "middle";
-  ctx.fillText(label, x + 15, y + 18);
-  ctx.restore();
 };
 
 /** Pixel wooden table with a mini 3x3 board reflecting `board` (9-char string of X/O/.). */
