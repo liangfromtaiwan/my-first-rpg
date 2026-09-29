@@ -7,6 +7,7 @@ export const ZONES = {
     { id: "meeting", name: "會議室", x: 24, y: 20, w: 8, h: 7, private: true, color: "#8e5cc4", indoor: true },
     { id: "arcade", name: "遊戲區", x: 24, y: 4, w: 12, h: 7, private: false, color: "#e8773b", indoor: true },
     { id: "party", name: "派對房", x: 6, y: 4, w: 8, h: 6, private: false, color: "#ff6fb1", indoor: true },
+    { id: "bar", name: "爵士酒吧", x: 14, y: 4, w: 6, h: 6, private: false, color: "#c9a24a", indoor: true },
   ],
   villageMap: [
     // The sofa corner is obviously a lounge, so no name tag on the map (the name still shows in 📍 and chat)

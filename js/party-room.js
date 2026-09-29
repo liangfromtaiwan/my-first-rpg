@@ -7,7 +7,7 @@
 //   a channel's current live stream   https://www.youtube.com/channel/CHANNEL_ID/live
 // A live stream or a long mix keeps everyone in sync: people in the room hear the same part.
 export const PARTY_MUSIC = {
-  url: "https://www.youtube.com/watch?v=nI725iVsyoQ", // Lofi Girl's live radio (placeholder until we pick party songs)
+  url: "https://www.youtube.com/watch?v=XL8V37LDmu0", // Defected Records · House Music All Life Long (live 24/7)
   title: "派對音樂",
   volume: 60, // 0–100
 };
