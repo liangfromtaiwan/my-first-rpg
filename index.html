@@ -8477,6 +8477,35 @@
     });
 
 
+    // Room spotlight: while you're inside a space (meeting room, arcade, lounge, office rooms…),
+    // everything outside it dims a little, so the room you're in reads as brighter. Fades in/out.
+    const SPOTLIGHT_DIM = 0.32;
+    const SPOTLIGHT_FADE_MS = 280;
+    let spotlight = { zone: null, alpha: 0, at: 0 };
+    const drawRoomSpotlight = (now) => {
+      const c = getPlayerCenter();
+      const inside = isHomeMap(currentMapName) ? null : zoneAt(currentMapName, c.x, c.y, tileSize);
+      const dt = spotlight.at ? Math.min(100, now - spotlight.at) : 0;
+      spotlight.at = now;
+      if (inside) {
+        if (spotlight.zone && spotlight.zone.id !== inside.id) spotlight.alpha = 0; // straight into another room
+        spotlight.zone = inside;
+        spotlight.alpha = Math.min(1, spotlight.alpha + dt / SPOTLIGHT_FADE_MS);
+      } else {
+        spotlight.alpha = Math.max(0, spotlight.alpha - dt / SPOTLIGHT_FADE_MS);
+        if (spotlight.alpha === 0) spotlight.zone = null;
+      }
+      const z = spotlight.zone;
+      if (!z || spotlight.alpha <= 0) return;
+      ctx.save();
+      ctx.fillStyle = `rgba(10, 12, 24, ${SPOTLIGHT_DIM * spotlight.alpha})`;
+      ctx.beginPath();
+      ctx.rect(-tileSize, -tileSize, mapWidth + 2 * tileSize, mapHeight + 2 * tileSize);
+      ctx.rect(z.x * tileSize, z.y * tileSize, z.w * tileSize, z.h * tileSize);
+      ctx.fill("evenodd");
+      ctx.restore();
+    };
+
     /** When both the guide and a bulletin board are in reach, only the closer one is offered. */
     const nearestBubbleTarget = () => {
       const nearNpc = npc.active && isPlayerNearNpc();
@@ -11386,6 +11415,7 @@
         }
       }
 
+      drawRoomSpotlight(now);
       overlays.forEach((draw) => draw());
 
       // Locate highlight: pulsing ring around the target when on screen
