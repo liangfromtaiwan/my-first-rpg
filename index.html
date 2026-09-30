@@ -3484,6 +3484,20 @@
     .party-music.is-bar {
       border-color: #c9a24a; /* warm gold for the jazz bar */
     }
+    /* Two sizes: small by default (200px is YouTube's minimum player width), big to watch */
+    .party-music:not(.is-large) {
+      width: 200px !important;
+    }
+    .party-music:not(.is-large) .party-dj,
+    .party-music:not(.is-large) #party-invite {
+      display: none;
+    }
+    .party-music.is-large {
+      width: min(560px, calc(100vw - 24px)) !important;
+    }
+    .party-music.is-large .party-music-title {
+      font-size: 16px;
+    }
     .party-music.is-bar .party-dj {
       display: none;
     }
@@ -3928,6 +3942,7 @@
           <div class="party-music-bar">
             <span class="party-music-title">🎵 <span id="party-music-title"></span></span>
             <button type="button" id="party-music-play" hidden>▶ 播放</button>
+            <button type="button" id="party-size" title="放大">⤢</button>
             <button type="button" id="party-invite" title="邀請朋友來派對房">🔗 邀請</button>
             <button type="button" id="party-music-mute" title="靜音">🔊</button>
           </div>
@@ -9195,6 +9210,24 @@
         partyPlayer.pauseVideo();
       }
     };
+    // ⤢ / ⤡: switch between the small player and the big one (remembered on this device)
+    const partySizeBtn = document.querySelector("#party-size");
+    const setPartyLarge = (large) => {
+      partyMusicEl?.classList.toggle("is-large", large);
+      if (partySizeBtn) {
+        partySizeBtn.textContent = large ? "⤡" : "⤢";
+        partySizeBtn.title = large ? "縮小" : "放大";
+      }
+      try {
+        localStorage.setItem("partyPlayerLarge", large ? "1" : "0");
+      } catch {}
+    };
+    let partyLargePref = false;
+    try {
+      partyLargePref = localStorage.getItem("partyPlayerLarge") === "1";
+    } catch {}
+    setPartyLarge(partyLargePref);
+    partySizeBtn?.addEventListener("click", () => setPartyLarge(!partyMusicEl?.classList.contains("is-large")));
     document.querySelector("#party-invite")?.addEventListener("click", () =>
       musicRoom === "bar"
         ? shareInvite("bar", "來抱石村的爵士酒吧坐坐吧 🎷")
