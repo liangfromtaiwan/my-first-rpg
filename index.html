@@ -3,11 +3,16 @@
 
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <link rel="icon" type="image/png" sizes="64x64" href="image/brand/favicon-64.png?v=2" />
   <link rel="apple-touch-icon" sizes="180x180" href="image/brand/apple-touch-icon.png?v=2" />
   <link rel="apple-touch-icon" href="image/brand/apple-touch-icon.png?v=2" />
   <meta name="apple-mobile-web-app-title" content="抱石村" />
+  <!-- Installable app (PWA): full screen from the home screen -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="application-name" content="抱石村" />
   <meta name="theme-color" content="#1b1a2e" />
   <meta name="description" content="抱石村 Bouldering Village：像素社交小鎮，邊走邊聊、視訊、玩小遊戲，還有自己的家。" />
@@ -3764,6 +3769,17 @@
     button,
     canvas {
       touch-action: manipulation;
+    }
+    /* Invisible probe: its padding is the phone's notch / status bar height, read by JS for the minimap */
+    #safe-area-probe {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 0;
+      height: 0;
+      visibility: hidden;
+      pointer-events: none;
+      padding-top: env(safe-area-inset-top, 0px);
     }
     /* Toolbar groups: invisible wrappers on desktop (the bar looks exactly as before) */
     .toolbar-group {
@@ -8675,7 +8691,20 @@
         if (canvasRect.width) chatCover = Math.max(0, canvasRect.right - panelLeft) * (viewportWidth / canvasRect.width);
       }
       const miniX = mobileMini ? pad : viewportWidth - chatCover - contentW - pad - 4;
-      const miniY = mobileMini ? pad : viewportHeight - contentH - pad - 4;
+      // Phones: stay below the status bar / notch (full-screen app mode draws under it)
+      let safeTop = 0;
+      if (mobileMini) {
+        let probe = document.getElementById("safe-area-probe");
+        if (!probe) {
+          probe = document.createElement("div");
+          probe.id = "safe-area-probe";
+          document.body.appendChild(probe);
+        }
+        const cssTop = parseFloat(getComputedStyle(probe).paddingTop) || 0;
+        const rect = canvas.getBoundingClientRect();
+        if (cssTop && rect.height) safeTop = cssTop * (viewportHeight / rect.height);
+      }
+      const miniY = mobileMini ? pad + safeTop : viewportHeight - contentH - pad - 4;
       minimapBottom = miniY + contentH + 4;
       const offX = miniX + 2;
       const offY = miniY + 2;
@@ -12482,6 +12511,13 @@
 
       drawMinimap();
     };
+
+    // Installable app: register the service worker (fast start, offline page; never pins old code)
+    if ("serviceWorker" in navigator && location.protocol === "https:") {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js").catch((err) => console.warn("Service worker not registered", err));
+      });
+    }
 
     registerResidentialMap([]); // empty street until homes load
     // Initialize the first map only after every helper it touches has been defined
