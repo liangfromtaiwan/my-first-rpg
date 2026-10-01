@@ -8688,30 +8688,92 @@
     const updateCows = (deltaMs = 16.67) => updateAnimals(currentMap.cows, deltaMs, ANIMAL_KINDS.cow);
 
     // 🐮🐷🐔 Walk up to an animal and it says hello (sounds/*.m4a). Only when you first come
-    // close, at most every 8 s per animal, and never two calls within 1.5 s.
-    const ANIMAL_SOUND_FILES = { cows: "sounds/cow.m4a", pigs: "sounds/pig.m4a", chickens: "sounds/chicken.m4a" };
-    const animalSounds = {};
+    // close, at most every 8 s per animal, and never two calls within 1.5 s. The sound is placed
+    // where the animal is: it fades as you walk away and comes from its side (left / right).
+    const ANIMAL_SOUND_FILES = { cows: "sounds/cow.m4a?v=2", pigs: "sounds/pig.m4a?v=2", chickens: "sounds/chicken.m4a?v=2" };
     const animalSoundState = new WeakMap(); // animal -> { near, lastAt }
+    const activeAnimalSounds = new Set(); // { animal, gain, pan, source }
     let lastAnimalSoundAt = 0;
+    let animalAudioCtx = null;
+    const animalBuffers = {};
     const ANIMAL_SOUND_RADIUS = () => tileSize * 1.6;
-    const playAnimalSound = (listKey) => {
-      let a = animalSounds[listKey];
-      if (!a) {
-        a = new Audio(ANIMAL_SOUND_FILES[listKey]);
-        a.preload = "auto";
-        a.volume = 0.7;
-        animalSounds[listKey] = a;
+    const ANIMAL_HEAR_RANGE = () => tileSize * 7; // fully faded out this far away
+    const getAnimalAudio = () => {
+      if (animalAudioCtx) return animalAudioCtx;
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return null;
+      animalAudioCtx = new Ctx();
+      // Browsers only allow sound after a tap / key press: wake the audio up on the first one
+      const wake = () => animalAudioCtx.state === "suspended" && animalAudioCtx.resume().catch(() => {});
+      ["pointerdown", "keydown", "touchstart"].forEach((ev) => window.addEventListener(ev, wake, { passive: true }));
+      return animalAudioCtx;
+    };
+    const loadAnimalBuffer = (listKey) => {
+      const ctxA = getAnimalAudio();
+      if (!ctxA) return Promise.resolve(null);
+      if (!animalBuffers[listKey]) {
+        animalBuffers[listKey] = fetch(ANIMAL_SOUND_FILES[listKey])
+          .then((r) => r.arrayBuffer())
+          .then((data) => new Promise((res, rej) => ctxA.decodeAudioData(data, res, rej)))
+          .catch((err) => {
+            console.warn("Animal sound failed to load", listKey, err);
+            animalBuffers[listKey] = null;
+            return null;
+          });
       }
-      try {
-        a.currentTime = 0;
-      } catch {}
-      a.play().catch(() => {}); // browsers allow sound only after the first tap / key press
+      return animalBuffers[listKey];
+    };
+    const animalVolumeAndPan = (animal) => {
+      const c = getPlayerCenter();
+      const size = animal.size || tileSize * 0.8;
+      const dx = animal.x + size / 2 - c.x;
+      const dy = animal.y + size / 2 - c.y;
+      const d = Math.hypot(dx, dy);
+      const near = ANIMAL_SOUND_RADIUS();
+      const far = ANIMAL_HEAR_RANGE();
+      const t = Math.min(1, Math.max(0, (d - near) / (far - near)));
+      return { volume: 0.8 * (1 - t) * (1 - t), pan: Math.max(-1, Math.min(1, dx / (tileSize * 5))) * 0.8 };
+    };
+    const playAnimalSound = async (listKey, animal) => {
+      const ctxA = getAnimalAudio();
+      const buffer = await loadAnimalBuffer(listKey);
+      if (!ctxA || !buffer || ctxA.state !== "running") return;
+      const source = ctxA.createBufferSource();
+      source.buffer = buffer;
+      const gain = ctxA.createGain();
+      const pan = ctxA.createStereoPanner ? ctxA.createStereoPanner() : null;
+      const { volume, pan: p } = animalVolumeAndPan(animal);
+      gain.gain.value = volume;
+      if (pan) pan.pan.value = p;
+      source.connect(gain);
+      (pan ? gain.connect(pan) : gain).connect(ctxA.destination);
+      const entry = { animal, gain, pan, source };
+      activeAnimalSounds.add(entry);
+      source.onended = () => activeAnimalSounds.delete(entry);
+      source.start();
+    };
+    const stopAnimalSounds = () => {
+      activeAnimalSounds.forEach((e) => {
+        try {
+          e.source.stop();
+        } catch {}
+      });
+      activeAnimalSounds.clear();
     };
     const updateAnimalSounds = () => {
       if (!currentMap) return;
       const now = performance.now();
       const c = getPlayerCenter();
       const r = ANIMAL_SOUND_RADIUS();
+      // Sounds already playing follow the animal: quieter as you walk away, panned to its side
+      if (activeAnimalSounds.size && animalAudioCtx) {
+        const at = animalAudioCtx.currentTime;
+        activeAnimalSounds.forEach((e) => {
+          const { volume, pan } = animalVolumeAndPan(e.animal);
+          e.gain.gain.setTargetAtTime(volume, at, 0.08);
+          e.pan?.pan.setTargetAtTime(pan, at, 0.08);
+        });
+      }
       Object.keys(ANIMAL_SOUND_FILES).forEach((listKey) => {
         (currentMap[listKey] || []).forEach((animal) => {
           const size = animal.size || tileSize * 0.8;
@@ -8724,7 +8786,7 @@
           if (near && !st.near && now - st.lastAt > 8000 && now - lastAnimalSoundAt > 1500) {
             st.lastAt = now;
             lastAnimalSoundAt = now;
-            playAnimalSound(listKey);
+            playAnimalSound(listKey, animal);
           }
           st.near = near;
         });
@@ -10855,6 +10917,7 @@
       exitBuildMode();
       closeGuestbook();
       currentMapName = mapName;
+      if (typeof stopAnimalSounds === "function") stopAnimalSounds();
       // Switch the public chat to this place's channel
       const channelId = channelIdForMap(mapName);
       if (channelId !== chatChannelId) {
