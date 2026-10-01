@@ -6768,6 +6768,8 @@
               if (data.drinkId && data.drinkId !== renderState.drinkId) {
                 renderState.drinkId = data.drinkId;
                 milkDrinks.set(docSnap.id, performance.now());
+                const drinker = docSnap.id;
+                setTimeout(() => !isBlockedWith(drinker) && showEmote(drinker, "🥛"), 1900);
               }
             }
           });
@@ -7443,8 +7445,9 @@
     const EMOTES = ["👋", "❤️", "🎉", "👍", "🤣", "👏", "💯"]; // same set as Gather
     const EMOTE_MS = 2500;
     const activeEmotes = new Map(); // uid -> { emoji, until }
+    const SPECIAL_EMOTES = ["🥛"]; // shown by the game itself (e.g. after drinking milk), not in the emote bar
     const showEmote = (uid, emoji) => {
-      if (!uid || !EMOTES.includes(emoji)) return;
+      if (!uid || !(EMOTES.includes(emoji) || SPECIAL_EMOTES.includes(emoji))) return;
       activeEmotes.set(uid, { emoji, until: performance.now() + EMOTE_MS });
     };
     const EMOTE_COOLDOWN_MS = 700; // limits Firestore writes when spamming emote keys
@@ -12036,7 +12039,7 @@
     const isInPartyRoomAt = (x, y) =>
       currentMapName === "worldMap" && zoneAt(currentMapName, x + player.size / 2, y + player.size * 0.8, tileSize)?.id === "party";
     // 🥛 Meeting a cow: a glass of milk appears, goes up to the mouth and is downed in one go,
-    // leaving a milk moustache and a 「好喝！」. ~2.6 s, then the moustache lingers a little.
+    // leaving a milk moustache; a 🥛 then pops up above the name tag (as an emote). ~2.6 s.
     const milkDrinks = new Map(); // player id -> start time (performance.now())
     const MILK_MS = 2600;
     const MILK_MOUSTACHE_MS = 4200;
@@ -12090,12 +12093,13 @@
         ctx.fillRect(x + 12, y + 18, 3, 2);
         ctx.fillRect(x + 25, y + 18, 3, 2);
       }
-      if (t > 2000 && t < 3600) drawSpeechBubble(x + 20, y - 4, "好喝！🥛");
       return true;
     };
     const startDrinkingMilk = () => {
       const user = auth.currentUser;
-      milkDrinks.set(user?.uid || "me", performance.now());
+      const me = user?.uid || "me";
+      milkDrinks.set(me, performance.now());
+      setTimeout(() => showEmote(me, "🥛"), 1900); // after the last gulp, stacked above the name tag
       if (!user) return;
       setDoc(doc(db, "players", user.uid), { drinkId: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}` }, { merge: true }).catch(
         (err) => console.error("Milk sync failed", err)
