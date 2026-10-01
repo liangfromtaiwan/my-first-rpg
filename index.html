@@ -8655,13 +8655,15 @@
       a.layStart = performance.now();
     };
     const layChickenEgg = (a) => {
-      chickenEggs.push({ mapName: currentMapName, x: a.x + a.size / 2, y: a.y + a.size - 3, bornAt: performance.now() });
+      // Right at its feet, a little in front, so you see it come out
+      chickenEggs.push({ mapName: currentMapName, x: a.x + a.size / 2, y: a.y + a.size + 6, bornAt: performance.now() });
       if (chickenEggs.length > MAX_EGGS) chickenEggs = chickenEggs.slice(-MAX_EGGS);
     };
     const drawChickenEgg = (egg, now) => {
       const age = now - egg.bornAt;
-      const pop = Math.min(1, age / 220); // pops out with a tiny bounce
+      const pop = Math.min(1, 0.4 + age / 250); // pops out with a tiny bounce
       const hop = age < 450 ? Math.sin((age / 450) * Math.PI) * 4 : 0;
+      const slide = age < 250 ? (1 - age / 250) * 6 : 0; // rolls out from under the chicken
       const alpha = Math.min(1, (EGG_LIFE_MS - age) / 3000);
       const w = 6 * pop;
       const h = 8 * pop;
@@ -8673,14 +8675,14 @@
       ctx.fill();
       ctx.fillStyle = "#2a1f1a";
       ctx.beginPath();
-      ctx.ellipse(egg.x, egg.y - h / 2 - hop, w / 2 + 1, h / 2 + 1, 0, 0, Math.PI * 2);
+      ctx.ellipse(egg.x, egg.y - h / 2 - hop - slide, w / 2 + 1, h / 2 + 1, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = "#fbf3e2";
       ctx.beginPath();
-      ctx.ellipse(egg.x, egg.y - h / 2 - hop, w / 2, h / 2, 0, 0, Math.PI * 2);
+      ctx.ellipse(egg.x, egg.y - h / 2 - hop - slide, w / 2, h / 2, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = "#ffffff";
-      ctx.fillRect(Math.round(egg.x - w / 4), Math.round(egg.y - h * 0.8 - hop), 2, 2);
+      ctx.fillRect(Math.round(egg.x - w / 4), Math.round(egg.y - h * 0.8 - hop - slide), 2, 2);
       ctx.restore();
     };
 
@@ -12740,7 +12742,7 @@
       });
       chickenEggs.forEach((egg) => {
         if (egg.mapName !== currentMapName || !inView(egg.x - 8, egg.y - 14, 16, 16)) return;
-        addDrawable(egg.y - 6, () => drawChickenEgg(egg, now)); // just behind the chicken sitting on it
+        addDrawable(egg.y, () => drawChickenEgg(egg, now)); // in front of the chicken's feet
       });
 
       otherPlayers.forEach((playerData, playerId) => {
