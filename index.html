@@ -8699,24 +8699,33 @@
     // 🐮🐷🐔 Walk up to an animal and it says hello (sounds/*.m4a). Only when you first come
     // close, at most every 8 s per animal, and never two calls within 1.5 s. The sound is placed
     // where the animal is: it fades as you walk away and comes from its side (left / right).
-    const ANIMAL_SOUND_FILES = { cows: "sounds/cow.m4a?v=2", pigs: "sounds/pig.m4a?v=2", chickens: "sounds/chicken.m4a?v=2" };
+    const ANIMAL_SOUND_FILES = { cows: "sounds/cow.m4a?v=3", pigs: "sounds/pig.m4a?v=2", chickens: "sounds/chicken.m4a?v=2" };
     const animalSoundState = new WeakMap(); // animal -> { near, lastAt }
     const activeAnimalSounds = new Set(); // { animal, gain, pan, source }
     let lastAnimalSoundAt = 0;
     let animalAudioCtx = null;
     const animalBuffers = {};
-    const ANIMAL_SOUND_RADIUS = () => tileSize * 1.6;
+    const ANIMAL_SOUND_RADIUS = () => tileSize * 2;
     const ANIMAL_HEAR_RANGE = () => tileSize * 7; // fully faded out this far away
     const getAnimalAudio = () => {
       if (animalAudioCtx) return animalAudioCtx;
       const Ctx = window.AudioContext || window.webkitAudioContext;
       if (!Ctx) return null;
       animalAudioCtx = new Ctx();
-      // Browsers only allow sound after a tap / key press: wake the audio up on the first one
-      const wake = () => animalAudioCtx.state === "suspended" && animalAudioCtx.resume().catch(() => {});
-      ["pointerdown", "keydown", "touchstart"].forEach((ev) => window.addEventListener(ev, wake, { passive: true }));
       return animalAudioCtx;
     };
+    // Browsers only let a page make sound from inside a tap / key press. So the audio is created
+    // and woken up right there (the first tap or key), and the three sounds are fetched and
+    // decoded at the same time: walking up to an animal then plays at once, even the first time.
+    // (It used to be created only when you reached an animal, which starts "suspended", so the
+    // first moo was silently skipped.)
+    const wakeAnimalAudio = () => {
+      const ctxA = getAnimalAudio();
+      if (!ctxA) return;
+      if (ctxA.state === "suspended") ctxA.resume().catch(() => {});
+      Object.keys(ANIMAL_SOUND_FILES).forEach((k) => loadAnimalBuffer(k));
+    };
+    ["pointerdown", "keydown", "touchstart", "touchend"].forEach((ev) => window.addEventListener(ev, wakeAnimalAudio, { passive: true }));
     const loadAnimalBuffer = (listKey) => {
       const ctxA = getAnimalAudio();
       if (!ctxA) return Promise.resolve(null);
@@ -8745,8 +8754,10 @@
     };
     const playAnimalSound = async (listKey, animal) => {
       const ctxA = getAnimalAudio();
+      if (!ctxA) return;
+      if (ctxA.state === "suspended") await ctxA.resume().catch(() => {}); // try once more
       const buffer = await loadAnimalBuffer(listKey);
-      if (!ctxA || !buffer || ctxA.state !== "running") return;
+      if (!buffer || ctxA.state !== "running") return;
       const source = ctxA.createBufferSource();
       source.buffer = buffer;
       const gain = ctxA.createGain();
