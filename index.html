@@ -8904,7 +8904,23 @@
     // 🐮🐷🐔 Walk up to an animal and it says hello (sounds/*.m4a). Only when you first come
     // close, at most every 8 s per animal, and never two calls within 1.5 s. The sound is placed
     // where the animal is: it fades as you walk away and comes from its side (left / right).
-    const ANIMAL_SOUND_FILES = { cows: "sounds/cow.m4a?v=3", pigs: "sounds/pig.m4a?v=2", chickens: "sounds/chicken.m4a?v=2" };
+    const ANIMAL_SOUND_FILES = { cows: "sounds/cow.m4a?v=3", pigs: "sounds/pig.m4a?v=2", chickens: "sounds/chicken.m4a?v=2", cats: "sounds/cat.m4a?v=1" };
+    // 🐱 The cat in each home is a piece of furniture; give each one a stable "animal" for the sound code
+    const homeCatCache = new Map(); // "mapName/furnitureId" -> { x, y, size }
+    const homeCats = () => {
+      if (!isHomeMap(currentMapName)) return [];
+      return (currentMap.home?.furniture || [])
+        .filter((f) => f.type === "cat")
+        .map((f) => {
+          const key = `${currentMapName}/${f.id}`;
+          let cat = homeCatCache.get(key);
+          if (!cat) homeCatCache.set(key, (cat = {}));
+          cat.x = f.x * tileSize; // follows the cat if it's moved in build mode
+          cat.y = f.y * tileSize;
+          cat.size = tileSize;
+          return cat;
+        });
+    };
     const animalSoundState = new WeakMap(); // animal -> { near, lastAt }
     const activeAnimalSounds = new Set(); // { animal, gain, pan, source }
     let lastAnimalSoundAt = 0;
@@ -9000,7 +9016,7 @@
         });
       }
       Object.keys(ANIMAL_SOUND_FILES).forEach((listKey) => {
-        (currentMap[listKey] || []).forEach((animal) => {
+        (listKey === "cats" ? homeCats() : currentMap[listKey] || []).forEach((animal) => {
           const size = animal.size || tileSize * 0.8;
           const near = Math.hypot(animal.x + size / 2 - c.x, animal.y + size / 2 - c.y) < r;
           let st = animalSoundState.get(animal);
