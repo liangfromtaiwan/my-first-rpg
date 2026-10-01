@@ -6757,6 +6757,7 @@
                 emoteId: data.emoteId || null,
                 drinkId: data.drinkId || null,
                 feedId: data.feedId || null,
+                teaserId: data.teaserId || null,
               });
             } else {
               renderState.avatar = normalizeAvatar(data.avatar, docSnap.id);
@@ -6776,6 +6777,11 @@
               if (data.feedId && data.feedId !== renderState.feedId) {
                 renderState.feedId = data.feedId;
                 pigFeeds.set(docSnap.id, performance.now());
+              }
+              // 🪶 A new teaserId: they're playing with their cat
+              if (data.teaserId && data.teaserId !== renderState.teaserId) {
+                renderState.teaserId = data.teaserId;
+                catTeasers.set(docSnap.id, performance.now());
               }
             }
           });
@@ -8770,6 +8776,30 @@
           if (t > 250 && pigStepTowardPlayer(a, kind.walkSpeed * 2.2, deltaMs, tileSize * 0.75)) tr.arrivedAt = t;
           if (t > 3500) tr.arrivedAt = t; // couldn't reach you: munch where it is
         } else if (t - tr.arrivedAt > 1800) endPigTrick(a);
+      } else if (tr.type === "teaser") {
+        // 🐱 runs over to the feather on your cat teaser and keeps chasing it while it swings
+        const tip = myTeaserTip();
+        if (!tip || t > TEASER_MS) endPigTrick(a);
+        else if (t > 250) {
+          const dx = tip.x - (a.x + a.size / 2);
+          const dy = tip.y - (a.y + a.size * 0.6);
+          const d = Math.hypot(dx, dy);
+          if (d > tileSize * 0.35) {
+            const step = Math.min(d - tileSize * 0.35, (kind.walkSpeed * 2.6 * deltaMs) / 1000);
+            const nx = a.x + (dx / d) * step;
+            const ny = a.y + (dy / d) * step;
+            if (!isAnimalBlocked(nx, ny, a.size)) {
+              a.x = nx;
+              a.y = ny;
+              a.walking = true;
+              a.animMs = (a.animMs || 0) + deltaMs;
+            }
+          }
+          if (!a.walking) {
+            if (!tr.playingAt) tr.playingAt = t;
+            a.dir = Math.abs(dx) > 3 ? (dx < 0 ? 2 : 3) : a.dir; // eyes on the feather
+          }
+        }
       } else if (tr.type === "spin") {
         a.dir = [1, 3, 0, 2][Math.floor(t / 160) % 4]; // down, right, up, left...
         if (t > 1700) {
@@ -8786,6 +8816,11 @@
       if (tr.type === "sniff" && t < 2200) return { dx: Math.sin(now / 35) > 0 ? 1 : 0, dy: 0, rot: 0 }; // nose wiggle
       if (tr.type === "mud") return { dx: 0, dy: 3, rot: Math.sin(t / 140) * 0.7 * Math.min(1, (1900 - t) / 300) };
       if (tr.type === "feed" && tr.arrivedAt) return { dx: 0, dy: Math.sin(now / 70) > 0 ? 1 : 0, rot: 0 }; // munching
+      if (tr.type === "teaser" && tr.playingAt && !a.walking) {
+        // pounces: crouch, then leap up at the feather, again and again
+        const ph = ((t - tr.playingAt) % 700) / 700;
+        return { dx: 0, dy: ph < 0.35 ? 2 : -Math.sin(((ph - 0.35) / 0.65) * Math.PI) * 9, rot: 0 };
+      }
       if (tr.type === "spin") return { dx: 0, dy: t > 1300 ? -Math.sin(((t - 1300) / 400) * Math.PI) * 6 : 0, rot: 0 };
       return null;
     };
@@ -8810,6 +8845,7 @@
       if (tr.type === "sniff") drawAnimalPop("💗", cx, top, t - 300);
       if (tr.type === "feed" && tr.arrivedAt) drawAnimalPop("😋", cx, top, t - tr.arrivedAt);
       if (tr.type === "spin" && t > 1200) drawAnimalPop("✨", cx, top, t - 1200);
+      if (tr.type === "teaser" && t > TEASER_MS - 1300) drawAnimalPop("😻", cx, top, t - (TEASER_MS - 1300));
       if (tr.type === "mud") {
         // brown droplets flying off while it rolls
         ctx.fillStyle = "#7a5332";
@@ -9027,7 +9063,13 @@
             playAnimalSound(listKey, animal);
             if (listKey === "cows") startDrinkingMilk(); // 🥛 a cow! time for a glass of milk
             if (listKey === "chickens") startLayingEgg(animal);
-            if (listKey === "pigs") startPigTrick(animal); // 🐷 one of four tricks at random // 🥚 the chicken stops and lays an egg
+            if (listKey === "pigs") startPigTrick(animal);
+            if (listKey === "cats" && !animal.trick) {
+              // 🪶 out comes the cat teaser, and the cat comes to play
+              animal.trick = { type: "teaser", start: performance.now() };
+              animal.state = "trick";
+              startCatTeaser();
+            } // 🐷 one of four tricks at random // 🥚 the chicken stops and lays an egg
           }
           st.near = near;
         });
@@ -12076,6 +12118,7 @@
           c.y = c.spotY;
           c.walking = false;
           c.state = undefined;
+          c.trick = null;
         });
       } else updateAnimals(currentMap.cats, deltaMs, ANIMAL_KINDS.cat);
       updateAnimalSounds();
@@ -12387,6 +12430,76 @@
       );
     };
 
+    // 🪶 Playing with the home cat: you wave a cat teaser (a stick, a string and a feather)
+    const catTeasers = new Map(); // player id -> start time
+    const TEASER_MS = 5200;
+    /** Where the feather is (world px) for a character at (x, y) facing `facing`, `t` ms in. */
+    const teaserTipAt = (x, y, facing, t) => {
+      const hand = facing === "left" ? { x: 2, y: 24 } : facing === "right" ? { x: 38, y: 24 } : { x: 34, y: facing === "up" ? 20 : 26 };
+      const stick = facing === "left" ? { x: -18, y: -10 } : facing === "right" ? { x: 18, y: -10 } : facing === "up" ? { x: 12, y: -16 } : { x: 14, y: 6 };
+      const sway = Math.sin(t / 220) * 0.9 + Math.sin(t / 97) * 0.25; // a lively, uneven swing
+      const end = { x: x + hand.x + stick.x, y: y + hand.y + stick.y };
+      return { hand: { x: x + hand.x, y: y + hand.y }, end, x: end.x + Math.sin(sway) * 16, y: end.y + Math.cos(sway) * 16 };
+    };
+    const myTeaserTip = () => {
+      const start = catTeasers.get(auth.currentUser?.uid || "me");
+      if (start === undefined) return null;
+      const t = performance.now() - start;
+      return t > TEASER_MS ? null : teaserTipAt(player.x, player.y, player.facing, t);
+    };
+    const drawTeaser = (tip) => {
+      ctx.save();
+      ctx.strokeStyle = "#2a1f1a";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(tip.hand.x, tip.hand.y);
+      ctx.lineTo(tip.end.x, tip.end.y);
+      ctx.stroke();
+      ctx.strokeStyle = "#c9a24a"; // the wooden stick
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(42, 31, 26, 0.8)"; // the string
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(tip.end.x, tip.end.y);
+      ctx.lineTo(tip.x, tip.y);
+      ctx.stroke();
+      // the feather tuft
+      const fx = Math.round(tip.x);
+      const fy = Math.round(tip.y);
+      ctx.fillStyle = "#2a1f1a";
+      ctx.fillRect(fx - 4, fy - 1, 8, 9);
+      ctx.fillStyle = "#ff6fb1";
+      ctx.fillRect(fx - 3, fy, 3, 7);
+      ctx.fillStyle = "#5ee0ff";
+      ctx.fillRect(fx, fy, 3, 6);
+      ctx.fillStyle = "#ffe45e";
+      ctx.fillRect(fx - 1, fy + 5, 2, 3);
+      ctx.restore();
+    };
+    const drawWithTeaser = (id, avatar, facing, walking, animMs, x, y) => {
+      const start = catTeasers.get(id);
+      if (start === undefined) return false;
+      const t = performance.now() - start;
+      if (t > TEASER_MS) {
+        catTeasers.delete(id);
+        return false;
+      }
+      const tip = teaserTipAt(x, y, facing, t);
+      if (facing === "up") drawTeaser(tip);
+      drawPixelCharacter(avatar, facing, walking, animMs, x, y);
+      if (facing !== "up") drawTeaser(tip);
+      return true;
+    };
+    const startCatTeaser = () => {
+      const user = auth.currentUser;
+      catTeasers.set(user?.uid || "me", performance.now());
+      if (!user) return;
+      setDoc(doc(db, "players", user.uid), { teaserId: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}` }, { merge: true }).catch(
+        (err) => console.error("Teaser sync failed", err)
+      );
+    };
+
     // 🍷 In the jazz bar everyone holds a glass of red wine (in the hand on the side they face)
     const isInBarAt = (x, y) =>
       currentMapName === "worldMap" && zoneAt(currentMapName, x + player.size / 2, y + player.size * 0.8, tileSize)?.id === "bar";
@@ -12407,6 +12520,7 @@
     const drawAvatarMaybeDancing = (id, avatar, facing, walking, animMs, x, y) => {
       if (drawDrinkingMilk(id, avatar, facing, walking, animMs, x, y)) return;
       if (drawFeedingPig(id, avatar, facing, walking, animMs, x, y)) return;
+      if (drawWithTeaser(id, avatar, facing, walking, animMs, x, y)) return;
       if (isInBarAt(x, y)) {
         const hand = facing === "left" ? { x: -1, y: 13 } : { x: 29, y: 13 };
         drawPixelCharacter(avatar, facing, walking, animMs, x, y);
@@ -12738,7 +12852,7 @@
             ctx.beginPath();
             ctx.ellipse(animal.x + animal.size / 2, animal.y + animal.size - 2, animal.size * 0.36, kind === "chicken" ? 3 : 4, 0, 0, Math.PI * 2);
             ctx.fill();
-            const pose = kind === "pig" ? pigTrickPose(animal, now) : null;
+            const pose = kind === "pig" || kind === "cat" ? pigTrickPose(animal, now) : null;
             const frame = getAnimalFrame(animal.walking, animal.animMs || 0);
             if (pose?.rot) {
               // rolling in the mud: the pig tips from side to side around its middle
@@ -12750,7 +12864,7 @@
             } else {
               drawPixelAnimal(ctx, kind, animal.dir, frame, animal.x + wiggle + (pose?.dx || 0), animal.y + bob + (pose?.dy || 0), animal.size);
             }
-            if (kind === "pig" && animal.trick) overlays.push(() => drawPigTrickExtras(animal, now));
+            if ((kind === "pig" || kind === "cat") && animal.trick) overlays.push(() => drawPigTrickExtras(animal, now));
           });
         });
       };
