@@ -8687,6 +8687,50 @@
 
     const updateCows = (deltaMs = 16.67) => updateAnimals(currentMap.cows, deltaMs, ANIMAL_KINDS.cow);
 
+    // 🐮🐷🐔 Walk up to an animal and it says hello (sounds/*.m4a). Only when you first come
+    // close, at most every 8 s per animal, and never two calls within 1.5 s.
+    const ANIMAL_SOUND_FILES = { cows: "sounds/cow.m4a", pigs: "sounds/pig.m4a", chickens: "sounds/chicken.m4a" };
+    const animalSounds = {};
+    const animalSoundState = new WeakMap(); // animal -> { near, lastAt }
+    let lastAnimalSoundAt = 0;
+    const ANIMAL_SOUND_RADIUS = () => tileSize * 1.6;
+    const playAnimalSound = (listKey) => {
+      let a = animalSounds[listKey];
+      if (!a) {
+        a = new Audio(ANIMAL_SOUND_FILES[listKey]);
+        a.preload = "auto";
+        a.volume = 0.7;
+        animalSounds[listKey] = a;
+      }
+      try {
+        a.currentTime = 0;
+      } catch {}
+      a.play().catch(() => {}); // browsers allow sound only after the first tap / key press
+    };
+    const updateAnimalSounds = () => {
+      if (!currentMap) return;
+      const now = performance.now();
+      const c = getPlayerCenter();
+      const r = ANIMAL_SOUND_RADIUS();
+      Object.keys(ANIMAL_SOUND_FILES).forEach((listKey) => {
+        (currentMap[listKey] || []).forEach((animal) => {
+          const size = animal.size || tileSize * 0.8;
+          const near = Math.hypot(animal.x + size / 2 - c.x, animal.y + size / 2 - c.y) < r;
+          let st = animalSoundState.get(animal);
+          if (!st) {
+            st = { near: false, lastAt: -Infinity };
+            animalSoundState.set(animal, st);
+          }
+          if (near && !st.near && now - st.lastAt > 8000 && now - lastAnimalSoundAt > 1500) {
+            st.lastAt = now;
+            lastAnimalSoundAt = now;
+            playAnimalSound(listKey);
+          }
+          st.near = near;
+        });
+      });
+    };
+
     const minimapCache = new Map();
     let minimapBottom = 0; // y just below the minimap (used to keep the follow chip clear of it)
     const drawMinimap = () => {
@@ -11721,6 +11765,7 @@
       updatePigs(deltaMs);
       updateCows(deltaMs);
       updateAnimals(currentMap.chickens, deltaMs, ANIMAL_KINDS.chicken);
+      updateAnimalSounds();
       ensureBlockedGrid();
       releaseSeatsWhenFar();
       if (isNoticeOpen || isAvatarEditorOpen() || isTableOpen() || isGuestbookOpen()) {
