@@ -8565,6 +8565,17 @@
           a.animMs = 0;
           a.speedMul = randBetween(0.8, 1.2); // every animal walks at its own pace
         }
+        // 🥚 A chicken you walked up to stops, sits still and lays an egg
+        if (a.state === "laying") {
+          a.walking = false;
+          a.timer -= deltaMs;
+          if (a.timer <= 0) {
+            layChickenEgg(a);
+            a.state = "idle";
+            a.timer = randBetween(1200, 2400); // stays put a moment, then wanders off
+          }
+          return;
+        }
         // Shy animals shuffle away when you walk right up to them
         if (kind.skittish && a.state !== "flee" && player.walking) {
           const dx = a.x - player.x;
@@ -8619,6 +8630,47 @@
         a.walking = true;
         a.animMs += deltaMs;
       });
+    };
+
+    // ---- 🥚 Eggs: a chicken that sees you stops, wiggles for a moment and leaves an egg ----
+    const EGG_LAY_MS = 1600;
+    const EGG_LIFE_MS = 45000; // eggs fade away after a while
+    const MAX_EGGS = 8;
+    let chickenEggs = []; // { mapName, x, y, bornAt }
+    const startLayingEgg = (a) => {
+      if (a.state === "laying") return;
+      a.state = "laying";
+      a.timer = EGG_LAY_MS;
+      a.layStart = performance.now();
+    };
+    const layChickenEgg = (a) => {
+      chickenEggs.push({ mapName: currentMapName, x: a.x + a.size / 2, y: a.y + a.size - 3, bornAt: performance.now() });
+      if (chickenEggs.length > MAX_EGGS) chickenEggs = chickenEggs.slice(-MAX_EGGS);
+    };
+    const drawChickenEgg = (egg, now) => {
+      const age = now - egg.bornAt;
+      const pop = Math.min(1, age / 220); // pops out with a tiny bounce
+      const hop = age < 450 ? Math.sin((age / 450) * Math.PI) * 4 : 0;
+      const alpha = Math.min(1, (EGG_LIFE_MS - age) / 3000);
+      const w = 6 * pop;
+      const h = 8 * pop;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, alpha);
+      ctx.fillStyle = "rgba(20, 30, 20, 0.22)";
+      ctx.beginPath();
+      ctx.ellipse(egg.x, egg.y + 1, 5, 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#2a1f1a";
+      ctx.beginPath();
+      ctx.ellipse(egg.x, egg.y - h / 2 - hop, w / 2 + 1, h / 2 + 1, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#fbf3e2";
+      ctx.beginPath();
+      ctx.ellipse(egg.x, egg.y - h / 2 - hop, w / 2, h / 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(Math.round(egg.x - w / 4), Math.round(egg.y - h * 0.8 - hop), 2, 2);
+      ctx.restore();
     };
 
     const updatePigs = (deltaMs = 16.67) => updateAnimals(currentMap.pigs, deltaMs, ANIMAL_KINDS.pig);
@@ -8808,6 +8860,7 @@
             lastAnimalSoundAt = now;
             playAnimalSound(listKey, animal);
             if (listKey === "cows") startDrinkingMilk(); // 🥛 a cow! time for a glass of milk
+            if (listKey === "chickens") startLayingEgg(animal); // 🥚 the chicken stops and lays an egg
           }
           st.near = near;
         });
@@ -12456,17 +12509,29 @@
             // Soft shadow + a little hop while walking; chickens bob their heads to peck while idle
             let bob = animal.walking ? -Math.abs(Math.sin((animal.animMs || 0) / 110)) * 2 : 0;
             if (kind === "chicken" && !animal.walking && Math.sin(now / 180 + animal.x) > 0.6) bob = 2;
+            // Laying: squats down and wiggles side to side, then pops up as the egg comes out
+            let wiggle = 0;
+            if (kind === "chicken" && animal.state === "laying") {
+              const k = Math.min(1, (now - (animal.layStart || now)) / EGG_LAY_MS);
+              bob = k < 0.85 ? 3 : -3;
+              wiggle = k < 0.85 ? Math.round(Math.sin(now / 45) * 1.5) : 0;
+            }
             ctx.fillStyle = "rgba(20, 30, 20, 0.22)";
             ctx.beginPath();
             ctx.ellipse(animal.x + animal.size / 2, animal.y + animal.size - 2, animal.size * 0.36, kind === "chicken" ? 3 : 4, 0, 0, Math.PI * 2);
             ctx.fill();
-            drawPixelAnimal(ctx, kind, animal.dir, getAnimalFrame(animal.walking, animal.animMs || 0), animal.x, animal.y + bob, animal.size);
+            drawPixelAnimal(ctx, kind, animal.dir, getAnimalFrame(animal.walking, animal.animMs || 0), animal.x + wiggle, animal.y + bob, animal.size);
           });
         });
       };
       addAnimals(currentMap.pigs, "pig");
       addAnimals(currentMap.cows, "cow");
       addAnimals(currentMap.chickens, "chicken");
+      chickenEggs = chickenEggs.filter((egg) => now - egg.bornAt < EGG_LIFE_MS);
+      chickenEggs.forEach((egg) => {
+        if (egg.mapName !== currentMapName || !inView(egg.x - 8, egg.y - 14, 16, 16)) return;
+        addDrawable(egg.y - 6, () => drawChickenEgg(egg, now)); // just behind the chicken sitting on it
+      });
 
       otherPlayers.forEach((playerData, playerId) => {
         if (
