@@ -6755,6 +6755,7 @@
                 animMs: 0,
                 avatar: normalizeAvatar(data.avatar, docSnap.id),
                 emoteId: data.emoteId || null,
+                drinkId: data.drinkId || null,
               });
             } else {
               renderState.avatar = normalizeAvatar(data.avatar, docSnap.id);
@@ -6762,6 +6763,11 @@
               if (data.emoteId && data.emoteId !== renderState.emoteId) {
                 renderState.emoteId = data.emoteId;
                 if (data.emote && !isBlockedWith(docSnap.id)) showEmote(docSnap.id, data.emote);
+              }
+              // 🥛 A new drinkId: they just met a cow and are drinking a glass of milk
+              if (data.drinkId && data.drinkId !== renderState.drinkId) {
+                renderState.drinkId = data.drinkId;
+                milkDrinks.set(docSnap.id, performance.now());
               }
             }
           });
@@ -8787,6 +8793,7 @@
             st.lastAt = now;
             lastAnimalSoundAt = now;
             playAnimalSound(listKey, animal);
+            if (listKey === "cows") startDrinkingMilk(); // 🥛 a cow! time for a glass of milk
           }
           st.near = near;
         });
@@ -12028,6 +12035,73 @@
     };
     const isInPartyRoomAt = (x, y) =>
       currentMapName === "worldMap" && zoneAt(currentMapName, x + player.size / 2, y + player.size * 0.8, tileSize)?.id === "party";
+    // 🥛 Meeting a cow: a glass of milk appears, goes up to the mouth and is downed in one go,
+    // leaving a milk moustache and a 「好喝！」. ~2.6 s, then the moustache lingers a little.
+    const milkDrinks = new Map(); // player id -> start time (performance.now())
+    const MILK_MS = 2600;
+    const MILK_MOUSTACHE_MS = 4200;
+    const drawMilkGlass = (gx, gy, level, tilt) => {
+      ctx.save();
+      ctx.translate(gx, gy);
+      ctx.rotate(tilt);
+      const k = 1.5;
+      const p = (c, x, y, w, h) => {
+        ctx.fillStyle = c;
+        ctx.fillRect(Math.round(x * k), Math.round(y * k), Math.ceil(w * k), Math.ceil(h * k));
+      };
+      p("#2a1f1a", -4, -9, 8, 11); // outline
+      p("#9fcbe6", -3, -8, 6, 9); // the empty part of the glass (light blue, so the milk level shows)
+      const fill = Math.round(8 * level);
+      if (fill > 0) p("#ffffff", -3, 1 - fill, 6, fill); // milk
+      if (fill > 0) p("#fff6dc", -3, 1 - fill, 6, 1); // its creamy top
+      p("rgba(255,255,255,0.55)", -2, -7, 1, 7); // shine
+      ctx.restore();
+    };
+    /** Returns true when it drew the character (drinking), false when nothing to do. */
+    const drawDrinkingMilk = (id, avatar, facing, walking, animMs, x, y) => {
+      const start = milkDrinks.get(id);
+      if (start === undefined) return false;
+      const t = performance.now() - start;
+      if (t > MILK_MOUSTACHE_MS) {
+        milkDrinks.delete(id);
+        return false;
+      }
+      const side = facing === "left" ? -1 : 1;
+      const handX = x + (side < 0 ? 4 : 32);
+      const mouthX = x + 20 + side * 6;
+      const drawGlass = () => {
+        if (t > MILK_MS) return;
+        // raise (0.35–0.8 s), drink (0.8–1.9 s, tilting and emptying), lower (1.9–2.6 s)
+        const up = t < 350 ? 0 : t < 800 ? (t - 350) / 450 : t < 1900 ? 1 : Math.max(0, 1 - (t - 1900) / 500);
+        const level = t < 800 ? 1 : t < 1900 ? 1 - (t - 800) / 1100 : 0;
+        const gx = handX + (mouthX - handX) * up;
+        const gy = y + 26 - up * 12;
+        drawMilkGlass(gx, gy, level, side * up * (t < 1900 ? 0.4 + 0.5 * Math.min(1, (t - 800) / 1100) : 0.3));
+      };
+      if (facing === "up") drawGlass(); // facing away: the glass is in front of them, hidden behind the body
+      drawPixelCharacter(avatar, facing, walking, animMs, x, y);
+      if (facing !== "up") drawGlass();
+      if (t > 1900 && facing !== "up") {
+        // Milk moustache
+        ctx.fillStyle = "#2a1f1a";
+        ctx.fillRect(x + 12, y + 16, 16, 5);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(x + 13, y + 17, 14, 3);
+        ctx.fillRect(x + 12, y + 18, 3, 2);
+        ctx.fillRect(x + 25, y + 18, 3, 2);
+      }
+      if (t > 2000 && t < 3600) drawSpeechBubble(x + 20, y - 4, "好喝！🥛");
+      return true;
+    };
+    const startDrinkingMilk = () => {
+      const user = auth.currentUser;
+      milkDrinks.set(user?.uid || "me", performance.now());
+      if (!user) return;
+      setDoc(doc(db, "players", user.uid), { drinkId: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}` }, { merge: true }).catch(
+        (err) => console.error("Milk sync failed", err)
+      );
+    };
+
     // 🍷 In the jazz bar everyone holds a glass of red wine (in the hand on the side they face)
     const isInBarAt = (x, y) =>
       currentMapName === "worldMap" && zoneAt(currentMapName, x + player.size / 2, y + player.size * 0.8, tileSize)?.id === "bar";
@@ -12046,6 +12120,7 @@
       p("#2a1f1a", 0, 8, 6, 2); // foot
     };
     const drawAvatarMaybeDancing = (id, avatar, facing, walking, animMs, x, y) => {
+      if (drawDrinkingMilk(id, avatar, facing, walking, animMs, x, y)) return;
       if (isInBarAt(x, y)) {
         const hand = facing === "left" ? { x: -1, y: 13 } : { x: 29, y: 13 };
         drawPixelCharacter(avatar, facing, walking, animMs, x, y);
