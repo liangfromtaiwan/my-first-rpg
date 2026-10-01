@@ -239,7 +239,7 @@ export const buildHomeLayer = (home, t) => {
     const fb = FURNITURE_CATALOG[b.type]?.flat ? 0 : 1;
     return fa - fb || a.y - b.y;
   });
-  items.forEach((f) => drawFurnitureItem(g, f, t));
+  items.filter((f) => f.type !== "cat").forEach((f) => drawFurnitureItem(g, f, t)); // the cat walks about (drawn live)
   return layer;
 };
 

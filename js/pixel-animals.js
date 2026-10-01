@@ -1,4 +1,4 @@
-// Procedural pixel-art farm animals (pig, cow, chicken), matching the pixel characters.
+// Procedural pixel-art animals (pig, cow, chicken, and the cat that lives in every home), matching the pixel characters.
 // Each kind has side (left; right is mirrored), front (down) and back (up) views,
 // plus a walk cycle driven by swapping the leg rows.
 
@@ -98,15 +98,61 @@ const CHICK_FB_LEGS = [
   [".....YY.....", ".......Y...."],
 ];
 
+// ---- Cat: 14x10, orange tabby (matches the cat in the homes) ----
+const CAT_SIDE = [
+  "..O.O.........",
+  ".OAOAO......O.",
+  ".OAAAO.....OAO",
+  "OEAAAAO....OAO",
+  "OPAAAAOOOOOAO.",
+  ".OAAAASAASAAO.",
+  "..OAAAAAAAAAO.",
+  "..ObbbbbbbbbO.",
+];
+const CAT_SIDE_LEGS = [
+  ["...DD....DD...", "...OO....OO..."],
+  ["..DD......DD..", "..OO......OO.."],
+  ["....DD..DD....", "....OO..OO...."],
+];
+const CAT_FRONT = [
+  "...O......O...",
+  "..OAO....OAO..",
+  "..OAAOOOOAAO..",
+  ".OAAAAAAAAAAO.",
+  ".OAEAAAAAAEAO.",
+  ".OAAAAPPAAAAO.",
+  "..OAAAbbAAAO..",
+  "...ObbbbbbO...",
+];
+const CAT_BACK = [
+  "...O......O...",
+  "..OAO....OAO..",
+  "..OAAOOOOAAO..",
+  ".OAAAAAAAAAAO.",
+  ".OAASAAAASAAO.",
+  ".OAAAASSAAAAO.",
+  "..OAAAAAAAAO..",
+  "...OAAAAAAO...",
+];
+const CAT_FB_LEGS = [
+  ["....DD..DD....", "....OO..OO...."],
+  ["....DD..DD....", "....OO........"],
+  ["....DD..DD....", "........OO...."],
+];
+
 const PALETTES = {
   pig: { O: OUT, B: "#f4a9b8", b: "#e08a9c", h: "#e08a9c", S: "#e68fa2", N: "#9c4a5c", E: OUT, D: "#d98396", T: "#d9738a" },
   cow: { O: OUT, B: "#f4f1ea", b: "#d8d2c6", h: "#d9c9a3", S: "#f2b8c2", N: "#9c4a5c", E: OUT, D: "#4a4038", T: "#4a4038", K: "#2f2a28" },
+  cat: { O: OUT, A: "#e8773b", S: "#c9562f", b: "#f7c29a", E: OUT, P: "#e46f86", D: "#c9562f" },
   chicken: { O: OUT, W: "#fbfaf5", w: "#dcd8cc", R: "#e04a3a", Y: "#f2b33d", E: OUT },
 };
 
 const buildGrid = (kind, view, frame) => {
   let rows;
-  if (kind === "chicken") {
+  if (kind === "cat") {
+    const body = view === "side" ? CAT_SIDE : view === "front" ? CAT_FRONT : CAT_BACK;
+    rows = body.concat((view === "side" ? CAT_SIDE_LEGS : CAT_FB_LEGS)[frame]);
+  } else if (kind === "chicken") {
     const body = view === "side" ? CHICK_SIDE : view === "front" ? CHICK_FRONT : CHICK_BACK;
     const legs = view === "side" ? CHICK_SIDE_LEGS : CHICK_FB_LEGS;
     rows = body.concat(legs[frame]);

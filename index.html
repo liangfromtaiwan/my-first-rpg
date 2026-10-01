@@ -4438,9 +4438,9 @@
       DOOR_MODES,
       FLOOR_COLORS,
       WALL_COLORS,
-    } from "./js/home.js?v=20260929a";
+    } from "./js/home.js?v=20261002a";
     import { FURNITURE_CATALOG, FURNITURE_TYPES, drawFurnitureItem } from "./js/furniture.js";
-    import { drawPixelAnimal, getAnimalFrame } from "./js/pixel-animals.js";
+    import { drawPixelAnimal, getAnimalFrame } from "./js/pixel-animals.js?v=20261002a";
     import {
       INTERESTS,
       MAX_BIO,
@@ -7042,6 +7042,16 @@
     // --- Homes: each player's home is its own map, created on demand ---
     let homeReturn = null; // { mapName, spawn } — where the EXIT mat leads back to
     let myParty = null; // { title, endsAt } while my own house party is on
+    /** 🐱 The cat furniture in a home becomes a live cat; keeps cats that already roam this home. */
+    const homeCatsFor = (home, previous = []) =>
+      home.furniture
+        .filter((f) => f.type === "cat")
+        .map((f) => {
+          const spotX = f.x * tileSize + tileSize * 0.1;
+          const spotY = f.y * tileSize + tileSize * 0.1;
+          const old = previous.find((c) => c.furnitureId === f.id && c.spotX === spotX && c.spotY === spotY);
+          return old || { furnitureId: f.id, spotX, spotY, x: spotX, y: spotY, dir: 1, size: tileSize * 0.8 };
+        });
     const registerHomeMap = (ownerUid, rawHome) => {
       const name = homeMapName(ownerUid);
       const home = normalizeHome(rawHome, ownerUid, rawHome?.ownerName);
@@ -7059,6 +7069,7 @@
         pigs: [],
         chickens: [],
         cows: [],
+        cats: homeCatsFor(home, maps[name]?.cats),
         buildLayer: () => buildHomeLayer(home, tileSize),
         minimapColor: homeMinimapColor(home),
       };
@@ -8511,6 +8522,7 @@
       pig: { walkSpeed: 36, idle: [1200, 3800], radius: 3.5, skittish: true },
       cow: { walkSpeed: 24, idle: [2200, 6000], radius: 3, skittish: false },
       chicken: { walkSpeed: 34, idle: [500, 2200], radius: 2.5, skittish: true },
+      cat: { walkSpeed: 30, idle: [2000, 6000], radius: 3.5, skittish: false },
     };
     const randBetween = (min, max) => min + Math.random() * (max - min);
 
@@ -8525,7 +8537,7 @@
       for (let ty = top; ty <= bottom; ty++) {
         for (let tx = left; tx <= right; tx++) {
           if (currentMap.tiles[ty]?.[tx] !== 0) return true;
-          if (isZoneTile(currentMapName, tx, ty) || isReservedTile(currentMapName, tx, ty)) return true;
+          if (!currentMap.home && (isZoneTile(currentMapName, tx, ty) || isReservedTile(currentMapName, tx, ty))) return true;
           if (NOTICE_BOARDS[currentMapName] && Math.abs(tx - NOTICE_BOARDS[currentMapName].tileX) <= 1 && Math.abs(ty - NOTICE_BOARDS[currentMapName].tileY) <= 1) return true; // bulletin board
         }
       }
@@ -8905,22 +8917,7 @@
     // close, at most every 8 s per animal, and never two calls within 1.5 s. The sound is placed
     // where the animal is: it fades as you walk away and comes from its side (left / right).
     const ANIMAL_SOUND_FILES = { cows: "sounds/cow.m4a?v=3", pigs: "sounds/pig.m4a?v=2", chickens: "sounds/chicken.m4a?v=2", cats: "sounds/cat.m4a?v=1" };
-    // 🐱 The cat in each home is a piece of furniture; give each one a stable "animal" for the sound code
-    const homeCatCache = new Map(); // "mapName/furnitureId" -> { x, y, size }
-    const homeCats = () => {
-      if (!isHomeMap(currentMapName)) return [];
-      return (currentMap.home?.furniture || [])
-        .filter((f) => f.type === "cat")
-        .map((f) => {
-          const key = `${currentMapName}/${f.id}`;
-          let cat = homeCatCache.get(key);
-          if (!cat) homeCatCache.set(key, (cat = {}));
-          cat.x = f.x * tileSize; // follows the cat if it's moved in build mode
-          cat.y = f.y * tileSize;
-          cat.size = tileSize;
-          return cat;
-        });
-    };
+
     const animalSoundState = new WeakMap(); // animal -> { near, lastAt }
     const activeAnimalSounds = new Set(); // { animal, gain, pan, source }
     let lastAnimalSoundAt = 0;
@@ -9016,7 +9013,7 @@
         });
       }
       Object.keys(ANIMAL_SOUND_FILES).forEach((listKey) => {
-        (listKey === "cats" ? homeCats() : currentMap[listKey] || []).forEach((animal) => {
+        (currentMap[listKey] || []).forEach((animal) => {
           const size = animal.size || tileSize * 0.8;
           const near = Math.hypot(animal.x + size / 2 - c.x, animal.y + size / 2 - c.y) < r;
           let st = animalSoundState.get(animal);
@@ -12072,6 +12069,15 @@
       updatePigs(deltaMs);
       updateCows(deltaMs);
       updateAnimals(currentMap.chickens, deltaMs, ANIMAL_KINDS.chicken);
+      if (buildMode) {
+        // Decorating: the cat sits on its spot so it can be picked up / moved like furniture
+        (currentMap.cats || []).forEach((c) => {
+          c.x = c.spotX;
+          c.y = c.spotY;
+          c.walking = false;
+          c.state = undefined;
+        });
+      } else updateAnimals(currentMap.cats, deltaMs, ANIMAL_KINDS.cat);
       updateAnimalSounds();
       ensureBlockedGrid();
       releaseSeatsWhenFar();
@@ -12751,6 +12757,7 @@
       addAnimals(currentMap.pigs, "pig");
       addAnimals(currentMap.cows, "cow");
       addAnimals(currentMap.chickens, "chicken");
+      addAnimals(currentMap.cats, "cat");
       chickenEggs = chickenEggs.filter((egg) => now - egg.bornAt < EGG_LIFE_MS);
       pigMud = pigMud.filter((m) => now - m.bornAt < MUD_LIFE_MS);
       pigMud.forEach((m) => {
